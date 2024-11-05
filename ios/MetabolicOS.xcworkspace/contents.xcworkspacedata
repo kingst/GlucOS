@@ -20,9 +20,6 @@
       location = "group:MKRingProgressView/MKRingProgressView.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:Test Open URL/Test Open URL.xcodeproj">
-   </FileRef>
-   <FileRef
       location = "group:dexcom-share-client-swift/ShareClient.xcodeproj">
    </FileRef>
 </Workspace>
