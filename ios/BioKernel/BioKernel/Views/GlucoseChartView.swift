@@ -42,8 +42,10 @@ struct GlucoseChartView: View {
             .opacity(0.25)
 
             ForEach(deviceManagerObservable.glucoseChartData, id: \.created) { reading in
-                LineMark(x: .value("Time", reading.created),
+                PointMark(x: .value("Time", reading.created),
                          y: .value("mg/dL", reading.readingInMgDl))
+                    .symbolSize(10)  // Adjust the size of the points
+                    .foregroundStyle(.blue)
             }
         }
         .chartYScale(domain: 0...maxY)

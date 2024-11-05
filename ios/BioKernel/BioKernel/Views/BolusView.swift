@@ -72,12 +72,14 @@ struct BolusView: View {
             Spacer().frame(height: 16)
             if useMealAnnoucements {
                 Button {
+                    bolusAmount = ""
                     useMealAnnoucements = false
                 } label: {
                     Text("Enter units")
                 }
             } else {
                 Button {
+                    bolusAmount = ""
                     useMealAnnoucements = true
                 } label: {
                     Text("Announce carbs")
