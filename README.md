@@ -1,6 +1,8 @@
-# GlucOS
+# GlucOS <img src="biohacker.png" width="48" align="top">
 
-<img src="biokernel.jpeg" width="200"> <img src="biohacker.png" width="200">
+<div align="center">
+  <img src="biokernel.jpeg" width="200">
+</div>
 
 GlucOS is a new automated insulin delivery system with a focus on
 computer security. GlucOS is a simple, yet still fully featured
@@ -12,7 +14,7 @@ GlucOS is the first automated insulin delivery system to support
 ML-based predictions safely. To read more about how we do it, you can
 see our [academic
 paper](https://bob.cs.ucdavis.edu/assets/dl/glucos.pdf) on the
-topic. We also discuss several novel security mechanisms around
+topic or checkout this [10 minute youtube video](https://www.youtube.com/watch?v=0SAoigEHjJ4&list=PLS7sMlgd1pNM0KIKUQ-3y0_NRBU6Q-64h&index=3) that introduces the topic. In our paper, We also discuss several novel security mechanisms around
 insulin pump driver security, how we model human physiology and use it
 as a part of our security system, our use of formal methods, and how
 we include humans as a part of the system.
