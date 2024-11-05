@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <FileRef
+      location = "group:BioKernel/BioKernel.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:LoopKit/LoopKit.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:CGMBLEKit/CGMBLEKit.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:G7SensorKit/G7SensorKit.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:OmniBLE/OmniBLE.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:MKRingProgressView/MKRingProgressView.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:Test Open URL/Test Open URL.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:dexcom-share-client-swift/ShareClient.xcodeproj">
+   </FileRef>
+</Workspace>

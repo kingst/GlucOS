@@ -1,0 +1,18 @@
+[submodule "ios/LoopKit"]
+	path = ios/LoopKit
+	url = https://github.com/kingst/LoopKit
+[submodule "ios/OmniBLE"]
+	path = ios/OmniBLE
+	url = https://github.com/kingst/OmniBLE.git
+[submodule "ios/MKRingProgressView"]
+	path = ios/MKRingProgressView
+	url = https://github.com/kingst/MKRingProgressView.git
+[submodule "ios/G7SensorKit"]
+	path = ios/G7SensorKit
+	url = https://github.com/kingst/G7SensorKit.git
+[submodule "ios/CGMBLEKit"]
+	path = ios/CGMBLEKit
+	url = https://github.com/kingst/CGMBLEKit.git
+[submodule "ios/dexcom-share-client-swift"]
+	path = ios/dexcom-share-client-swift
+	url = https://github.com/kingst/libre-share-client-swift.git

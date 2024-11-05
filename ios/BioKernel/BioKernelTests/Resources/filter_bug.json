@@ -1,0 +1,60 @@
+[
+  {
+    "date" : "2023-11-21T07:07:31Z",
+    "dose" : {
+      "automatic" : true,
+      "deliveredUnits" : 0,
+      "endDate" : "2023-11-21T07:14:28Z",
+      "insulinType" : 4,
+      "isMutable" : false,
+      "manuallyEntered" : false,
+      "startDate" : "2023-11-21T07:07:31Z",
+      "syncIdentifier" : "74656d70426173616c20302e3120323032332d31312d32315430373a30373a33315a",
+      "type" : "tempBasal",
+      "unit" : "U\/hour",
+      "value" : 0.2,
+      "wasProgrammedByPumpUI" : false
+    },
+    "raw" : "dGVtcEJhc2FsIDAuMSAyMDIzLTExLTIxVDA3OjA3OjMxWg==",
+    "title" : "Temp Basal",
+    "type" : "TempBasal"
+  },
+  {
+    "date" : "2023-11-21T07:07:31Z",
+    "dose" : {
+      "automatic" : true,
+      "endDate" : "2023-11-21T07:37:31Z",
+      "insulinType" : 4,
+      "isMutable" : true,
+      "manuallyEntered" : false,
+      "startDate" : "2023-11-21T07:07:31Z",
+      "syncIdentifier" : "74656d70426173616c20302e3120323032332d31312d32315430373a30373a33315a",
+      "type" : "tempBasal",
+      "unit" : "U\/hour",
+      "value" : 0.2,
+      "wasProgrammedByPumpUI" : false
+    },
+    "raw" : "dGVtcEJhc2FsIDAuMSAyMDIzLTExLTIxVDA3OjA3OjMxWg==",
+    "title" : "Temp Basal",
+    "type" : "TempBasal"
+  },
+  {
+    "date" : "2023-11-21T07:14:28Z",
+    "dose" : {
+      "automatic" : true,
+      "endDate" : "2023-11-21T07:44:28Z",
+      "insulinType" : 4,
+      "isMutable" : true,
+      "manuallyEntered" : false,
+      "startDate" : "2023-11-21T07:14:28Z",
+      "syncIdentifier" : "74656d70426173616c20302e3020323032332d31312d32315430373a31343a32385a",
+      "type" : "tempBasal",
+      "unit" : "U\/hour",
+      "value" : 0,
+      "wasProgrammedByPumpUI" : false
+    },
+    "raw" : "dGVtcEJhc2FsIDAuMCAyMDIzLTExLTIxVDA3OjE0OjI4Wg==",
+    "title" : "Temp Basal",
+    "type" : "TempBasal"
+  }
+]
