@@ -1,6 +1,6 @@
 # GlucOS
 
-![BioKernel screenshot](biokernel.jpeg)
+<img src="biokernel.jpeg" width="200"> <img src="biohacker.png" width="200">
 
 GlucOS is a new automated insulin delivery system with a focus on
 computer security. GlucOS is a simple, yet still fully featured
@@ -21,7 +21,7 @@ we include humans as a part of the system.
 
 This source code is not meant for people to use yet. Also, the ML
 model is highly personalized for one individual and not appropriate
-for anyone other than that person to use.
+for anyone other than "Bob" from our paper.
 
 Also, we haven't moved the `event-log` server or our formal methods
 proofs to this public repo yet.
