@@ -13,6 +13,7 @@ struct BioKernelApp: App {
     @UIApplicationDelegateAdaptor(MyAppDelegate.self) var appDelegate
     
     init() {
+        UIApplication.shared.statusBarStyle = .lightContent
         //G7CGMManager.debugLogger = getDebugLogger()
         getBackgroundService().registerBackgroundTask()
     }
