@@ -4,6 +4,7 @@
   <img src="biokernel.jpeg" width="200">
 </div>
 
+## Security, correctness, and simplicity for automated insulin delivery
 GlucOS is a new automated insulin delivery system with a focus on
 computer security. GlucOS is a simple, yet still fully featured
 automated insulin delivery system. Simplicity is important for being
