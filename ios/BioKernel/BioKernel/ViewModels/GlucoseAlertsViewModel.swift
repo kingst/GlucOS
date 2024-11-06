@@ -13,7 +13,7 @@ public class GlucoseAlertsViewModel: ObservableObject {
     // for the never values we set it to 24 hours, which is close enough
     static let never = GlucoseAlertValue(id: "Never", value: 1440)
     let highLevelValues = stride(from: 140, through: 350, by: 10).map { GlucoseAlertValue(id: "\($0) mg/dl", value: $0)}
-    let highRepeatsValues = [never] + stride(from:15, through: 60, by: 15).map { GlucoseAlertValue(id: "\($0)m", value: $0)}
+    let highRepeatsValues = [never] + stride(from:15, through: 60, by: 15).map { GlucoseAlertValue(id: "\($0)m", value: $0)} + [GlucoseAlertValue(id: "120m", value: 120), GlucoseAlertValue(id: "180m", value: 180)]
     let lowLevelValues = stride(from: 60, through: 100, by: 5).map { GlucoseAlertValue(id: "\($0) mg/dl", value: $0)}
     let lowRepeatsValues = [never] + stride(from:15, through: 60, by: 15).map { GlucoseAlertValue(id: "\($0)m", value: $0)}
     
