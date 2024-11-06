@@ -48,7 +48,7 @@ struct MainViewSummaryView: View {
                     if glucoseAlertsViewModel.alertString != nil {
                         Text("-")
                     } else if let predictedGlucose = predictedGlucose {
-                        Text(String(format: "%0.0f", predictedGlucose)).font(.title)
+                        Text(String(format: "%0.0f", predictedGlucose.clamp(low: 40, high: 400))).font(.title)
                     } else {
                         Text("-")
                     }
