@@ -47,9 +47,7 @@ struct MainViewSummaryView: View {
                     }
                     if glucoseAlertsViewModel.alertString != nil {
                         if let predictedGlucose = glucoseAlertsViewModel.mostRecentPredictedGlucose {
-                            VStack {
-                                Text(String(format: "%0.0f", predictedGlucose.clamp(low: 40, high: 400))).font(.title)
-                            }
+                            Text(String(format: "%0.0f", predictedGlucose.clamp(low: 40, high: 400))).font(.title)
                         } else {
                             Text("-")
                         }
