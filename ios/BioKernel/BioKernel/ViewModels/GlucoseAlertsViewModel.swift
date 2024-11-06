@@ -23,6 +23,7 @@ public class GlucoseAlertsViewModel: ObservableObject {
     @Published var lowLevel = GlucoseAlertValue(id: "70 mg/dl", value: 70)
     @Published var lowRepeats = never
     @Published var alertString: String? = nil
+    @Published var mostRecentPredictedGlucose: Double? = nil
     var alertStringFromSettings: String? = nil
     
     func glucoseAlertValue(from: Double) -> GlucoseAlertValue {
@@ -36,13 +37,14 @@ public class GlucoseAlertsViewModel: ObservableObject {
         }
         return GlucoseAlertValue(id: "\(value)m", value: value)
     }
-    func update(settings: GlucoseAlertSettings) {
+    func update(settings: GlucoseAlertSettings, predictedGlucose: Double?) {
         enabled = settings.enabled
         highLevel = glucoseAlertValue(from: settings.highLevelMgDl)
         highRepeats = repeatsValue(fromSeconds: settings.highRepeatsSeconds)
         lowLevel = glucoseAlertValue(from: settings.lowLevelMgDl)
         lowRepeats = repeatsValue(fromSeconds: settings.lowRepeatsSeconds)
         alertStringFromSettings = settings.alertString
+        mostRecentPredictedGlucose = predictedGlucose
         
         if settings.enabled {
             alertString = settings.alertString

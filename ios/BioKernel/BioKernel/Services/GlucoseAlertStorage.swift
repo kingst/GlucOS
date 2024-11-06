@@ -108,7 +108,7 @@ class PredictiveGlucoseAlertStorage: GlucoseAlertStorage {
         let settings = (try? storage.read()) ?? GlucoseAlertSettings.defaults()
         glucoseAlertSettings = settings
         DispatchQueue.main.async {
-            self.alertViewModel.update(settings: settings)
+            self.alertViewModel.update(settings: settings, predictedGlucose: nil)
         }
     }
     func viewModel() -> GlucoseAlertsViewModel {
@@ -209,7 +209,7 @@ class PredictiveGlucoseAlertStorage: GlucoseAlertStorage {
         print("Predicted: \(predictedGlucose)")
         
         DispatchQueue.main.async {
-            self.alertViewModel.update(settings: newSettings)
+            self.alertViewModel.update(settings: newSettings, predictedGlucose: predictedGlucose)
         }
     }
     
