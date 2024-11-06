@@ -69,6 +69,9 @@ struct MainViewSummaryView: View {
                 self.timer.upstream.connect().cancel()
             } else if newPhase == .active {
                 self.timer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
+                Task {
+                    predictedGlucose = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: Date())
+                }
             }
         }
         .task {
