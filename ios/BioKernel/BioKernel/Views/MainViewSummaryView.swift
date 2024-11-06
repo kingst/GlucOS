@@ -9,8 +9,10 @@ import SwiftUI
 
 struct MainViewSummaryView: View {
     @StateObject var deviceManagerObservable = getDeviceDataManager().observableObject()
+    @ObservedObject var glucoseAlertsViewModel = getGlucoseAlertsService().viewModel()
     @Environment(\.scenePhase) var scenePhase
     @State var timer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
+    @State var predictedGlucose: Double?
     
     var body: some View {
         VStack {
@@ -26,13 +28,14 @@ struct MainViewSummaryView: View {
                     Text("N/A").font(.largeTitle).bold()
                 }
                 Text("mg/dL")
-            }.padding()
+            }
+            .padding()
             
             Grid {
                 GridRow {
                     Text("Acc Error").bold()
+                    Text("Predicted").bold()
                     Text("IoB").bold()
-                    Text("Insulin act").bold()
                 }
                 .frame(maxWidth: .infinity)
                 GridRow {
@@ -42,12 +45,14 @@ struct MainViewSummaryView: View {
                     } else {
                         Text("-")
                     }
-                    IoBGauge(current: iob)
-                    if let insulinAction = deviceManagerObservable.insulinActionPerHour() {
-                        InsulinActionGauge(current: insulinAction.clamp(low: 0, high: 100))
+                    if glucoseAlertsViewModel.alertString != nil {
+                        Text("-")
+                    } else if let predictedGlucose = predictedGlucose {
+                        Text(String(format: "%0.0f", predictedGlucose)).font(.title)
                     } else {
                         Text("-")
                     }
+                    IoBGauge(current: iob)
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -67,12 +72,16 @@ struct MainViewSummaryView: View {
             }
         }
         .task {
+            predictedGlucose = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: Date())
             await getDeviceDataManager().refreshCgmAndPumpDataFromUI()
             await getHealthKitStorage().removeDuplicateEntries()
         }
         .onReceive(timer) { _ in
             print("timer")
             deviceManagerObservable.objectWillChange.send()
+            Task {
+                predictedGlucose = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: Date())
+            }
         }
     }
 }
