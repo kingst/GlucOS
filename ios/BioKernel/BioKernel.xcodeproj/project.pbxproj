@@ -55,6 +55,10 @@
 		3B7C6D9C2B0C09320030DFA7 /* InsulinStorageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B7C6D9B2B0C09320030DFA7 /* InsulinStorageTests.swift */; };
 		3B7F08412B2DDE33002930A4 /* ClosedLoopTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B7F08402B2DDE33002930A4 /* ClosedLoopTests.swift */; };
 		3B7F08622B31590D002930A4 /* BolusProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B7F08612B31590D002930A4 /* BolusProgressView.swift */; };
+		3B96F2542D08A2A800ABBA16 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B96F2532D08A2A800ABBA16 /* WidgetKit.framework */; };
+		3B96F2562D08A2A800ABBA16 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B96F2552D08A2A800ABBA16 /* SwiftUI.framework */; };
+		3B96F25F2D08A2A900ABBA16 /* LauncherWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3B96F2522D08A2A800ABBA16 /* LauncherWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		3B96F2652D08ADA000ABBA16 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3B709A7E2AF492A0004E5885 /* Assets.xcassets */; };
 		3BAECD202B28F270002B9062 /* HealthKitStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAECD1F2B28F270002B9062 /* HealthKitStorage.swift */; };
 		3BBC7C742B155C7F00410123 /* FaceId.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BBC7C732B155C7F00410123 /* FaceId.swift */; };
 		3BBC7C762B15620200410123 /* LoopTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3BBC7C752B15620200410123 /* LoopTestingKit.framework */; };
@@ -113,6 +117,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		3B96F25D2D08A2A900ABBA16 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3B709A6F2AF4929D004E5885 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3B96F2512D08A2A800ABBA16;
+			remoteInfo = LauncherWidgetExtension;
+		};
 		3BE6DDD92D08706E0032DD7F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 3B709A6F2AF4929D004E5885 /* Project object */;
@@ -152,6 +163,17 @@
 				3B709AB62AF4937B004E5885 /* MockKitUI.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3B96F2642D08A2A900ABBA16 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				3B96F25F2D08A2A900ABBA16 /* LauncherWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3BE6DDDC2D08706E0032DD7F /* Embed Watch Content */ = {
@@ -209,6 +231,9 @@
 		3B7C6D9B2B0C09320030DFA7 /* InsulinStorageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsulinStorageTests.swift; sourceTree = "<group>"; };
 		3B7F08402B2DDE33002930A4 /* ClosedLoopTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClosedLoopTests.swift; sourceTree = "<group>"; };
 		3B7F08612B31590D002930A4 /* BolusProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusProgressView.swift; sourceTree = "<group>"; };
+		3B96F2522D08A2A800ABBA16 /* LauncherWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LauncherWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		3B96F2532D08A2A800ABBA16 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		3B96F2552D08A2A800ABBA16 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		3BAECD1F2B28F270002B9062 /* HealthKitStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitStorage.swift; sourceTree = "<group>"; };
 		3BAECD212B28FF54002B9062 /* BioKernel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BioKernel.entitlements; sourceTree = "<group>"; };
 		3BBC7C732B155C7F00410123 /* FaceId.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceId.swift; sourceTree = "<group>"; };
@@ -261,7 +286,18 @@
 		3CE9B8AF2B28CB2100B12300 /* AlertStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertStorage.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		3B96F2602D08A2A900ABBA16 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 3B96F2512D08A2A800ABBA16 /* LauncherWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		3B96F2572D08A2A800ABBA16 /* LauncherWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (3B96F2602D08A2A900ABBA16 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = LauncherWidget; sourceTree = "<group>"; };
 		3BE6DDCF2D08706D0032DD7F /* BioKernelWatch Watch App */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "BioKernelWatch Watch App"; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -284,6 +320,15 @@
 				3C07C8982AF964E4008F604C /* MKRingProgressView.framework in Frameworks */,
 				3BBC7C762B15620200410123 /* LoopTestingKit.framework in Frameworks */,
 				3B709AB52AF4937B004E5885 /* MockKitUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3B96F24F2D08A2A800ABBA16 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3B96F2562D08A2A800ABBA16 /* SwiftUI.framework in Frameworks */,
+				3B96F2542D08A2A800ABBA16 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -328,6 +373,7 @@
 				3B709A792AF4929D004E5885 /* BioKernel */,
 				3CBFB9882AFE02E90020FC90 /* BioKernelTests */,
 				3BE6DDCF2D08706D0032DD7F /* BioKernelWatch Watch App */,
+				3B96F2572D08A2A800ABBA16 /* LauncherWidget */,
 				3B709A782AF4929D004E5885 /* Products */,
 				3B709AA92AF49366004E5885 /* Frameworks */,
 			);
@@ -339,6 +385,7 @@
 				3B709A772AF4929D004E5885 /* BioKernel.app */,
 				3CBFB9872AFE02E90020FC90 /* BioKernelTests.xctest */,
 				3BE6DDCE2D08706D0032DD7F /* BioKernelWatch Watch App.app */,
+				3B96F2522D08A2A800ABBA16 /* LauncherWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -386,6 +433,8 @@
 				3B709AB12AF49377004E5885 /* MockKit.framework */,
 				3B709AAE2AF49370004E5885 /* LoopKitUI.framework */,
 				3B709AAA2AF49366004E5885 /* LoopKit.framework */,
+				3B96F2532D08A2A800ABBA16 /* WidgetKit.framework */,
+				3B96F2552D08A2A800ABBA16 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -540,6 +589,28 @@
 			productReference = 3B709A772AF4929D004E5885 /* BioKernel.app */;
 			productType = "com.apple.product-type.application";
 		};
+		3B96F2512D08A2A800ABBA16 /* LauncherWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3B96F2612D08A2A900ABBA16 /* Build configuration list for PBXNativeTarget "LauncherWidgetExtension" */;
+			buildPhases = (
+				3B96F24E2D08A2A800ABBA16 /* Sources */,
+				3B96F24F2D08A2A800ABBA16 /* Frameworks */,
+				3B96F2502D08A2A800ABBA16 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				3B96F2572D08A2A800ABBA16 /* LauncherWidget */,
+			);
+			name = LauncherWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = LauncherWidgetExtension;
+			productReference = 3B96F2522D08A2A800ABBA16 /* LauncherWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		3BE6DDCD2D08706D0032DD7F /* BioKernelWatch Watch App */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3BE6DDDF2D08706E0032DD7F /* Build configuration list for PBXNativeTarget "BioKernelWatch Watch App" */;
@@ -547,10 +618,12 @@
 				3BE6DDCA2D08706D0032DD7F /* Sources */,
 				3BE6DDCB2D08706D0032DD7F /* Frameworks */,
 				3BE6DDCC2D08706D0032DD7F /* Resources */,
+				3B96F2642D08A2A900ABBA16 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				3B96F25E2D08A2A900ABBA16 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				3BE6DDCF2D08706D0032DD7F /* BioKernelWatch Watch App */,
@@ -593,6 +666,9 @@
 					3B709A762AF4929D004E5885 = {
 						CreatedOnToolsVersion = 15.0.1;
 					};
+					3B96F2512D08A2A800ABBA16 = {
+						CreatedOnToolsVersion = 16.1;
+					};
 					3BE6DDCD2D08706D0032DD7F = {
 						CreatedOnToolsVersion = 16.1;
 					};
@@ -621,6 +697,7 @@
 				3B709A762AF4929D004E5885 /* BioKernel */,
 				3CBFB9862AFE02E90020FC90 /* BioKernelTests */,
 				3BE6DDCD2D08706D0032DD7F /* BioKernelWatch Watch App */,
+				3B96F2512D08A2A800ABBA16 /* LauncherWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -632,6 +709,14 @@
 			files = (
 				3B709A822AF492A0004E5885 /* Preview Assets.xcassets in Resources */,
 				3B709A7F2AF492A0004E5885 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3B96F2502D08A2A800ABBA16 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3B96F2652D08ADA000ABBA16 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -723,6 +808,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3B96F24E2D08A2A800ABBA16 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3BE6DDCA2D08706D0032DD7F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -748,6 +840,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		3B96F25E2D08A2A900ABBA16 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3B96F2512D08A2A800ABBA16 /* LauncherWidgetExtension */;
+			targetProxy = 3B96F25D2D08A2A900ABBA16 /* PBXContainerItemProxy */;
+		};
 		3BE6DDDA2D08706E0032DD7F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 3BE6DDCD2D08706D0032DD7F /* BioKernelWatch Watch App */;
@@ -964,6 +1061,66 @@
 			};
 			name = Release;
 		};
+		3B96F2622D08A2A900ABBA16 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L4TQ6C2R74;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LauncherWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = LauncherWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.getgrowthmetrics.BioKernel.watchkitapp.LauncherWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Debug;
+		};
+		3B96F2632D08A2A900ABBA16 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L4TQ6C2R74;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LauncherWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = LauncherWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.getgrowthmetrics.BioKernel.watchkitapp.LauncherWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Release;
+		};
 		3BE6DDDD2D08706E0032DD7F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1077,6 +1234,15 @@
 			buildConfigurations = (
 				3B709A862AF492A0004E5885 /* Debug */,
 				3B709A872AF492A0004E5885 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3B96F2612D08A2A900ABBA16 /* Build configuration list for PBXNativeTarget "LauncherWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3B96F2622D08A2A900ABBA16 /* Debug */,
+				3B96F2632D08A2A900ABBA16 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
