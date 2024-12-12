@@ -73,6 +73,7 @@ actor LocalGlucoseStorage: GlucoseStorage {
         
         do {
             try storage.write(self.glucoseReadings)
+            await getWatchComms().updateAppContext()
             await updateGlucoseChartData()
         } catch {
             print("Failed to save glucose readings to disk")

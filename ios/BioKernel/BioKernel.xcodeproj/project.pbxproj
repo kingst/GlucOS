@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -55,6 +55,23 @@
 		3B7C6D9C2B0C09320030DFA7 /* InsulinStorageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B7C6D9B2B0C09320030DFA7 /* InsulinStorageTests.swift */; };
 		3B7F08412B2DDE33002930A4 /* ClosedLoopTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B7F08402B2DDE33002930A4 /* ClosedLoopTests.swift */; };
 		3B7F08622B31590D002930A4 /* BolusProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B7F08612B31590D002930A4 /* BolusProgressView.swift */; };
+		3B96F2542D08A2A800ABBA16 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B96F2532D08A2A800ABBA16 /* WidgetKit.framework */; };
+		3B96F2562D08A2A800ABBA16 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B96F2552D08A2A800ABBA16 /* SwiftUI.framework */; };
+		3B96F25F2D08A2A900ABBA16 /* LauncherWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3B96F2522D08A2A800ABBA16 /* LauncherWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		3B96F2682D08C86D00ABBA16 /* WatchComms.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B96F2672D08C86700ABBA16 /* WatchComms.swift */; };
+		3B96F26A2D08CA2C00ABBA16 /* LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = 3B96F2692D08CA2C00ABBA16 /* LICENSE.txt */; };
+		3B96F27F2D08CB6800ABBA16 /* WatchComms.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B96F2672D08C86700ABBA16 /* WatchComms.swift */; };
+		3B96F2882D08CB6800ABBA16 /* WatchComms.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B96F2672D08C86700ABBA16 /* WatchComms.swift */; };
+		3B96F2922D08CD6B00ABBA16 /* CommandStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B96F2892D08CD6B00ABBA16 /* CommandStatus.swift */; };
+		3B96F2932D08CD6B00ABBA16 /* SessionDelegator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B96F28D2D08CD6B00ABBA16 /* SessionDelegator.swift */; };
+		3B96F2972D08CD6B00ABBA16 /* SessionCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B96F28C2D08CD6B00ABBA16 /* SessionCommands.swift */; };
+		3B96F29A2D08CD6B00ABBA16 /* CommandStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B96F2892D08CD6B00ABBA16 /* CommandStatus.swift */; };
+		3B96F29B2D08CD6B00ABBA16 /* SessionDelegator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B96F28D2D08CD6B00ABBA16 /* SessionDelegator.swift */; };
+		3B96F29F2D08CD6B00ABBA16 /* SessionCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B96F28C2D08CD6B00ABBA16 /* SessionCommands.swift */; };
+		3B96F2A22D08CD6B00ABBA16 /* CommandStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B96F2892D08CD6B00ABBA16 /* CommandStatus.swift */; };
+		3B96F2A32D08CD6B00ABBA16 /* SessionDelegator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B96F28D2D08CD6B00ABBA16 /* SessionDelegator.swift */; };
+		3B96F2A72D08CD6B00ABBA16 /* SessionCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B96F28C2D08CD6B00ABBA16 /* SessionCommands.swift */; };
+		3B96F2AC2D0904EE00ABBA16 /* WatchCommsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B96F2AB2D0904EE00ABBA16 /* WatchCommsService.swift */; };
 		3BAECD202B28F270002B9062 /* HealthKitStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAECD1F2B28F270002B9062 /* HealthKitStorage.swift */; };
 		3BBC7C742B155C7F00410123 /* FaceId.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BBC7C732B155C7F00410123 /* FaceId.swift */; };
 		3BBC7C762B15620200410123 /* LoopTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3BBC7C752B15620200410123 /* LoopTestingKit.framework */; };
@@ -66,8 +83,13 @@
 		3BD793832AF564EA00E5FDC9 /* DateExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD793822AF564EA00E5FDC9 /* DateExtensions.swift */; };
 		3BD7E2102C48A3AB0093D300 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD7E20F2C48A3AB0093D300 /* NotificationManager.swift */; };
 		3BE629B52AFCC8B6001526D4 /* SettingsStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BE629B42AFCC8B6001526D4 /* SettingsStorage.swift */; };
+		3BE6DDDB2D08706E0032DD7F /* BioKernelWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 3BE6DDCE2D08706D0032DD7F /* BioKernelWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		3BE6DDE02D0870840032DD7F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3B709A7E2AF492A0004E5885 /* Assets.xcassets */; };
 		3BE8ADA12B2A4DCE0002BB3E /* UserDefaults+Json.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BE8ADA02B2A4DCE0002BB3E /* UserDefaults+Json.swift */; };
 		3BEE4E202B5FF4A000A09203 /* DateTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BEE4E1F2B5FF4A000A09203 /* DateTime.swift */; };
+		3BF1BB262D0B1C2B00135F86 /* StoredJsonObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C7553CD2AFD610B00FAD880 /* StoredJsonObject.swift */; };
+		3BF1BB272D0B1CA800135F86 /* Debug.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C7553DD2AFDB2DA00FAD880 /* Debug.swift */; };
+		3BF1BB292D0B253000135F86 /* DateExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD793822AF564EA00E5FDC9 /* DateExtensions.swift */; };
 		3C07C88F2AF9625A008F604C /* OmniBLE.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C07C88E2AF9625A008F604C /* OmniBLE.framework */; };
 		3C07C8902AF9625A008F604C /* OmniBLE.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3C07C88E2AF9625A008F604C /* OmniBLE.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3C07C8982AF964E4008F604C /* MKRingProgressView.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C07C8972AF964E4008F604C /* MKRingProgressView.framework */; };
@@ -111,6 +133,20 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		3B96F25D2D08A2A900ABBA16 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3B709A6F2AF4929D004E5885 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3B96F2512D08A2A800ABBA16;
+			remoteInfo = LauncherWidgetExtension;
+		};
+		3BE6DDD92D08706E0032DD7F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3B709A6F2AF4929D004E5885 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3BE6DDCD2D08706D0032DD7F;
+			remoteInfo = "BioKernelWatch Watch App";
+		};
 		3CBFB98B2AFE02E90020FC90 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 3B709A6F2AF4929D004E5885 /* Project object */;
@@ -143,6 +179,28 @@
 				3B709AB62AF4937B004E5885 /* MockKitUI.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3B96F2642D08A2A900ABBA16 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				3B96F25F2D08A2A900ABBA16 /* LauncherWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3BE6DDDC2D08706E0032DD7F /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				3BE6DDDB2D08706E0032DD7F /* BioKernelWatch Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -189,6 +247,15 @@
 		3B7C6D9B2B0C09320030DFA7 /* InsulinStorageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsulinStorageTests.swift; sourceTree = "<group>"; };
 		3B7F08402B2DDE33002930A4 /* ClosedLoopTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClosedLoopTests.swift; sourceTree = "<group>"; };
 		3B7F08612B31590D002930A4 /* BolusProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusProgressView.swift; sourceTree = "<group>"; };
+		3B96F2522D08A2A800ABBA16 /* LauncherWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LauncherWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		3B96F2532D08A2A800ABBA16 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		3B96F2552D08A2A800ABBA16 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		3B96F2672D08C86700ABBA16 /* WatchComms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchComms.swift; sourceTree = "<group>"; };
+		3B96F2692D08CA2C00ABBA16 /* LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
+		3B96F2892D08CD6B00ABBA16 /* CommandStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandStatus.swift; sourceTree = "<group>"; };
+		3B96F28C2D08CD6B00ABBA16 /* SessionCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCommands.swift; sourceTree = "<group>"; };
+		3B96F28D2D08CD6B00ABBA16 /* SessionDelegator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDelegator.swift; sourceTree = "<group>"; };
+		3B96F2AB2D0904EE00ABBA16 /* WatchCommsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchCommsService.swift; sourceTree = "<group>"; };
 		3BAECD1F2B28F270002B9062 /* HealthKitStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitStorage.swift; sourceTree = "<group>"; };
 		3BAECD212B28FF54002B9062 /* BioKernel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BioKernel.entitlements; sourceTree = "<group>"; };
 		3BBC7C732B155C7F00410123 /* FaceId.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceId.swift; sourceTree = "<group>"; };
@@ -200,6 +267,7 @@
 		3BD793822AF564EA00E5FDC9 /* DateExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateExtensions.swift; sourceTree = "<group>"; };
 		3BD7E20F2C48A3AB0093D300 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		3BE629B42AFCC8B6001526D4 /* SettingsStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStorage.swift; sourceTree = "<group>"; };
+		3BE6DDCE2D08706D0032DD7F /* BioKernelWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "BioKernelWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3BE8ADA02B2A4DCE0002BB3E /* UserDefaults+Json.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UserDefaults+Json.swift"; sourceTree = "<group>"; };
 		3BEE4E1F2B5FF4A000A09203 /* DateTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateTime.swift; sourceTree = "<group>"; };
 		3C07C88E2AF9625A008F604C /* OmniBLE.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = OmniBLE.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -240,6 +308,21 @@
 		3CE9B8AF2B28CB2100B12300 /* AlertStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertStorage.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		3B96F2602D08A2A900ABBA16 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 3B96F2512D08A2A800ABBA16 /* LauncherWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		3B96F2572D08A2A800ABBA16 /* LauncherWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (3B96F2602D08A2A900ABBA16 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = LauncherWidget; sourceTree = "<group>"; };
+		3BE6DDCF2D08706D0032DD7F /* BioKernelWatch Watch App */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "BioKernelWatch Watch App"; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		3B709A742AF4929D004E5885 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
@@ -259,6 +342,22 @@
 				3C07C8982AF964E4008F604C /* MKRingProgressView.framework in Frameworks */,
 				3BBC7C762B15620200410123 /* LoopTestingKit.framework in Frameworks */,
 				3B709AB52AF4937B004E5885 /* MockKitUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3B96F24F2D08A2A800ABBA16 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3B96F2562D08A2A800ABBA16 /* SwiftUI.framework in Frameworks */,
+				3B96F2542D08A2A800ABBA16 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3BE6DDCB2D08706D0032DD7F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -295,6 +394,8 @@
 			children = (
 				3B709A792AF4929D004E5885 /* BioKernel */,
 				3CBFB9882AFE02E90020FC90 /* BioKernelTests */,
+				3BE6DDCF2D08706D0032DD7F /* BioKernelWatch Watch App */,
+				3B96F2572D08A2A800ABBA16 /* LauncherWidget */,
 				3B709A782AF4929D004E5885 /* Products */,
 				3B709AA92AF49366004E5885 /* Frameworks */,
 			);
@@ -305,6 +406,8 @@
 			children = (
 				3B709A772AF4929D004E5885 /* BioKernel.app */,
 				3CBFB9872AFE02E90020FC90 /* BioKernelTests.xctest */,
+				3BE6DDCE2D08706D0032DD7F /* BioKernelWatch Watch App.app */,
+				3B96F2522D08A2A800ABBA16 /* LauncherWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -324,6 +427,7 @@
 				3C7553DF2AFDBEF900FAD880 /* Services */,
 				3B6063AE2B54BD8B009D9CBC /* ViewModels */,
 				3C7553E02AFDBF6D00FAD880 /* Views */,
+				3B96F2662D08C83700ABBA16 /* WatchCommsShared */,
 			);
 			path = BioKernel;
 			sourceTree = "<group>";
@@ -352,6 +456,8 @@
 				3B709AB12AF49377004E5885 /* MockKit.framework */,
 				3B709AAE2AF49370004E5885 /* LoopKitUI.framework */,
 				3B709AAA2AF49366004E5885 /* LoopKit.framework */,
+				3B96F2532D08A2A800ABBA16 /* WidgetKit.framework */,
+				3B96F2552D08A2A800ABBA16 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -375,6 +481,18 @@
 				3C07C89F2AF986EF008F604C /* PumpManagerViews.swift */,
 			);
 			path = LoopKitSupport;
+			sourceTree = "<group>";
+		};
+		3B96F2662D08C83700ABBA16 /* WatchCommsShared */ = {
+			isa = PBXGroup;
+			children = (
+				3B96F2692D08CA2C00ABBA16 /* LICENSE.txt */,
+				3B96F2892D08CD6B00ABBA16 /* CommandStatus.swift */,
+				3B96F28C2D08CD6B00ABBA16 /* SessionCommands.swift */,
+				3B96F28D2D08CD6B00ABBA16 /* SessionDelegator.swift */,
+				3B96F2672D08C86700ABBA16 /* WatchComms.swift */,
+			);
+			path = WatchCommsShared;
 			sourceTree = "<group>";
 		};
 		3C15FE482B0C9C5000CA1FD4 /* Resources */ = {
@@ -412,6 +530,7 @@
 				3B6063C22B593821009D9CBC /* PhysiologicalModels.swift */,
 				3B348D912B5D9AEE000A40E9 /* SafetyService.swift */,
 				3BE629B42AFCC8B6001526D4 /* SettingsStorage.swift */,
+				3B96F2AB2D0904EE00ABBA16 /* WatchCommsService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -491,10 +610,12 @@
 				3B709A742AF4929D004E5885 /* Frameworks */,
 				3B709A752AF4929D004E5885 /* Resources */,
 				3B709AAD2AF49366004E5885 /* Embed Frameworks */,
+				3BE6DDDC2D08706E0032DD7F /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				3BE6DDDA2D08706E0032DD7F /* PBXTargetDependency */,
 			);
 			name = BioKernel;
 			packageProductDependencies = (
@@ -502,6 +623,52 @@
 			);
 			productName = BioKernel;
 			productReference = 3B709A772AF4929D004E5885 /* BioKernel.app */;
+			productType = "com.apple.product-type.application";
+		};
+		3B96F2512D08A2A800ABBA16 /* LauncherWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3B96F2612D08A2A900ABBA16 /* Build configuration list for PBXNativeTarget "LauncherWidgetExtension" */;
+			buildPhases = (
+				3B96F24E2D08A2A800ABBA16 /* Sources */,
+				3B96F24F2D08A2A800ABBA16 /* Frameworks */,
+				3B96F2502D08A2A800ABBA16 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				3B96F2572D08A2A800ABBA16 /* LauncherWidget */,
+			);
+			name = LauncherWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = LauncherWidgetExtension;
+			productReference = 3B96F2522D08A2A800ABBA16 /* LauncherWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		3BE6DDCD2D08706D0032DD7F /* BioKernelWatch Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3BE6DDDF2D08706E0032DD7F /* Build configuration list for PBXNativeTarget "BioKernelWatch Watch App" */;
+			buildPhases = (
+				3BE6DDCA2D08706D0032DD7F /* Sources */,
+				3BE6DDCB2D08706D0032DD7F /* Frameworks */,
+				3BE6DDCC2D08706D0032DD7F /* Resources */,
+				3B96F2642D08A2A900ABBA16 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3B96F25E2D08A2A900ABBA16 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				3BE6DDCF2D08706D0032DD7F /* BioKernelWatch Watch App */,
+			);
+			name = "BioKernelWatch Watch App";
+			packageProductDependencies = (
+			);
+			productName = "BioKernelWatch Watch App";
+			productReference = 3BE6DDCE2D08706D0032DD7F /* BioKernelWatch Watch App.app */;
 			productType = "com.apple.product-type.application";
 		};
 		3CBFB9862AFE02E90020FC90 /* BioKernelTests */ = {
@@ -529,11 +696,17 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1500;
+				LastSwiftUpdateCheck = 1610;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					3B709A762AF4929D004E5885 = {
 						CreatedOnToolsVersion = 15.0.1;
+					};
+					3B96F2512D08A2A800ABBA16 = {
+						CreatedOnToolsVersion = 16.1;
+					};
+					3BE6DDCD2D08706D0032DD7F = {
+						CreatedOnToolsVersion = 16.1;
 					};
 					3CBFB9862AFE02E90020FC90 = {
 						CreatedOnToolsVersion = 15.0.1;
@@ -559,6 +732,8 @@
 			targets = (
 				3B709A762AF4929D004E5885 /* BioKernel */,
 				3CBFB9862AFE02E90020FC90 /* BioKernelTests */,
+				3BE6DDCD2D08706D0032DD7F /* BioKernelWatch Watch App */,
+				3B96F2512D08A2A800ABBA16 /* LauncherWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -568,8 +743,24 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3B96F26A2D08CA2C00ABBA16 /* LICENSE.txt in Resources */,
 				3B709A822AF492A0004E5885 /* Preview Assets.xcassets in Resources */,
 				3B709A7F2AF492A0004E5885 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3B96F2502D08A2A800ABBA16 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3BE6DDCC2D08706D0032DD7F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3BE6DDE02D0870840032DD7F /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -608,6 +799,10 @@
 				3C4911E92AF4C6690070D3B4 /* Dependency.swift in Sources */,
 				3C4F79442AFB17D500786EB5 /* InsulinStorage.swift in Sources */,
 				3C7553D42AFD8BAE00FAD880 /* DeviceDataManager+Pump.swift in Sources */,
+				3B96F2682D08C86D00ABBA16 /* WatchComms.swift in Sources */,
+				3B96F29A2D08CD6B00ABBA16 /* CommandStatus.swift in Sources */,
+				3B96F29B2D08CD6B00ABBA16 /* SessionDelegator.swift in Sources */,
+				3B96F29F2D08CD6B00ABBA16 /* SessionCommands.swift in Sources */,
 				3BD7E2102C48A3AB0093D300 /* NotificationManager.swift in Sources */,
 				3B6063B22B54BDB7009D9CBC /* DecimalPicker.swift in Sources */,
 				3B5329502B5D8451000DED1A /* AddedGlucoseDataFrame.swift in Sources */,
@@ -644,12 +839,38 @@
 				3B3C9B142C46DEB800BB7CCF /* MainViewAlertView.swift in Sources */,
 				3C7553D22AFD8AD100FAD880 /* DeviceDataManager+CGM.swift in Sources */,
 				3B709A7B2AF4929D004E5885 /* BioKernelApp.swift in Sources */,
+				3B96F2AC2D0904EE00ABBA16 /* WatchCommsService.swift in Sources */,
 				3B3BEC502C3D87B8007F0CCE /* BackgroundService.swift in Sources */,
 				3CBFB9912AFFAEC80020FC90 /* DateTime.swift in Sources */,
 				3BD793812AF55F5800E5FDC9 /* DiagnosticLog.swift in Sources */,
 				3B6063C32B593821009D9CBC /* PhysiologicalModels.swift in Sources */,
 				3CAAFC962B0ED6CE00597055 /* Http.swift in Sources */,
 				3B6063B02B54BDA9009D9CBC /* SettingsViewModel.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3B96F24E2D08A2A800ABBA16 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3B96F2A22D08CD6B00ABBA16 /* CommandStatus.swift in Sources */,
+				3B96F2A32D08CD6B00ABBA16 /* SessionDelegator.swift in Sources */,
+				3B96F2A72D08CD6B00ABBA16 /* SessionCommands.swift in Sources */,
+				3B96F2882D08CB6800ABBA16 /* WatchComms.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3BE6DDCA2D08706D0032DD7F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3B96F27F2D08CB6800ABBA16 /* WatchComms.swift in Sources */,
+				3B96F2922D08CD6B00ABBA16 /* CommandStatus.swift in Sources */,
+				3B96F2932D08CD6B00ABBA16 /* SessionDelegator.swift in Sources */,
+				3B96F2972D08CD6B00ABBA16 /* SessionCommands.swift in Sources */,
+				3BF1BB272D0B1CA800135F86 /* Debug.swift in Sources */,
+				3BF1BB292D0B253000135F86 /* DateExtensions.swift in Sources */,
+				3BF1BB262D0B1C2B00135F86 /* StoredJsonObject.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -671,6 +892,16 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		3B96F25E2D08A2A900ABBA16 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3B96F2512D08A2A800ABBA16 /* LauncherWidgetExtension */;
+			targetProxy = 3B96F25D2D08A2A900ABBA16 /* PBXContainerItemProxy */;
+		};
+		3BE6DDDA2D08706E0032DD7F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3BE6DDCD2D08706D0032DD7F /* BioKernelWatch Watch App */;
+			targetProxy = 3BE6DDD92D08706E0032DD7F /* PBXContainerItemProxy */;
+		};
 		3CBFB98C2AFE02E90020FC90 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 3B709A762AF4929D004E5885 /* BioKernel */;
@@ -882,6 +1113,126 @@
 			};
 			name = Release;
 		};
+		3B96F2622D08A2A900ABBA16 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L4TQ6C2R74;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LauncherWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = LauncherWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.getgrowthmetrics.BioKernel.watchkitapp.LauncherWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Debug;
+		};
+		3B96F2632D08A2A900ABBA16 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L4TQ6C2R74;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LauncherWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = LauncherWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.getgrowthmetrics.BioKernel.watchkitapp.LauncherWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Release;
+		};
+		3BE6DDDD2D08706E0032DD7F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"BioKernelWatch Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = L4TQ6C2R74;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = BioKernel;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.getgrowthmetrics.BioKernel;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.getgrowthmetrics.BioKernel.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Debug;
+		};
+		3BE6DDDE2D08706E0032DD7F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"BioKernelWatch Watch App/Preview Content\"";
+				DEVELOPMENT_TEAM = L4TQ6C2R74;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = BioKernel;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.getgrowthmetrics.BioKernel;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.getgrowthmetrics.BioKernel.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Release;
+		};
 		3CBFB98D2AFE02E90020FC90 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -935,6 +1286,24 @@
 			buildConfigurations = (
 				3B709A862AF492A0004E5885 /* Debug */,
 				3B709A872AF492A0004E5885 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3B96F2612D08A2A900ABBA16 /* Build configuration list for PBXNativeTarget "LauncherWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3B96F2622D08A2A900ABBA16 /* Debug */,
+				3B96F2632D08A2A900ABBA16 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3BE6DDDF2D08706E0032DD7F /* Build configuration list for PBXNativeTarget "BioKernelWatch Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3BE6DDDD2D08706E0032DD7F /* Debug */,
+				3BE6DDDE2D08706E0032DD7F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
