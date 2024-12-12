@@ -7,6 +7,7 @@
 
 import SwiftUI
 import G7SensorKit
+import WatchConnectivity
 
 @main
 struct BioKernelApp: App {
@@ -32,8 +33,16 @@ struct BioKernelApp: App {
 }
 
 class MyAppDelegate: NSObject, UIApplicationDelegate {
+    private lazy var sessionDelegator: SessionDelegator = {
+        return SessionDelegator()
+    }()
+    
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
 
+        assert(WCSession.isSupported(), "This sample requires Watch Connectivity support!")
+        WCSession.default.delegate = sessionDelegator
+        WCSession.default.activate()
+        
         print("BACK: registering for remote notifications")
         application.registerForRemoteNotifications()
         return true

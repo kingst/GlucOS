@@ -91,6 +91,7 @@ public protocol GlucoseAlertStorage {
     func update(lowRepeatsSeconds: Double)
     func update(notificationsPermissions: NotificationPermissions)
     func onNewGlucoseValue() async
+    func isInRange(glucose: Double) -> Bool
 }
 
 @MainActor
@@ -113,6 +114,10 @@ class PredictiveGlucoseAlertStorage: GlucoseAlertStorage {
     }
     func viewModel() -> GlucoseAlertsViewModel {
         return alertViewModel
+    }
+    
+    func isInRange(glucose: Double) -> Bool {
+        return glucoseAlertSettings.highLevelMgDl >= glucose && glucose >= glucoseAlertSettings.lowLevelMgDl
     }
     
     func clearCurrentNotification() {

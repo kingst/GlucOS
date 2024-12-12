@@ -51,6 +51,7 @@ struct LauncherWidgetEntryView : View {
             Image(systemName: "dog.circle.fill")
                 .resizable()
                 .scaledToFit()
+                .opacity(0.5)
         }
     }
 }
@@ -70,8 +71,8 @@ struct LauncherWidget: Widget {
                     .background()
             }
         }
-        .configurationDisplayName("My Widget")
-        .description("This is an example widget.")
+        .configurationDisplayName("Launcher")
+        .description("Launches the BioKernel app.")
     }
 }
 

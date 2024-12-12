@@ -8,16 +8,18 @@
 import SwiftUI
 
 struct WatchMainView: View {
-    @State private var selection = 1
+    @State private var selection = 0
     var body: some View {
         NavigationStack {
             TabView(selection: $selection) {
-                GlucoseChart()
-                    .tag(0)
-                GlucoseView()
-                    .tag(1)
-                StartWorkoutView()
-                    .tag(2)
+                VStack {
+                    GlucoseView()
+                    GlucoseChart()
+                }
+                .tag(0)
+                // comment out until we get it working
+                //StartWorkoutView()
+                //.tag(1)
             }
         }
     }
