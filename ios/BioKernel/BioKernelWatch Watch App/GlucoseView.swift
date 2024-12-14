@@ -14,13 +14,29 @@ struct GlucoseView: View {
         VStack {
             HStack {
                 VStack {
+                    Text("IoB").font(.caption)
+                    if let iob = stateViewModel.appState?.insulinOnBoard, iob > 0.05 {
+                        Text(String(format: "%0.1f", iob))
+                            .font(.title3)
+                            .foregroundColor(.blue)
+                    } else {
+                        Text("-")
+                            .font(.title3)
+                            .foregroundColor(.blue)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                VStack {
                     if let glucose = stateViewModel.appState?.glucoseReadings.last {
                         let trend = glucose.trend ?? ""
-                        Text("\(String(format: "%0.0f", glucose.glucoseReadingInMgDl))\(trend)").font(.title2)
+                        Text("\(String(format: "%0.0f", glucose.glucoseReadingInMgDl))\(trend)")
+                            .font(.title2)
+                            .minimumScaleFactor(0.3)
+                            .lineLimit(1)
                     } else {
                         Text("-").font(.title2)
                     }
-                    Text("mg/dl").font(.caption2)
+                    Text("mg/dl").font(.system(size: 10))
                 }
                 .frame(maxWidth: .infinity)
                 VStack {
