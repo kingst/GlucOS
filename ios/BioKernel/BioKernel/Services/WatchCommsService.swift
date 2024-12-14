@@ -19,6 +19,7 @@ struct LocalWatchComms: WatchComms, SessionCommands {
         let glucose = await getGlucoseStorage().readingsBetween(startDate: now - 3.hoursToSeconds(), endDate: now).map { StateGlucoseReadings(at: $0.date, glucoseReadingInMgDl: $0.quantity.doubleValue(for: .milligramsPerDeciliter), trend: $0.trend?.symbol) }
         guard let mostRecentReading = glucose.last else { return }
         let prediction = await (getPhysiologicalModels().predictGlucoseIn15Minutes(from: now) ?? mostRecentReading.glucoseReadingInMgDl).clamp(low: 40.0, high: 400.0)
+        let insulinOnBoard = await getInsulinStorage().insulinOnBoard(at: now)
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .secondsSince1970
         guard let glucoseReadingData = try? encoder.encode(glucose) else {
@@ -31,6 +32,7 @@ struct LocalWatchComms: WatchComms, SessionCommands {
         updateAppContext([PayloadKeys.glucoseReadingsData: glucoseReadingData,
                           PayloadKeys.predictedGlucose: prediction,
                           PayloadKeys.timestamp: now,
-                          PayloadKeys.isPredictedGlucoseInRange: isPredictedGlucoseInRange])
+                          PayloadKeys.isPredictedGlucoseInRange: isPredictedGlucoseInRange,
+                          PayloadKeys.insulinOnBoard: insulinOnBoard])
     }
 }

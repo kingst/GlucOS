@@ -11,6 +11,7 @@ struct PayloadKeys {
     static let glucoseReadingsData = "glucoseReadingsData"
     static let predictedGlucose = "predictedGlucose"
     static let isPredictedGlucoseInRange = "isPredictedGlucoseInRange"
+    static let insulinOnBoard = "insulinOnBoard"
 }
 
 struct StateGlucoseReadings: Codable {
@@ -24,6 +25,7 @@ struct BioKernelState: Codable {
     let glucoseReadings: [StateGlucoseReadings]
     let predictedGlucose: Double
     let isPredictedGlucoseInRange: Bool
+    let insulinOnBoard: Double?
     
     enum ParsingError: Error {
         case missingTimestamp
@@ -47,6 +49,8 @@ struct BioKernelState: Codable {
             throw ParsingError.missingIsPredictedGlucoseInRange
         }
         self.isPredictedGlucoseInRange = isPredictedGlucoseInRange
+        
+        self.insulinOnBoard = context[PayloadKeys.insulinOnBoard] as? Double
         
         guard let readingsData = context[PayloadKeys.glucoseReadingsData] as? Data else {
             throw ParsingError.missingGlucoseReadings
