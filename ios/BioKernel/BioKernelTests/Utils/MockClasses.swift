@@ -62,6 +62,10 @@ class MockStoredObject: StoredObject {
     }
 }
 
+class MockWatchComms: WatchComms {
+    func updateAppContext() async { }
+}
+
 class MockReplayLogger: EventLogger {
     func update(deviceToken: String) async { }
     func upload(healthKitRecords: BioKernel.HealthKitRecords) async -> Bool { return false }

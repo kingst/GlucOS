@@ -18,6 +18,7 @@ final class ClosedLoopTests: XCTestCase {
         Dependency.useMockConstructors = true
         Dependency.mock { MockInsulinStorage() as InsulinStorage }
         Dependency.mock { MockReplayLogger() as EventLogger}
+        Dependency.mock { MockWatchComms() as WatchComms }
     }
 
     override func tearDownWithError() throws {

@@ -18,6 +18,7 @@ final class InsulinPersistantStorageTests: XCTestCase {
         Dependency.mock { settings as SettingsStorage }
         Dependency.mock { MockStoredObject.self as StoredObject.Type }
         Dependency.mock { MockReplayLogger() as EventLogger }
+        Dependency.mock { MockWatchComms() as WatchComms }
     }
 
     override func tearDownWithError() throws {

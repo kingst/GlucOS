@@ -32,6 +32,7 @@ struct BioKernelApp: App {
     }
 }
 
+@MainActor
 class MyAppDelegate: NSObject, UIApplicationDelegate {
     private lazy var sessionDelegator: SessionDelegator = {
         return SessionDelegator()

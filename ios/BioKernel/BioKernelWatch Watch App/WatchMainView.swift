@@ -8,18 +8,47 @@
 import SwiftUI
 
 struct WatchMainView: View {
-    @State private var selection = 0
+    @StateObject private var workoutManager = WorkoutManager()
+    @State private var showingWorkout = false
+    @State private var normalModeSelection = 0
+    @State private var workoutModeSelection = 0
+    
     var body: some View {
-        NavigationStack {
-            TabView(selection: $selection) {
+        if !showingWorkout {
+            TabView(selection: $normalModeSelection) {
                 VStack {
                     GlucoseView()
                     GlucoseChart()
                 }
                 .tag(0)
-                // comment out until we get it working
-                //StartWorkoutView()
-                //.tag(1)
+                StartWorkoutView(startWorkout: { workout in
+                    workoutManager.requestAuthorization() { success in
+                        if success {
+                            workoutManager.selectedWorkout = workout
+                            showingWorkout = true
+                            workoutModeSelection = 1
+                        }
+                    }
+                })
+                .tag(1)
+            }
+        } else {
+            TabView(selection: $workoutModeSelection) {
+                ControlsView(stopWorkout: {
+                    showingWorkout = false
+                    normalModeSelection = 0
+                })
+                    .tag(0)
+                    .environmentObject(workoutManager)
+                MetricsView()
+                    .tag(1)
+                    .environmentObject(workoutManager)
+                VStack {
+                    GlucoseView()
+                    GlucoseChart()
+                }
+                .tag(2)
+
             }
         }
     }
