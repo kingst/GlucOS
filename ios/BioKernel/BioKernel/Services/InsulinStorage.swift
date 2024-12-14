@@ -110,7 +110,9 @@ actor LocalInsulinStorage: InsulinStorage {
         await replayLogger.add(events: events)
         self.lastPumpReconciliation = lastReconciliation
         eventLog.append(contentsOf: events)
-        return syncDataToDisk()
+        let ret = syncDataToDisk()
+        await getWatchComms().updateAppContext()
+        return ret
     }
     
     private func readFromDisk() async {

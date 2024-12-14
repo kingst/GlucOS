@@ -27,3 +27,14 @@ class StateViewModel: ObservableObject, SessionUpdateDelegate {
     
     @Published var appState: BioKernelState? = nil
 }
+
+extension BioKernelState {
+    func minutesSinceLastUpdate() -> Int? {
+        guard let lastUpdate = self.glucoseReadings.last?.at else { return nil }
+        return Int(Date().timeIntervalSince(lastUpdate).secondsToMinutes())
+    }
+    
+    func lastGlucose() -> Int? {
+        return self.glucoseReadings.last.map { Int($0.glucoseReadingInMgDl) }
+    }
+}

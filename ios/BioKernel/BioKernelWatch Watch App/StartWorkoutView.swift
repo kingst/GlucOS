@@ -8,14 +8,17 @@
 import SwiftUI
 
 struct StartWorkoutView: View {
-    let workouts: [String] = ["Walk", "Strength training", "Outdoor cycle", "Indoor cycle", "Softball", "Hike", "Run"]
+    let startWorkout: (Workout) -> Void
+    
     var body: some View {
-        List(workouts, id: \.self) { workout in
-            Text(workout)
+        List(Workout.workouts, id: \.self.description) { workout in
+            Button(action: { startWorkout(workout) }) {
+                Text(workout.description)
+            }
         }
     }
 }
 
 #Preview {
-    StartWorkoutView()
+    StartWorkoutView(startWorkout: { _ in })
 }

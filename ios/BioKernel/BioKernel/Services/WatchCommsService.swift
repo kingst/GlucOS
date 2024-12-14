@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol WatchComms {
+public protocol WatchComms {
     func updateAppContext() async
 }
 
