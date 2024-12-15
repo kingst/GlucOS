@@ -17,7 +17,11 @@ struct MetricsView: View {
             VStack(alignment: .leading) {
                 Text(workoutManager.builder?.elapsedTime.toHMS() ?? "-")
                 HStack {
-                    Text("\(stateViewModel.appState?.lastGlucose() ?? 0)").font(.largeTitle).fontWeight(.bold)
+                    Text("\(stateViewModel.appState?.lastGlucoseString() ?? "-")")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .minimumScaleFactor(0.3)
+                        .lineLimit(1)
                     VStack {
                         HStack {
                             Text("mg/dL")

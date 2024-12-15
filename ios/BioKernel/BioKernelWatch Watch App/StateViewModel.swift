@@ -34,7 +34,8 @@ extension BioKernelState {
         return Int(Date().timeIntervalSince(lastUpdate).secondsToMinutes())
     }
     
-    func lastGlucose() -> Int? {
-        return self.glucoseReadings.last.map { Int($0.glucoseReadingInMgDl) }
+    func lastGlucoseString() -> String? {
+        guard let lastGlucose = self.glucoseReadings.last else { return nil }
+        return "\(String(format: "%0.0f", lastGlucose.glucoseReadingInMgDl))\(lastGlucose.trend ?? "")"
     }
 }
