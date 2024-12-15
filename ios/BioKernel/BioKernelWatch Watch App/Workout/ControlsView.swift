@@ -10,13 +10,16 @@ import SwiftUI
 
 struct ControlsView: View {
     let stopWorkout: () -> Void
+    let afterLock: () -> Void
+
     @EnvironmentObject var workoutManager: WorkoutManager
+    @State var showingEndWorkoutAlert = false
     
     var body: some View {
         VStack {
             HStack {
                 VStack {
-                    Button(action: { workoutManager.end(); stopWorkout() }) {
+                    Button(action: { showingEndWorkoutAlert = true }) {
                         Image(systemName: "xmark")
                     }
                     .tint(.red)
@@ -35,6 +38,7 @@ struct ControlsView: View {
             VStack {
                 Button {
                     workoutManager.lock()
+                    afterLock()
                 } label: {
                     Image(systemName: "lock")
                 }
@@ -43,12 +47,27 @@ struct ControlsView: View {
                 Text("Lock")
             }
         }
+        .confirmationDialog("End Workout?", isPresented: $showingEndWorkoutAlert, titleVisibility: .visible) {
+            Button("Save Workout", role: .none) {
+                workoutManager.end(save: true)
+                stopWorkout()
+            }
+            Button("Discard Workout", role: .destructive) {
+                workoutManager.end(save: false)
+                stopWorkout()
+            }
+            Button("Resume Workout", role: .cancel) {
+                // Do nothing, just dismiss
+            }
+        } message: {
+            
+        }
     }
 }
 
 struct ControlsView_Previews: PreviewProvider {
     static var previews: some View {
-        ControlsView(stopWorkout: {})
+        ControlsView(stopWorkout: {}, afterLock: {})
             .environmentObject(WorkoutManager())
     }
 }

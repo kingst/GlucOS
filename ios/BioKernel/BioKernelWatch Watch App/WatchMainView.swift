@@ -37,6 +37,8 @@ struct WatchMainView: View {
                 ControlsView(stopWorkout: {
                     showingWorkout = false
                     normalModeSelection = 0
+                }, afterLock: {
+                    workoutModeSelection = 1
                 })
                     .tag(0)
                     .environmentObject(workoutManager)

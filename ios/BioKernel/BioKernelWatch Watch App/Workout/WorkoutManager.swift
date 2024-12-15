@@ -82,8 +82,13 @@ class WorkoutManager: NSObject, ObservableObject {
         }
     }
     
-    func end() {
-        session?.end()
+    func end(save: Bool) {
+        if save {
+            session?.end()
+        } else {
+            builder?.discardWorkout()
+            session?.end()
+        }
     }
     
     func lock() {
