@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 @MainActor
 class StateViewModel: ObservableObject, SessionUpdateDelegate {
@@ -29,13 +30,33 @@ class StateViewModel: ObservableObject, SessionUpdateDelegate {
 }
 
 extension BioKernelState {
-    func minutesSinceLastUpdate() -> Int? {
+    func minutesSinceLastReading() -> Int? {
         guard let lastUpdate = self.glucoseReadings.last?.at else { return nil }
         return Int(Date().timeIntervalSince(lastUpdate).secondsToMinutes())
+    }
+    
+    func readingAgeColor() -> Color {
+        guard let minutesSinceLastReading = minutesSinceLastReading() else { return .red }
+        if minutesSinceLastReading < 6 {
+            return .green
+        } else if minutesSinceLastReading < 12 {
+            return .yellow
+        } else {
+            return .red
+        }
     }
     
     func lastGlucoseString() -> String? {
         guard let lastGlucose = self.glucoseReadings.last else { return nil }
         return "\(String(format: "%0.0f", lastGlucose.glucoseReadingInMgDl))\(lastGlucose.trend ?? "")"
+    }
+}
+
+// Create a preview state with realistic glucose values
+extension StateViewModel {
+    static func preview() -> StateViewModel {
+        let model = StateViewModel()
+        model.appState = BioKernelState.preview()
+        return model
     }
 }

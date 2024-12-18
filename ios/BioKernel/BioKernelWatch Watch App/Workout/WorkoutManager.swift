@@ -154,6 +154,31 @@ extension WorkoutManager: HKLiveWorkoutBuilderDelegate {
     func workoutBuilderDidCollectEvent(_ workoutBuilder: HKLiveWorkoutBuilder) {
         
     }
-    
-    
 }
+
+extension WorkoutManager {
+    static func preview() -> WorkoutManager {
+        let manager = WorkoutManager()
+        
+        // Simulate an active workout session
+        manager.running = true
+        manager.heartRate = 142
+        manager.activeEnergy = 240  // kilocalories
+        manager.distance = 2463     // meters
+        
+        // Create a workout session
+        let configuration = HKWorkoutConfiguration()
+        configuration.activityType = .running
+        configuration.locationType = .outdoor
+        
+        // Simulate a workout that started 31 minutes ago
+        if let session = try? HKWorkoutSession(healthStore: manager.healthStore, configuration: configuration) {
+            manager.session = session
+            manager.builder = session.associatedWorkoutBuilder()
+            manager.selectedWorkout = Workout(description: "Running", activityType: .running, locationType: .outdoor)
+        }
+        
+        return manager
+    }
+}
+
