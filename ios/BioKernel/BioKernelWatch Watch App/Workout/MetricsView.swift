@@ -132,11 +132,11 @@ extension WorkoutManager {
         case .traditionalStrengthTraining:
             return Image(systemName: "dumbbell.fill")
         case .softball:
-            return Image(systemName: "baseball.fill")
+            return Image(systemName: "figure.baseball")
         case .baseball:
-            return Image(systemName: "baseball.fill")
+            return Image(systemName: "figure.baseball")
         case .basketball:
-            return Image(systemName: "basketball.fill")
+            return Image(systemName: "figure.basketball")
         default:
             return Image(systemName: "figure.walk")
         }

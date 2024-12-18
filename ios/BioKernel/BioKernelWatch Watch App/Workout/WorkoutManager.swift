@@ -21,6 +21,7 @@ class WorkoutManager: NSObject, ObservableObject {
     let healthStore = HKHealthStore()
     var session: HKWorkoutSession?
     var builder: HKLiveWorkoutBuilder?
+    var cachedHealthKitAuthorization: Bool?
     
     func startWorkout(workout: Workout) {
         let configuration = HKWorkoutConfiguration()
@@ -47,6 +48,11 @@ class WorkoutManager: NSObject, ObservableObject {
     }
     
     func requestAuthorization(_ complete: @escaping (Bool) -> Void) {
+        if let success = cachedHealthKitAuthorization {
+            DispatchQueue.main.async { complete(success) }
+            return
+        }
+        
         let typesToShare: Set = [ HKQuantityType.workoutType() ]
         let typesToRead: Set = [
             HKQuantityType.quantityType(forIdentifier: .heartRate)!,
@@ -58,7 +64,8 @@ class WorkoutManager: NSObject, ObservableObject {
         ]
         
         healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead) { (success, error) in
-            DispatchQueue.main.async {
+            DispatchQueue.main.async { [weak self] in
+                self?.cachedHealthKitAuthorization = success
                 complete(success)
             }
         }
