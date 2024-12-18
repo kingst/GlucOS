@@ -64,3 +64,41 @@ struct BioKernelState: Codable {
         self.glucoseReadings = readings
     }
 }
+
+extension BioKernelState {
+    static func preview() -> BioKernelState {
+        // Create last 15 minutes of glucose readings
+        let now = Date()
+        var readings: [StateGlucoseReadings] = []
+        
+        // Generate readings every 5 minutes for the last hour
+        for i in 0..<12 {
+            let timestamp = now.addingTimeInterval(TimeInterval(-300 * i)) // 5 minutes * i
+            // Create a somewhat realistic glucose curve
+            let baseGlucose = 118.0
+            let variation = sin(Double(i) * 0.5) * 15 // Add some wave-like variation
+            let reading = StateGlucoseReadings(
+                at: timestamp,
+                glucoseReadingInMgDl: baseGlucose + variation,
+                trend: ""
+            )
+            readings.append(reading)
+        }
+        readings.reverse()
+        
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .secondsSince1970
+        
+        // Create preview context
+        let context: [String: Any] = [
+            PayloadKeys.timestamp: now,
+            PayloadKeys.predictedGlucose: 125.0,
+            PayloadKeys.isPredictedGlucoseInRange: true,
+            PayloadKeys.insulinOnBoard: 2.3,
+            PayloadKeys.glucoseReadingsData: try! encoder.encode(readings)
+        ]
+        
+        // Create preview state
+        return try! BioKernelState(context)
+    }
+}

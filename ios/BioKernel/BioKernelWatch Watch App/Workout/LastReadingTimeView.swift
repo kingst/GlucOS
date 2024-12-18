@@ -12,7 +12,7 @@ struct LastReadingTimeView: View {
     @EnvironmentObject var stateViewModel: StateViewModel
     
     var body: some View {
-        LastReadingTimeContent(minutesSinceLastReading: stateViewModel.appState?.minutesSinceLastUpdate() ?? 99)
+        LastReadingTimeContent(minutesSinceLastReading: stateViewModel.appState?.minutesSinceLastReading() ?? 99)
     }
 }
 
