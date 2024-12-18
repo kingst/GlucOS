@@ -11,11 +11,11 @@ import SwiftUI
 struct MetricsView: View {
     @EnvironmentObject var stateViewModel: StateViewModel
     @EnvironmentObject var workoutManager: WorkoutManager
-    let smallFontSize: Font = .title3
+    let smallFontSize: Font = .title2.monospacedDigit()
     
     var body: some View {
         TimelineView(MetricsTimelineSchedule(from: workoutManager.builder?.startDate ?? Date())) { context in
-            VStack(spacing: 8) {
+            VStack(spacing: 4) {
                 // Header
                 Text("Glucose")
                     .font(.body)
@@ -40,33 +40,8 @@ struct MetricsView: View {
                 Text(workoutManager.builder?.elapsedTime.toHMS() ?? "-")
                     .font(.title2.monospacedDigit())
                 
-                // Metrics grid
-                HStack(spacing: 8) {
-                    // Distance
-                    VStack {
-                        workoutManager.workoutImage
-                            .font(smallFontSize)
-                            .foregroundColor(.teal)
-                        HStack(spacing: 2) {
-                            Text(Measurement(
-                                value: workoutManager.distance,
-                                unit: UnitLength.meters
-                            ).formatted(.measurement(width: .abbreviated, usage: .road)))
-                            .font(smallFontSize)
-                        }
-                    }
+                MetricsGridView()
                     .frame(maxWidth: .infinity)
-                    
-                    // Heart Rate
-                    VStack {
-                        Image(systemName: "heart.fill")
-                            .font(smallFontSize)
-                            .foregroundColor(.red)
-                        Text("\(workoutManager.heartRate.formatted(.number.precision(.fractionLength(0))))")
-                            .font(smallFontSize)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
             }
             .frame(maxWidth: .infinity)
             .padding()
@@ -110,35 +85,6 @@ extension TimeInterval {
 
 extension WorkoutManager {
     var workoutImage: Image {
-        guard let workout = selectedWorkout else {
-            return Image(systemName: "figure.walk") // default icon
-        }
-        
-        switch workout.activityType {
-        case .running:
-            return Image(systemName: "figure.run")
-        case .walking:
-            return Image(systemName: "figure.walk")
-        case .cycling:
-            return Image(systemName: "figure.outdoor.cycle")
-        case .swimming:
-            return Image(systemName: "figure.pool.swim")
-        case .hiking:
-            return Image(systemName: "figure.hiking")
-        case .yoga:
-            return Image(systemName: "figure.mind.and.body")
-        case .functionalStrengthTraining:
-            return Image(systemName: "figure.strengthtraining.traditional")
-        case .traditionalStrengthTraining:
-            return Image(systemName: "dumbbell.fill")
-        case .softball:
-            return Image(systemName: "figure.baseball")
-        case .baseball:
-            return Image(systemName: "figure.baseball")
-        case .basketball:
-            return Image(systemName: "figure.basketball")
-        default:
-            return Image(systemName: "figure.walk")
-        }
+        selectedWorkout?.image ?? Image(systemName: "figure.walk")
     }
 }

@@ -182,7 +182,7 @@ extension WorkoutManager {
         if let session = try? HKWorkoutSession(healthStore: manager.healthStore, configuration: configuration) {
             manager.session = session
             manager.builder = session.associatedWorkoutBuilder()
-            manager.selectedWorkout = Workout(description: "Running", activityType: .running, locationType: .outdoor)
+            manager.selectedWorkout = Workout.run
         }
         
         return manager

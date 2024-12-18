@@ -11,10 +11,19 @@ struct StartWorkoutView: View {
     let startWorkout: (Workout) -> Void
     
     var body: some View {
-        List(Workout.workouts, id: \.self.description) { workout in
-            Button(action: { startWorkout(workout) }) {
-                Text(workout.description)
+        NavigationStack {
+            List(Workout.workouts, id: \.self.description) { workout in
+                Button(action: { startWorkout(workout) }) {
+                    HStack {
+                        workout.image
+                        Text(workout.description)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                    }
+                }
             }
+            .navigationTitle("Workout")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
