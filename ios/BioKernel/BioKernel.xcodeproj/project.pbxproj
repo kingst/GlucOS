@@ -87,6 +87,8 @@
 		3BE6DDE02D0870840032DD7F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3B709A7E2AF492A0004E5885 /* Assets.xcassets */; };
 		3BE8ADA12B2A4DCE0002BB3E /* UserDefaults+Json.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BE8ADA02B2A4DCE0002BB3E /* UserDefaults+Json.swift */; };
 		3BEE4E202B5FF4A000A09203 /* DateTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BEE4E1F2B5FF4A000A09203 /* DateTime.swift */; };
+		3BF1631C2D20A6B700287BA0 /* WorkoutStatusService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF1631B2D20A6B700287BA0 /* WorkoutStatusService.swift */; };
+		3BF1631E2D20D69F00287BA0 /* WorkoutStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF1631D2D20D69F00287BA0 /* WorkoutStatusView.swift */; };
 		3BF1BB262D0B1C2B00135F86 /* StoredJsonObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C7553CD2AFD610B00FAD880 /* StoredJsonObject.swift */; };
 		3BF1BB272D0B1CA800135F86 /* Debug.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C7553DD2AFDB2DA00FAD880 /* Debug.swift */; };
 		3BF1BB292D0B253000135F86 /* DateExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD793822AF564EA00E5FDC9 /* DateExtensions.swift */; };
@@ -270,6 +272,8 @@
 		3BE6DDCE2D08706D0032DD7F /* BioKernelWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "BioKernelWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3BE8ADA02B2A4DCE0002BB3E /* UserDefaults+Json.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UserDefaults+Json.swift"; sourceTree = "<group>"; };
 		3BEE4E1F2B5FF4A000A09203 /* DateTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateTime.swift; sourceTree = "<group>"; };
+		3BF1631B2D20A6B700287BA0 /* WorkoutStatusService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutStatusService.swift; sourceTree = "<group>"; };
+		3BF1631D2D20D69F00287BA0 /* WorkoutStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutStatusView.swift; sourceTree = "<group>"; };
 		3C07C88E2AF9625A008F604C /* OmniBLE.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = OmniBLE.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3C07C8972AF964E4008F604C /* MKRingProgressView.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = MKRingProgressView.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3C07C89A2AF969F1008F604C /* AddPumpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AddPumpView.swift; path = BioKernel/Views/AddPumpView.swift; sourceTree = SOURCE_ROOT; };
@@ -531,6 +535,7 @@
 				3B348D912B5D9AEE000A40E9 /* SafetyService.swift */,
 				3BE629B42AFCC8B6001526D4 /* SettingsStorage.swift */,
 				3B96F2AB2D0904EE00ABBA16 /* WatchCommsService.swift */,
+				3BF1631B2D20A6B700287BA0 /* WorkoutStatusService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -554,6 +559,7 @@
 				3B36F67A2B311BCE00008F4A /* NavigationModifier.swift */,
 				3B66FFA02C892EF600DB8CF2 /* SaveDataView.swift */,
 				3B6063B32B54BDFA009D9CBC /* SettingsView.swift */,
+				3BF1631D2D20D69F00287BA0 /* WorkoutStatusView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -804,9 +810,11 @@
 				3B96F29B2D08CD6B00ABBA16 /* SessionDelegator.swift in Sources */,
 				3B96F29F2D08CD6B00ABBA16 /* SessionCommands.swift in Sources */,
 				3BD7E2102C48A3AB0093D300 /* NotificationManager.swift in Sources */,
+				3BF1631C2D20A6B700287BA0 /* WorkoutStatusService.swift in Sources */,
 				3B6063B22B54BDB7009D9CBC /* DecimalPicker.swift in Sources */,
 				3B5329502B5D8451000DED1A /* AddedGlucoseDataFrame.swift in Sources */,
 				3B4052302B6DA87A004D232D /* AddedGlucoseModel.mlpackage in Sources */,
+				3BF1631E2D20D69F00287BA0 /* WorkoutStatusView.swift in Sources */,
 				3C7553CE2AFD610B00FAD880 /* StoredJsonObject.swift in Sources */,
 				3B6EC2322BD8131A008BFD4D /* AccErrorGauge.swift in Sources */,
 				3BD793832AF564EA00E5FDC9 /* DateExtensions.swift in Sources */,

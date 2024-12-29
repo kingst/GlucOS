@@ -28,3 +28,4 @@ let getDebugLogger: () -> G7DebugLogger = Dependency.bind { LocalEventLogger.sha
 let getBackgroundService: () -> BackgroundService = Dependency.bind { LocalBackgroundService.shared }
 let getGlucoseAlertsService: () -> GlucoseAlertStorage = Dependency.bind { PredictiveGlucoseAlertStorage.shared }
 let getWatchComms: () -> WatchComms = Dependency.bind { LocalWatchComms.shared }
+@MainActor let getWorkoutStatusService: () -> WorkoutStatusService = Dependency.bind { LocalWorkoutStatusService.shared }

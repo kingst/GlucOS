@@ -16,6 +16,7 @@ struct BioKernelApp: App {
     init() {
         //G7CGMManager.debugLogger = getDebugLogger()
         getBackgroundService().registerBackgroundTask()
+        appDelegate.sessionDelegator.delegate = getWorkoutStatusService()
     }
     var body: some Scene {
         WindowGroup {
@@ -34,13 +35,11 @@ struct BioKernelApp: App {
 
 @MainActor
 class MyAppDelegate: NSObject, UIApplicationDelegate {
-    private lazy var sessionDelegator: SessionDelegator = {
-        return SessionDelegator()
-    }()
+    var sessionDelegator: SessionDelegator = SessionDelegator()
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
 
-        assert(WCSession.isSupported(), "This sample requires Watch Connectivity support!")
+        assert(WCSession.isSupported())
         WCSession.default.delegate = sessionDelegator
         WCSession.default.activate()
         

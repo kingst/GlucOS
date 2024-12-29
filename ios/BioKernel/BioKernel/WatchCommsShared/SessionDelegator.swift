@@ -24,6 +24,7 @@ extension Notification.Name {
 @MainActor
 protocol SessionUpdateDelegate: AnyObject {
     func contextDidUpdate(_ context: BioKernelState)
+    func didRecieveMessage(_ workout: WorkoutMessage)
 }
 
 class SessionDelegator: NSObject, WCSessionDelegate {
@@ -50,6 +51,16 @@ class SessionDelegator: NSObject, WCSessionDelegate {
         } catch {
             assertionFailure("Error parsing app context: \(error)")
         }
+        postNotificationOnMainQueueAsync(name: .dataDidFlow, object: commandStatus)
+    }
+    
+    func session(_ session: WCSession, didReceiveMessageData messageData: Data) {
+        var commandStatus = CommandStatus(command: .sendMessageData, phrase: .received)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .secondsSince1970
+        commandStatus.workoutMessage = try? decoder.decode(WorkoutMessage.self, from: messageData)
+        
+        //commandStatus.timedColor = TimedColor(messageData)
         postNotificationOnMainQueueAsync(name: .dataDidFlow, object: commandStatus)
     }
     
@@ -85,6 +96,13 @@ class SessionDelegator: NSObject, WCSessionDelegate {
                 self?.delegate?.contextDidUpdate(bioKernelState)
             }
             print("WC: Done with context update")
+            
+            print("WC: Checking message")
+            if let workoutMessage = object?.workoutMessage, name == .dataDidFlow {
+                print("WC: got new message")
+                self?.delegate?.didRecieveMessage(workoutMessage)
+            }
+            print("WC: Done checking message")
         }
     }
 }

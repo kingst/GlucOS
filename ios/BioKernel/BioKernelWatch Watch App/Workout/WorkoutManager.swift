@@ -10,7 +10,7 @@ import Foundation
 import HealthKit
 import WatchKit
 
-class WorkoutManager: NSObject, ObservableObject {
+class WorkoutManager: NSObject, ObservableObject, SessionCommands {
     var selectedWorkout: Workout? {
         didSet {
             guard let selectedWorkout = selectedWorkout else { return }
@@ -42,6 +42,7 @@ class WorkoutManager: NSObject, ObservableObject {
         
         let startDate = Date()
         session.startActivity(with: startDate)
+        sendMessageData(workoutMessage: .started(at: startDate, description: workout.description, imageName: workout.imageName))
         builder?.beginCollection(withStart: startDate) { (success, error) in
             // the workout has started
         }
@@ -90,6 +91,7 @@ class WorkoutManager: NSObject, ObservableObject {
     }
     
     func end(save: Bool) {
+        sendMessageData(workoutMessage: .ended(at: Date()))
         if save {
             session?.end()
         } else {

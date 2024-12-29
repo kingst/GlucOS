@@ -40,6 +40,7 @@ struct CommandStatus {
     var command: Command
     var phrase: Phrase
     var bioKernelState: BioKernelState?
+    var workoutMessage: WorkoutMessage?
     var errorMessage: String?
     
     init(command: Command, phrase: Phrase) {

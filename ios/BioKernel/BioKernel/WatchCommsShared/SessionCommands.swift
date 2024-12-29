@@ -40,7 +40,34 @@ extension SessionCommands {
         postNotificationOnMainQueueAsync(name: .dataDidFlow, object: commandStatus)
     }
 
-    
+    // Send a piece of message data if the session is activated, and update the UI with the command status.
+    //
+    func sendMessageData(workoutMessage: WorkoutMessage) {
+        var commandStatus = CommandStatus(command: .sendMessageData, phrase: .sent)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .secondsSince1970
+        let messageData: Data
+        do {
+            messageData = try encoder.encode(workoutMessage)
+        } catch {
+            commandStatus.phrase = .failed
+            commandStatus.errorMessage = error.localizedDescription
+            postNotificationOnMainQueueAsync(name: .dataDidFlow, object: commandStatus)
+            return
+        }
+        
+        guard WCSession.default.activationState == .activated else {
+            return handleSessionUnactivated(with: commandStatus)
+        }
+
+        // A reply handler block runs asynchronously on a background thread and should return quickly.
+        WCSession.default.sendMessageData(messageData, replyHandler: nil, errorHandler: { error in
+            commandStatus.phrase = .failed
+            commandStatus.errorMessage = error.localizedDescription
+            self.postNotificationOnMainQueueAsync(name: .dataDidFlow, object: commandStatus)
+        })
+        postNotificationOnMainQueueAsync(name: .dataDidFlow, object: commandStatus)
+    }
     
     // Post a notification from the main queue asynchronously.
     //

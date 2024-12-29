@@ -10,6 +10,7 @@ import SwiftUI
 struct MainViewSummaryView: View {
     @StateObject var deviceManagerObservable = getDeviceDataManager().observableObject()
     @ObservedObject var glucoseAlertsViewModel = getGlucoseAlertsService().viewModel()
+    @ObservedObject var workoutStatus = getWorkoutStatusService().observableObject()
     @Environment(\.scenePhase) var scenePhase
     @State var timer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
     @State var predictedGlucose: Double?
@@ -64,6 +65,15 @@ struct MainViewSummaryView: View {
                 .frame(maxWidth: .infinity)
             }
             .padding([.bottom])
+            switch (workoutStatus.lastWorkoutMessage) {
+            case (.none):
+                EmptyView()
+            case (.started(let at, let description, let imageName)):
+                WorkoutStatusView(at: at, description: description, imageName: imageName)
+                    .padding()
+            case (.ended):
+                EmptyView()
+            }
         }
         .foregroundColor(.white)
         .frame(maxWidth: .infinity)
