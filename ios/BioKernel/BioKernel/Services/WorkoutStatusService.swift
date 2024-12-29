@@ -27,7 +27,7 @@ class LocalWorkoutStatusService: WorkoutStatusService {
         let lastWorkoutMessage: WorkoutMessage?
     }
     static let shared = LocalWorkoutStatusService()
-    let storage = StoredJsonObject.create(fileName: "workoutStatus.json")
+    let storage = getStoredObject().create(fileName: "workoutStatus.json")
     let observable = WorkoutStatus()
     var lastMessageAt: Date?
     var lastWorkoutMessage: WorkoutMessage?
