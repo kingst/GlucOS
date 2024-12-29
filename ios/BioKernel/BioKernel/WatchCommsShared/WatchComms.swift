@@ -14,6 +14,11 @@ struct PayloadKeys {
     static let insulinOnBoard = "insulinOnBoard"
 }
 
+public enum WorkoutMessage: Codable {
+    case started(at: Date, description: String, imageName: String)
+    case ended(at: Date)
+}
+
 struct StateGlucoseReadings: Codable {
     let at: Date
     let glucoseReadingInMgDl: Double

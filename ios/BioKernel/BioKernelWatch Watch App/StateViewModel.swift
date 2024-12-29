@@ -10,7 +10,10 @@ import SwiftUI
 
 @MainActor
 class StateViewModel: ObservableObject, SessionUpdateDelegate {
-    static let shared = StateViewModel()
+    func didRecieveMessage(at: Date, workoutMessage: WorkoutMessage) {
+        print("not implemented")
+    }
+    
     let storage = StoredJsonObject.create(fileName: "appState.json")
     func contextDidUpdate(_ context: BioKernelState) {
         print("WC: StateViewModel: contextDidUpdate")

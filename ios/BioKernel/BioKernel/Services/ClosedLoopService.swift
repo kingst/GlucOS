@@ -96,8 +96,9 @@ public struct ClosedLoopResult: Codable {
     let microBolusAmount: Double?
     let cgmPumpMetadata: CgmPumpMetadata
     let pidTempBasalResult: PIDTempBasalResult?
+    let targetGlucoseInMgDl: Double?
     
-    init(at: Date, action: ClosedLoopAction, settings: CodableSettings, glucoseInMgDl: Double?, predictedGlucoseInMgDl: Double?, insulinOnBoard: Double?, insulinSensitivity: Double?, basalRate: Double?, tempBasal: Double?, shadowTempBasal: Double?, shadowPredictedAddedGlucose: Double?, shadowMlAddedGlucose: Double?, shadowAddedGlucoseDataFrame: [AddedGlucoseDataRow]?, safetyResult: SafetyResult?, mlDuration: TimeInterval, safetyDuration: TimeInterval, proportionalControllerDuration: TimeInterval, microBolusAmount: Double?, cgmPumpMetadata: CgmPumpMetadata, pidTempBasalResult: PIDTempBasalResult?) {
+    init(at: Date, action: ClosedLoopAction, settings: CodableSettings, glucoseInMgDl: Double?, predictedGlucoseInMgDl: Double?, insulinOnBoard: Double?, insulinSensitivity: Double?, basalRate: Double?, tempBasal: Double?, shadowTempBasal: Double?, shadowPredictedAddedGlucose: Double?, shadowMlAddedGlucose: Double?, shadowAddedGlucoseDataFrame: [AddedGlucoseDataRow]?, safetyResult: SafetyResult?, mlDuration: TimeInterval, safetyDuration: TimeInterval, proportionalControllerDuration: TimeInterval, microBolusAmount: Double?, cgmPumpMetadata: CgmPumpMetadata, pidTempBasalResult: PIDTempBasalResult?, targetGlucoseInMgDl: Double?) {
         self.at = at
         self.action = action
         self.settings = settings
@@ -119,15 +120,16 @@ public struct ClosedLoopResult: Codable {
         self.microBolusAmount = microBolusAmount
         self.cgmPumpMetadata = cgmPumpMetadata
         self.pidTempBasalResult = pidTempBasalResult
+        self.targetGlucoseInMgDl = targetGlucoseInMgDl
     }
     
     static func withError(at: Date, action: ClosedLoopAction, settings: CodableSettings, cgmPumpMetadata: CgmPumpMetadata) -> ClosedLoopResult {
-        return ClosedLoopResult(at: at, action: action, settings: settings, glucoseInMgDl: nil, predictedGlucoseInMgDl: nil, insulinOnBoard: nil, insulinSensitivity: nil, basalRate: nil, tempBasal: nil, shadowTempBasal: nil, shadowPredictedAddedGlucose: nil, shadowMlAddedGlucose: nil, shadowAddedGlucoseDataFrame: nil, safetyResult: nil, mlDuration: 0, safetyDuration: 0, proportionalControllerDuration: 0, microBolusAmount: nil, cgmPumpMetadata: cgmPumpMetadata, pidTempBasalResult: nil)
+        return ClosedLoopResult(at: at, action: action, settings: settings, glucoseInMgDl: nil, predictedGlucoseInMgDl: nil, insulinOnBoard: nil, insulinSensitivity: nil, basalRate: nil, tempBasal: nil, shadowTempBasal: nil, shadowPredictedAddedGlucose: nil, shadowMlAddedGlucose: nil, shadowAddedGlucoseDataFrame: nil, safetyResult: nil, mlDuration: 0, safetyDuration: 0, proportionalControllerDuration: 0, microBolusAmount: nil, cgmPumpMetadata: cgmPumpMetadata, pidTempBasalResult: nil, targetGlucoseInMgDl: nil)
     }
     
     static func withResult(at: Date, action: ClosedLoopAction, settings: CodableSettings, cgmPumpMetadata: CgmPumpMetadata, glucoseInMgDl: Double, insulinOnBoard: Double, closedLoopAlgorithmResult: ClosedLoopAlgorithmResult) -> ClosedLoopResult {
         return ClosedLoopResult(at: at, action: action, settings: settings, glucoseInMgDl: glucoseInMgDl, predictedGlucoseInMgDl: closedLoopAlgorithmResult.predictedGlucoseInMgDl, insulinOnBoard: insulinOnBoard, insulinSensitivity: closedLoopAlgorithmResult.learnedInsulinSensitivity, basalRate: closedLoopAlgorithmResult.learnedBasalRate, tempBasal: closedLoopAlgorithmResult.tempBasal, shadowTempBasal: closedLoopAlgorithmResult.shadowTempBasal, shadowPredictedAddedGlucose: closedLoopAlgorithmResult.shadowPredictedAddedGlucose, shadowMlAddedGlucose: closedLoopAlgorithmResult.shadowMlAddedGlucose, shadowAddedGlucoseDataFrame: closedLoopAlgorithmResult.shadowAddedGlucoseDataFrame, safetyResult: closedLoopAlgorithmResult.safetyResult, mlDuration: closedLoopAlgorithmResult.mlDurationInSeconds, safetyDuration: closedLoopAlgorithmResult.safetyDurationInSeconds, proportionalControllerDuration: closedLoopAlgorithmResult.proportionalControllerDurationInSeconds, microBolusAmount: closedLoopAlgorithmResult.microBolusAmount,
-                                cgmPumpMetadata: cgmPumpMetadata, pidTempBasalResult: closedLoopAlgorithmResult.pidTempBasalResult)
+                                cgmPumpMetadata: cgmPumpMetadata, pidTempBasalResult: closedLoopAlgorithmResult.pidTempBasalResult, targetGlucoseInMgDl: closedLoopAlgorithmResult.targetGlucoseInMgDl)
     }
 }
 
@@ -146,6 +148,7 @@ struct ClosedLoopAlgorithmResult {
     let proportionalControllerDurationInSeconds: TimeInterval
     let predictedGlucoseInMgDl: Double
     let pidTempBasalResult: PIDTempBasalResult
+    let targetGlucoseInMgDl: Double
 }
 
 actor LocalClosedLoopService: ClosedLoopService {
@@ -166,12 +169,12 @@ actor LocalClosedLoopService: ClosedLoopService {
         return lastRun.action == .setTempBasal
     }
     
-    func microBolusAmount(tempBasal: Double, settings: CodableSettings, glucoseInMgDl: Double, basalRate: Double, predictedGlucoseInMgDl: Double, at: Date) async -> Double? {
+    func microBolusAmount(tempBasal: Double, settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, basalRate: Double, predictedGlucoseInMgDl: Double, at: Date) async -> Double? {
         // make sure that we haven't issued a micro bolus in the last 4.2 minutes
         guard lastMicroBolus.map({ Date().timeIntervalSince($0) > 4.2.minutesToSeconds() }) ?? true else { return nil }
 
         // make sure we're at least 20 mg/dl above our target
-        let glucoseThreshold = settings.targetGlucoseInMgDl + 20
+        let glucoseThreshold = targetGlucoseInMgDl + 20
         guard glucoseInMgDl >= glucoseThreshold else { return nil }
         
         // make sure that our glucose is rising or close to flat. The
@@ -295,16 +298,18 @@ actor LocalClosedLoopService: ClosedLoopService {
         let basalRate = settings.learnedBasalRate(at: at)
         let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
         let predictedGlucoseInMgDl = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: at) ?? glucoseInMgDl
+        let targetGlucoseInMgDl = await getTargetGlucoseService().targetGlucoseInMgDl(at: at, settings: settings)
+        let isExercising = await getWorkoutStatusService().isExercising(at: at) && settings.isTargetGlucoseAdjustedDuringExerciseEnabled()
         
         let proportionalControllerStart = Date()
-        let pidTempBasal = await getPhysiologicalModels().tempBasal(settings: settings, glucoseInMgDl: glucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at)
+        let pidTempBasal = await getPhysiologicalModels().tempBasal(settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at)
 
         let physiologicalTempBasal = applyGuardrails(glucoseInMgDl: glucoseInMgDl, predictedGlucoseInMgDl: predictedGlucoseInMgDl, newBasalRateRaw: pidTempBasal.tempBasal, settings: settings, roundToSupportedBasalRate: roundToSupportedBasalRate)
         let proportionalControllerDuration = Date().timeIntervalSince(proportionalControllerStart)
         
         // calculate the ML-based tempBasal
         let mlStart = Date()
-        let mlTempBasalRaw = await getMachineLearning().tempBasal(settings: settings, glucoseInMgDl: glucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at) ?? physiologicalTempBasal
+        let mlTempBasalRaw = await getMachineLearning().tempBasal(settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at) ?? physiologicalTempBasal
         let mlTempBasal = applyGuardrails(glucoseInMgDl: glucoseInMgDl, predictedGlucoseInMgDl: predictedGlucoseInMgDl, newBasalRateRaw: mlTempBasalRaw, settings: settings, roundToSupportedBasalRate: roundToSupportedBasalRate)
         let mlDuration = Date().timeIntervalSince(mlStart)
         
@@ -317,17 +322,17 @@ actor LocalClosedLoopService: ClosedLoopService {
         // calculate the micro bolus candidates and the biological invariant
         // IMPORTANT: you must run the mlTempBasal through the safety logic and use only
         // that temp basal for micro bolus calculations, or you can use the physiological temp basal
-        let microBolusSafety = await microBolusAmount(tempBasal: safetyTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, basalRate: basalRate, predictedGlucoseInMgDl: predictedGlucoseInMgDl, at: at) ?? 0.0
-        let microBolusPhysiological = await microBolusAmount(tempBasal: physiologicalTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, basalRate: basalRate, predictedGlucoseInMgDl: predictedGlucoseInMgDl, at: at) ?? 0.0
+        let microBolusSafety = await microBolusAmount(tempBasal: safetyTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, basalRate: basalRate, predictedGlucoseInMgDl: predictedGlucoseInMgDl, at: at) ?? 0.0
+        let microBolusPhysiological = await microBolusAmount(tempBasal: physiologicalTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, basalRate: basalRate, predictedGlucoseInMgDl: predictedGlucoseInMgDl, at: at) ?? 0.0
         let biologicalInvariant = await getPhysiologicalModels().deltaGlucoseError(settings: settings, dataFrame: dataFrame, at: at)
         
-        let dose = determineDose(settings: settings, safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: physiologicalTempBasal, mlTempBasal: mlTempBasal, safetyTempBasal: safetyTempBasal, microBolusPhysiological: microBolusPhysiological, microBolusSafety: microBolusSafety, biologicalInvariant: biologicalInvariant)
+        let dose = determineDose(settings: settings, safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: physiologicalTempBasal, mlTempBasal: mlTempBasal, safetyTempBasal: safetyTempBasal, microBolusPhysiological: microBolusPhysiological, microBolusSafety: microBolusSafety, biologicalInvariant: biologicalInvariant, isExercising: isExercising)
         
-        return ClosedLoopAlgorithmResult(tempBasal: dose.tempBasal, microBolusAmount: dose.microBolus, shadowTempBasal: 0.0, shadowPredictedAddedGlucose: 0.0, learnedInsulinSensitivity: insulinSensitivity, learnedBasalRate: basalRate, shadowMlAddedGlucose: 0.0, shadowAddedGlucoseDataFrame: dataFrame, safetyResult: dose.safetyResult, mlDurationInSeconds: mlDuration, safetyDurationInSeconds: safetyDuration, proportionalControllerDurationInSeconds: proportionalControllerDuration, predictedGlucoseInMgDl: predictedGlucoseInMgDl, pidTempBasalResult: pidTempBasal)
+        return ClosedLoopAlgorithmResult(tempBasal: dose.tempBasal, microBolusAmount: dose.microBolus, shadowTempBasal: 0.0, shadowPredictedAddedGlucose: 0.0, learnedInsulinSensitivity: insulinSensitivity, learnedBasalRate: basalRate, shadowMlAddedGlucose: 0.0, shadowAddedGlucoseDataFrame: dataFrame, safetyResult: dose.safetyResult, mlDurationInSeconds: mlDuration, safetyDurationInSeconds: safetyDuration, proportionalControllerDurationInSeconds: proportionalControllerDuration, predictedGlucoseInMgDl: predictedGlucoseInMgDl, pidTempBasalResult: pidTempBasal, targetGlucoseInMgDl: targetGlucoseInMgDl)
     }
     
     /// post condition: either tempBasal _or_ microBolus can be > 0 but not both
-    func determineDose(settings: CodableSettings, safetyTempBasalResult: SafetyTempBasal, physiologicalTempBasal: Double, mlTempBasal: Double, safetyTempBasal: Double, microBolusPhysiological: Double, microBolusSafety: Double, biologicalInvariant: Double?) -> (tempBasal: Double, microBolus: Double, safetyResult: SafetyResult) {
+    func determineDose(settings: CodableSettings, safetyTempBasalResult: SafetyTempBasal, physiologicalTempBasal: Double, mlTempBasal: Double, safetyTempBasal: Double, microBolusPhysiological: Double, microBolusSafety: Double, biologicalInvariant: Double?, isExercising: Bool) -> (tempBasal: Double, microBolus: Double, safetyResult: SafetyResult) {
         var tempBasal: Double
         var microBolus: Double
         var microBolusCandidate: Double
@@ -345,7 +350,7 @@ actor LocalClosedLoopService: ClosedLoopService {
             microBolus = 0.0
             tempBasal = 0.0
             safetyResult = SafetyResult.withBiologicalInvariantViolation(biologicalInvariantMgDlPerHour: biologicalInvariant, machineLearningInsulinLastThreeHours: safetyTempBasalResult.machineLearningInsulinLastThreeHours)
-        } else if settings.isMicroBolusEnabled(), microBolusCandidate > 0.025 {
+        } else if settings.isMicroBolusEnabled(), microBolusCandidate > 0.025, !isExercising {
             microBolus = microBolusCandidate
             tempBasal = 0.0
             safetyResult = SafetyResult.withMicroBolus(machineLearningMicroBolus: microBolusSafety, physiologicalMicroBolus: microBolusPhysiological, actualMicroBolus: microBolus, machineLearningInsulinLastThreeHours: safetyTempBasalResult.machineLearningInsulinLastThreeHours, biologicalInvariantMgDlPerHour: biologicalInvariant)

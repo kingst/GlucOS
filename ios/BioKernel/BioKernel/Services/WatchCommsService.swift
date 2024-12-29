@@ -11,7 +11,7 @@ public protocol WatchComms {
     func updateAppContext() async
 }
 
-struct LocalWatchComms: WatchComms, SessionCommands {
+class LocalWatchComms: WatchComms, SessionCommands {
     static let shared = LocalWatchComms()
     
     func updateAppContext() async {

@@ -56,7 +56,7 @@ final class ClosedLoopTests: XCTestCase {
         // this is just for logging
         let safetyTempBasalResult = SafetyTempBasal(tempBasal: 1.0, machineLearningInsulinLastThreeHours: 0.0)
 
-        let dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+        let dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil, isExercising: false)
         
         XCTAssertEqual(dose.tempBasal, 1.0, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
@@ -70,7 +70,7 @@ final class ClosedLoopTests: XCTestCase {
         // this is just for logging
         let safetyTempBasalResult = SafetyTempBasal(tempBasal: 1.0, machineLearningInsulinLastThreeHours: 0.0)
 
-        let dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+        let dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil, isExercising: false)
         
         XCTAssertEqual(dose.tempBasal, 1.5, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
@@ -84,7 +84,7 @@ final class ClosedLoopTests: XCTestCase {
         // this is just for logging
         let safetyTempBasalResult = SafetyTempBasal(tempBasal: 1.0, machineLearningInsulinLastThreeHours: 0.0)
 
-        let dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+        let dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil, isExercising: false)
         
         XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.25, accuracy: iobAccuracy)
@@ -98,16 +98,31 @@ final class ClosedLoopTests: XCTestCase {
         // this is just for logging
         let safetyTempBasalResult = SafetyTempBasal(tempBasal: 1.0, machineLearningInsulinLastThreeHours: 0.0)
 
-        var dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+        var dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil, isExercising: false)
         
         XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.2, accuracy: iobAccuracy)
         
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.02, microBolusSafety: 0.25, biologicalInvariant: nil)
+        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.02, microBolusSafety: 0.25, biologicalInvariant: nil, isExercising: false)
         
         XCTAssertEqual(dose.tempBasal, 1.0, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
     }
+    
+    func testDoseLogicDisableMicroBolusFromExercise() async {
+        let closedLoop = LocalClosedLoopService()
+        let settings = await MockSettingsStorage()
+        await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: false, useBiologicalInvariant: false)
+        
+        // this is just for logging
+        let safetyTempBasalResult = SafetyTempBasal(tempBasal: 1.0, machineLearningInsulinLastThreeHours: 0.0)
+
+        var dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil, isExercising: true)
+        
+        XCTAssertEqual(dose.tempBasal, 1.0, accuracy: iobAccuracy)
+        XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
+    }
+    
     
     func testDoseLogicUseBiologicalInvariant() async {
         let closedLoop = LocalClosedLoopService()
@@ -117,17 +132,17 @@ final class ClosedLoopTests: XCTestCase {
         // this is just for logging
         let safetyTempBasalResult = SafetyTempBasal(tempBasal: 1.0, machineLearningInsulinLastThreeHours: 0.0)
 
-        var dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
+        var dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25, isExercising: false)
         
         XCTAssertEqual(dose.tempBasal, 1.0, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
         
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45)
+        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45, isExercising: false)
         
         XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
         
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil, isExercising: false)
         
         XCTAssertEqual(dose.tempBasal, 1.0, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
@@ -141,17 +156,17 @@ final class ClosedLoopTests: XCTestCase {
         // this is just for logging
         let safetyTempBasalResult = SafetyTempBasal(tempBasal: 1.0, machineLearningInsulinLastThreeHours: 0.0)
 
-        var dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
+        var dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25, isExercising: false)
         
         XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.2, accuracy: iobAccuracy)
         
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45)
+        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45, isExercising: false)
         
         XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
         
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil, isExercising: false)
         
         XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.2, accuracy: iobAccuracy)
@@ -165,17 +180,17 @@ final class ClosedLoopTests: XCTestCase {
         // this is just for logging
         let safetyTempBasalResult = SafetyTempBasal(tempBasal: 1.0, machineLearningInsulinLastThreeHours: 0.0)
 
-        var dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
+        var dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25, isExercising: false)
         
         XCTAssertEqual(dose.tempBasal, 1.5, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
         
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45)
+        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45, isExercising: false)
         
         XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
         
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil, isExercising: false)
         
         XCTAssertEqual(dose.tempBasal, 1.5, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
@@ -189,17 +204,17 @@ final class ClosedLoopTests: XCTestCase {
         // this is just for logging
         let safetyTempBasalResult = SafetyTempBasal(tempBasal: 1.0, machineLearningInsulinLastThreeHours: 0.0)
 
-        var dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
+        var dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25, isExercising: false)
         
         XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.25, accuracy: iobAccuracy)
         
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45)
+        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45, isExercising: false)
         
         XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
         
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+        dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil, isExercising: false)
         
         XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.25, accuracy: iobAccuracy)

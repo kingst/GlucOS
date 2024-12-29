@@ -13,6 +13,7 @@ struct Workout {
     let activityType: HKWorkoutActivityType
     let locationType: HKWorkoutSessionLocationType
     let image: Image
+    let imageName: String
     
     private init(description: String,
                 activityType: HKWorkoutActivityType,
@@ -21,6 +22,7 @@ struct Workout {
         self.description = description
         self.activityType = activityType
         self.locationType = locationType
+        self.imageName = imageName
         self.image = Image(systemName: imageName)
     }
     

@@ -10,7 +10,7 @@ import CoreML
 import LoopKit
 
 protocol MachineLearning {
-    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> Double?
+    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> Double?
 }
 
 struct MLUtilities {
@@ -50,14 +50,14 @@ actor LocalMachineLearning: MachineLearning {
     // our current prediction uses an ML model to predict addedGlucose
     // then runs it through the same calculations that we use for
     // our physiological models
-    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> Double? {
+    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> Double? {
         
         // For now we will always return nil for ML, the current model is highly
         // personalized for one individual and not appropriate for use in general.
         // But, it shows what we used when we ran experiments.
         return nil
         
-        let targetGlucose = settings.targetGlucoseInMgDl
+        let targetGlucose = targetGlucoseInMgDl
         let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
         let correctionDuration = settings.correctionDurationInSeconds
         
