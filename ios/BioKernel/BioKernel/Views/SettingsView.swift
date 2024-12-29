@@ -30,6 +30,11 @@ struct SettingsView: View {
                     }.onChange(of: settingsViewModel.closedLoopEnabled) { _ in
                         hasModifications = true
                     }
+                    Toggle(isOn: $settingsViewModel.adjustTargetGlucoseDuringExercise) {
+                        Text("Adjust target glucose during exercise")
+                    }.onChange(of: settingsViewModel.adjustTargetGlucoseDuringExercise) { _ in
+                        hasModifications = true
+                    }
                     Toggle(isOn: $settingsViewModel.useMachineLearningClosedLoop) {
                         Text("Use ML closed loop")
                     }.onChange(of: settingsViewModel.useMachineLearningClosedLoop) { _ in

@@ -89,6 +89,7 @@ public class SettingsViewModel: ObservableObject {
     @Published var pidIntegratorGain: DecimalSetting
     @Published var pidDerivativeGain: DecimalSetting
     @Published var useBiologicalInvariant: Bool
+    @Published var adjustTargetGlucoseDuringExercise: Bool
     
     var mlBasalSchedule: DecimalSettingSchedule
     var mlInsulinSensitivitySchedule: DecimalSettingSchedule
@@ -154,6 +155,7 @@ public class SettingsViewModel: ObservableObject {
         pidIntegratorGain = DecimalSetting(value: settings.getPidIntegratorGain(), units: SettingsViewModel.gainUnits)
         pidDerivativeGain = DecimalSetting(value: settings.getPidDerivativeGain(), units: SettingsViewModel.gainUnits)
         useBiologicalInvariant = settings.isBiologicalInvariantEnabled()
+        adjustTargetGlucoseDuringExercise = settings.isTargetGlucoseAdjustedDuringExerciseEnabled()
     }
     
     public init(settings: CodableSettings) {
@@ -175,12 +177,13 @@ public class SettingsViewModel: ObservableObject {
         pidIntegratorGain = DecimalSetting(value: settings.getPidIntegratorGain(), units: SettingsViewModel.gainUnits)
         pidDerivativeGain = DecimalSetting(value: settings.getPidDerivativeGain(), units: SettingsViewModel.gainUnits)
         useBiologicalInvariant = settings.isBiologicalInvariantEnabled()
+        adjustTargetGlucoseDuringExercise = settings.isTargetGlucoseAdjustedDuringExerciseEnabled()
     }
     
     func snapshot() -> CodableSettings {
         let learnedBasalRate = LearnedSettingsSchedule.from(schedule: mlBasalSchedule)
         let learnedInsulinSensitivity = LearnedSettingsSchedule.from(schedule: mlInsulinSensitivitySchedule)
-        return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: pumpBasalRate.value, insulinSensitivityInMgDlPerUnit: insulinSensitivity.value, maxBasalRateUnitsPerHour: maxBasalRate.value, maxBolusUnits: maxBolus.value, shutOffGlucoseInMgDl: glucoseSafetyShutoff.value, targetGlucoseInMgDl: glucoseTarget.value, closedLoopEnabled: closedLoopEnabled, useMachineLearningClosedLoop: useMachineLearningClosedLoop, useMicroBolus: useMicroBolus, microBolusDoseFactor: microBolusDoseFactor.value, learnedBasalRateUnitsPerHour: learnedBasalRate, learnedInsulinSensitivityInMgDlPerUnit: learnedInsulinSensitivity, bolusAmountForLess: bolusAmountForLess.value, bolusAmountForUsual: bolusAmountForUsual.value, bolusAmountForMore: bolusAmountForMore.value, pidIntegratorGain: pidIntegratorGain.value, pidDerivativeGain: pidDerivativeGain.value, useBiologicalInvariant: useBiologicalInvariant)
+        return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: pumpBasalRate.value, insulinSensitivityInMgDlPerUnit: insulinSensitivity.value, maxBasalRateUnitsPerHour: maxBasalRate.value, maxBolusUnits: maxBolus.value, shutOffGlucoseInMgDl: glucoseSafetyShutoff.value, targetGlucoseInMgDl: glucoseTarget.value, closedLoopEnabled: closedLoopEnabled, useMachineLearningClosedLoop: useMachineLearningClosedLoop, useMicroBolus: useMicroBolus, microBolusDoseFactor: microBolusDoseFactor.value, learnedBasalRateUnitsPerHour: learnedBasalRate, learnedInsulinSensitivityInMgDlPerUnit: learnedInsulinSensitivity, bolusAmountForLess: bolusAmountForLess.value, bolusAmountForUsual: bolusAmountForUsual.value, bolusAmountForMore: bolusAmountForMore.value, pidIntegratorGain: pidIntegratorGain.value, pidDerivativeGain: pidDerivativeGain.value, useBiologicalInvariant: useBiologicalInvariant, adjustTargetGlucoseDuringExercise: adjustTargetGlucoseDuringExercise)
     }
 }
 
