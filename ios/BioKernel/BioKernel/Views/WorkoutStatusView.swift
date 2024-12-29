@@ -11,8 +11,10 @@ struct WorkoutStatusView: View {
     let description: String
     let imageName: String
     
+    @State var timer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
+    @Environment(\.scenePhase) var scenePhase
     @State private var currentTime = Date()
-    let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+
     
     private var duration: Int {
         Int(currentTime.timeIntervalSince(at) / 60.0)
@@ -40,6 +42,7 @@ struct WorkoutStatusView: View {
             // Workout Info
             VStack(alignment: .leading, spacing: 4) {
                 Text(description)
+                    .foregroundColor(.primary)
                     .font(.headline)
                 HStack(spacing: 4) {
                     Image(systemName: "clock")
@@ -73,8 +76,16 @@ struct WorkoutStatusView: View {
                 .fill(Color(.systemBackground))
                 .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
         )
-        .onReceive(timer) { time in
-            currentTime = time
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .inactive || newPhase == .background {
+                self.timer.upstream.connect().cancel()
+            } else if newPhase == .active {
+                self.timer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
+                currentTime = Date()
+            }
+        }
+        .onReceive(timer) { _ in
+            currentTime = Date()
         }
     }
 }
