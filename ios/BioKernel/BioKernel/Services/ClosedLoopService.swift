@@ -146,6 +146,7 @@ struct ClosedLoopAlgorithmResult {
     let proportionalControllerDurationInSeconds: TimeInterval
     let predictedGlucoseInMgDl: Double
     let pidTempBasalResult: PIDTempBasalResult
+    let targetGlucoseInMgDl: Double
 }
 
 actor LocalClosedLoopService: ClosedLoopService {
@@ -166,12 +167,12 @@ actor LocalClosedLoopService: ClosedLoopService {
         return lastRun.action == .setTempBasal
     }
     
-    func microBolusAmount(tempBasal: Double, settings: CodableSettings, glucoseInMgDl: Double, basalRate: Double, predictedGlucoseInMgDl: Double, at: Date) async -> Double? {
+    func microBolusAmount(tempBasal: Double, settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, basalRate: Double, predictedGlucoseInMgDl: Double, at: Date) async -> Double? {
         // make sure that we haven't issued a micro bolus in the last 4.2 minutes
         guard lastMicroBolus.map({ Date().timeIntervalSince($0) > 4.2.minutesToSeconds() }) ?? true else { return nil }
 
         // make sure we're at least 20 mg/dl above our target
-        let glucoseThreshold = settings.targetGlucoseInMgDl + 20
+        let glucoseThreshold = targetGlucoseInMgDl + 20
         guard glucoseInMgDl >= glucoseThreshold else { return nil }
         
         // make sure that our glucose is rising or close to flat. The
@@ -295,16 +296,17 @@ actor LocalClosedLoopService: ClosedLoopService {
         let basalRate = settings.learnedBasalRate(at: at)
         let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
         let predictedGlucoseInMgDl = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: at) ?? glucoseInMgDl
+        let targetGlucoseInMgDl = settings.targetGlucoseInMgDl
         
         let proportionalControllerStart = Date()
-        let pidTempBasal = await getPhysiologicalModels().tempBasal(settings: settings, glucoseInMgDl: glucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at)
+        let pidTempBasal = await getPhysiologicalModels().tempBasal(settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at)
 
         let physiologicalTempBasal = applyGuardrails(glucoseInMgDl: glucoseInMgDl, predictedGlucoseInMgDl: predictedGlucoseInMgDl, newBasalRateRaw: pidTempBasal.tempBasal, settings: settings, roundToSupportedBasalRate: roundToSupportedBasalRate)
         let proportionalControllerDuration = Date().timeIntervalSince(proportionalControllerStart)
         
         // calculate the ML-based tempBasal
         let mlStart = Date()
-        let mlTempBasalRaw = await getMachineLearning().tempBasal(settings: settings, glucoseInMgDl: glucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at) ?? physiologicalTempBasal
+        let mlTempBasalRaw = await getMachineLearning().tempBasal(settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at) ?? physiologicalTempBasal
         let mlTempBasal = applyGuardrails(glucoseInMgDl: glucoseInMgDl, predictedGlucoseInMgDl: predictedGlucoseInMgDl, newBasalRateRaw: mlTempBasalRaw, settings: settings, roundToSupportedBasalRate: roundToSupportedBasalRate)
         let mlDuration = Date().timeIntervalSince(mlStart)
         
@@ -317,13 +319,13 @@ actor LocalClosedLoopService: ClosedLoopService {
         // calculate the micro bolus candidates and the biological invariant
         // IMPORTANT: you must run the mlTempBasal through the safety logic and use only
         // that temp basal for micro bolus calculations, or you can use the physiological temp basal
-        let microBolusSafety = await microBolusAmount(tempBasal: safetyTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, basalRate: basalRate, predictedGlucoseInMgDl: predictedGlucoseInMgDl, at: at) ?? 0.0
-        let microBolusPhysiological = await microBolusAmount(tempBasal: physiologicalTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, basalRate: basalRate, predictedGlucoseInMgDl: predictedGlucoseInMgDl, at: at) ?? 0.0
+        let microBolusSafety = await microBolusAmount(tempBasal: safetyTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, basalRate: basalRate, predictedGlucoseInMgDl: predictedGlucoseInMgDl, at: at) ?? 0.0
+        let microBolusPhysiological = await microBolusAmount(tempBasal: physiologicalTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, basalRate: basalRate, predictedGlucoseInMgDl: predictedGlucoseInMgDl, at: at) ?? 0.0
         let biologicalInvariant = await getPhysiologicalModels().deltaGlucoseError(settings: settings, dataFrame: dataFrame, at: at)
         
         let dose = determineDose(settings: settings, safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: physiologicalTempBasal, mlTempBasal: mlTempBasal, safetyTempBasal: safetyTempBasal, microBolusPhysiological: microBolusPhysiological, microBolusSafety: microBolusSafety, biologicalInvariant: biologicalInvariant)
         
-        return ClosedLoopAlgorithmResult(tempBasal: dose.tempBasal, microBolusAmount: dose.microBolus, shadowTempBasal: 0.0, shadowPredictedAddedGlucose: 0.0, learnedInsulinSensitivity: insulinSensitivity, learnedBasalRate: basalRate, shadowMlAddedGlucose: 0.0, shadowAddedGlucoseDataFrame: dataFrame, safetyResult: dose.safetyResult, mlDurationInSeconds: mlDuration, safetyDurationInSeconds: safetyDuration, proportionalControllerDurationInSeconds: proportionalControllerDuration, predictedGlucoseInMgDl: predictedGlucoseInMgDl, pidTempBasalResult: pidTempBasal)
+        return ClosedLoopAlgorithmResult(tempBasal: dose.tempBasal, microBolusAmount: dose.microBolus, shadowTempBasal: 0.0, shadowPredictedAddedGlucose: 0.0, learnedInsulinSensitivity: insulinSensitivity, learnedBasalRate: basalRate, shadowMlAddedGlucose: 0.0, shadowAddedGlucoseDataFrame: dataFrame, safetyResult: dose.safetyResult, mlDurationInSeconds: mlDuration, safetyDurationInSeconds: safetyDuration, proportionalControllerDurationInSeconds: proportionalControllerDuration, predictedGlucoseInMgDl: predictedGlucoseInMgDl, pidTempBasalResult: pidTempBasal, targetGlucoseInMgDl: targetGlucoseInMgDl)
     }
     
     /// post condition: either tempBasal _or_ microBolus can be > 0 but not both

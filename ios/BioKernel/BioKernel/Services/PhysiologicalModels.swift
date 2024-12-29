@@ -23,7 +23,7 @@ struct PIDTempBasalResult: Codable {
 }
 
 protocol PhysiologicalModels {
-    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> PIDTempBasalResult
+    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> PIDTempBasalResult
     func predictGlucoseIn15Minutes(from: Date) async -> Double?
     func deltaGlucoseError(settings: CodableSettings, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> Double?
 }
@@ -94,8 +94,7 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
         return error
     }
     
-    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> PIDTempBasalResult {
-        let targetGlucose = settings.targetGlucoseInMgDl
+    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> PIDTempBasalResult {
         let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
         let correctionDuration = settings.correctionDurationInSeconds
         let basalRate = settings.learnedBasalRate(at: at)
@@ -104,7 +103,7 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
         let deltaGlucoseError = deltaGlucoseError(settings: settings, dataFrame: dataFrame, at: at)
         
         // PID controller
-        let error = glucoseInMgDl - targetGlucose
+        let error = glucoseInMgDl - targetGlucoseInMgDl
         var derivative = 0.0
         if let dt = lastGlucoseAt.map({ at.timeIntervalSince($0) }), dt < 11.minutesToSeconds(), let lastGlucose = lastGlucose {
             // these are slighly non-standard for PID but we do it this

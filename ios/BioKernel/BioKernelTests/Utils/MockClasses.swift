@@ -38,6 +38,7 @@ class MockSettingsStorage: SettingsStorage {
     var pidIntegratorGain = 0.055
     var pidDerivativeGain = 0.35
     var useBiologicalInvariant = false
+    var adjustTargetGlucoseDuringExercise = false
     
     func update(useMicroBolus: Bool, useMachineLearningClosedLoop: Bool, useBiologicalInvariant: Bool) {
         self.useMicroBolus = useMicroBolus
@@ -46,7 +47,7 @@ class MockSettingsStorage: SettingsStorage {
     }
     
     func snapshot() -> BioKernel.CodableSettings {
-        return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: pumpBasalRateUnitsPerHour, insulinSensitivityInMgDlPerUnit: insulinSensitivityInMgDlPerUnit, maxBasalRateUnitsPerHour: maxBasalRateUnitsPerHour, maxBolusUnits: maxBolusUnits, shutOffGlucoseInMgDl: shutOffGlucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, closedLoopEnabled: closedLoopEnabled, useMachineLearningClosedLoop: useMachineLearningClosedLoop, useMicroBolus: useMicroBolus, microBolusDoseFactor: microBolusDoseFactor, learnedBasalRateUnitsPerHour: learnedBasalRateUnitsPerHour, learnedInsulinSensitivityInMgDlPerUnit: learnedInsulinSensitivityInMgDlPerUnit, bolusAmountForLess: bolusAmountForLess, bolusAmountForUsual: bolusAmountForUsual, bolusAmountForMore: bolusAmountForMore, pidIntegratorGain: pidIntegratorGain, pidDerivativeGain: pidDerivativeGain, useBiologicalInvariant: useBiologicalInvariant)
+        return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: pumpBasalRateUnitsPerHour, insulinSensitivityInMgDlPerUnit: insulinSensitivityInMgDlPerUnit, maxBasalRateUnitsPerHour: maxBasalRateUnitsPerHour, maxBolusUnits: maxBolusUnits, shutOffGlucoseInMgDl: shutOffGlucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, closedLoopEnabled: closedLoopEnabled, useMachineLearningClosedLoop: useMachineLearningClosedLoop, useMicroBolus: useMicroBolus, microBolusDoseFactor: microBolusDoseFactor, learnedBasalRateUnitsPerHour: learnedBasalRateUnitsPerHour, learnedInsulinSensitivityInMgDlPerUnit: learnedInsulinSensitivityInMgDlPerUnit, bolusAmountForLess: bolusAmountForLess, bolusAmountForUsual: bolusAmountForUsual, bolusAmountForMore: bolusAmountForMore, pidIntegratorGain: pidIntegratorGain, pidDerivativeGain: pidDerivativeGain, useBiologicalInvariant: useBiologicalInvariant, adjustTargetGlucoseDuringExercise: adjustTargetGlucoseDuringExercise)
     }
     
     func writeToDisk(settings: BioKernel.CodableSettings) throws {
