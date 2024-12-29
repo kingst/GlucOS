@@ -296,7 +296,7 @@ actor LocalClosedLoopService: ClosedLoopService {
         let basalRate = settings.learnedBasalRate(at: at)
         let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
         let predictedGlucoseInMgDl = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: at) ?? glucoseInMgDl
-        let targetGlucoseInMgDl = settings.targetGlucoseInMgDl
+        let targetGlucoseInMgDl = await getTargetGlucoseService().targetGlucoseInMgDl(at: at, settings: settings)
         
         let proportionalControllerStart = Date()
         let pidTempBasal = await getPhysiologicalModels().tempBasal(settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at)

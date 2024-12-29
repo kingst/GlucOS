@@ -53,7 +53,7 @@ public struct CodableSettings: Codable {
     let maxBasalRateUnitsPerHour: Double
     let maxBolusUnits: Double
     let shutOffGlucoseInMgDl: Double
-    let targetGlucoseInMgDl: Double
+    public let targetGlucoseInMgDl: Double
     let freshnessIntervalInSeconds: Double
     let correctionDurationInSeconds: Double
     let closedLoopEnabled: Bool

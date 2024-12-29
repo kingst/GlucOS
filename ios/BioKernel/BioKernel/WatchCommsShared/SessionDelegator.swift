@@ -24,7 +24,7 @@ extension Notification.Name {
 @MainActor
 protocol SessionUpdateDelegate: AnyObject {
     func contextDidUpdate(_ context: BioKernelState)
-    func didRecieveMessage(_ workout: WorkoutMessage)
+    func didRecieveMessage(at: Date, workoutMessage: WorkoutMessage)
 }
 
 class SessionDelegator: NSObject, WCSessionDelegate {
@@ -100,7 +100,7 @@ class SessionDelegator: NSObject, WCSessionDelegate {
             print("WC: Checking message")
             if let workoutMessage = object?.workoutMessage, name == .dataDidFlow {
                 print("WC: got new message")
-                self?.delegate?.didRecieveMessage(workoutMessage)
+                self?.delegate?.didRecieveMessage(at: Date(), workoutMessage: workoutMessage)
             }
             print("WC: Done checking message")
         }

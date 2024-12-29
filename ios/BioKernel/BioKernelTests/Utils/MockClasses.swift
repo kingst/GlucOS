@@ -67,6 +67,12 @@ class MockWatchComms: WatchComms {
     func updateAppContext() async { }
 }
 
+class MockTargetGlucose: TargetGlucoseService {
+    func targetGlucoseInMgDl(at: Date, settings: BioKernel.CodableSettings) async -> Double {
+        return settings.targetGlucoseInMgDl
+    }
+}
+
 class MockReplayLogger: EventLogger {
     func update(deviceToken: String) async { }
     func upload(healthKitRecords: BioKernel.HealthKitRecords) async -> Bool { return false }

@@ -10,7 +10,7 @@ import SwiftUI
 
 @MainActor
 class StateViewModel: ObservableObject, SessionUpdateDelegate {
-    func didRecieveMessage(_ workout: WorkoutMessage) {
+    func didRecieveMessage(at: Date, workoutMessage: WorkoutMessage) {
         print("not implemented")
     }
     

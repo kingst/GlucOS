@@ -65,15 +65,17 @@ struct MainViewSummaryView: View {
                 .frame(maxWidth: .infinity)
             }
             .padding([.bottom])
-            switch (getSettingsStorage().snapshot().isTargetGlucoseAdjustedDuringExerciseEnabled(),  workoutStatus.lastWorkoutMessage) {
-            case (false, _):
+            switch (getSettingsStorage().snapshot().isTargetGlucoseAdjustedDuringExerciseEnabled(),  workoutStatus.isExercising, workoutStatus.lastWorkoutMessage) {
+            case (false, _, _):
                 EmptyView()
-            case (true, .none):
+            case (true, false, _):
                 EmptyView()
-            case (true, .started(let at, let description, let imageName)):
+            case (true, true, .none):
+                EmptyView()
+            case (true, true, .started(let at, let description, let imageName)):
                 WorkoutStatusView(at: at, description: description, imageName: imageName)
                     .padding()
-            case (true, .ended):
+            case (true, true, .ended):
                 EmptyView()
             }
         }

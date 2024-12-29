@@ -23,6 +23,10 @@ class WorkoutManager: NSObject, ObservableObject, SessionCommands {
     var builder: HKLiveWorkoutBuilder?
     var cachedHealthKitAuthorization: Bool?
     
+    var startedWorkout: Workout?
+    var startedAt: Date?
+    var lastSentStartedMessageAt: Date?
+    
     func startWorkout(workout: Workout) {
         let configuration = HKWorkoutConfiguration()
         configuration.activityType = workout.activityType
@@ -42,10 +46,24 @@ class WorkoutManager: NSObject, ObservableObject, SessionCommands {
         
         let startDate = Date()
         session.startActivity(with: startDate)
-        sendMessageData(workoutMessage: .started(at: startDate, description: workout.description, imageName: workout.imageName))
+        startedAt = startDate
+        startedWorkout = workout
+        sendStartedMessage()
         builder?.beginCollection(withStart: startDate) { (success, error) in
             // the workout has started
         }
+    }
+    
+    // send a new `started` message while we are actively working out
+    func sendStartedMessage() {
+        guard let workout = startedWorkout, let startDate = startedAt else { return }
+
+        let at = Date()
+        let lastSent = lastSentStartedMessageAt ?? .distantPast
+        guard at.timeIntervalSince(lastSent) > 5.minutesToSeconds() else { return }
+        
+        sendMessageData(workoutMessage: .started(at: startDate, description: workout.description, imageName: workout.imageName))
+        lastSentStartedMessageAt = at
     }
     
     func requestAuthorization(_ complete: @escaping (Bool) -> Void) {
@@ -92,6 +110,9 @@ class WorkoutManager: NSObject, ObservableObject, SessionCommands {
     
     func end(save: Bool) {
         sendMessageData(workoutMessage: .ended(at: Date()))
+        startedAt = nil
+        startedWorkout = nil
+        lastSentStartedMessageAt = nil
         if save {
             session?.end()
         } else {
@@ -112,6 +133,7 @@ class WorkoutManager: NSObject, ObservableObject, SessionCommands {
         guard let stats = stats else { return }
         
         DispatchQueue.main.async {
+            self.sendStartedMessage()
             switch stats.quantityType {
             case HKQuantityType.quantityType(forIdentifier: .heartRate):
                 let heartRateUnit = HKUnit.count().unitDivided(by: .minute())
