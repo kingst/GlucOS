@@ -15,16 +15,16 @@ import Combine
 import SwiftUI
 import G7SensorKit
 
-struct CgmPumpMetadata: Codable {
-    let cgmStartedAt: Date?
-    let cgmExpiresAt: Date?
-    let pumpStartedAt: Date?
-    let pumpExpiresAt: Date?
-    let pumpResevoirPercentRemaining: Double?
+public struct CgmPumpMetadata: Codable {
+    public let cgmStartedAt: Date?
+    public let cgmExpiresAt: Date?
+    public let pumpStartedAt: Date?
+    public let pumpExpiresAt: Date?
+    public let pumpResevoirPercentRemaining: Double?
 }
 
 @MainActor
-protocol DeviceDataManager {
+public protocol DeviceDataManager {
     var pumpManager: PumpManagerUI? { get }
     func pumpSettingsUI() -> PumpManagerViewController?
     func pumpSettingsUI(for pumpManager: PumpManagerUI) -> PumpManagerViewController
@@ -61,7 +61,7 @@ protocol DeviceDataManager {
 }
 
 @MainActor
-class DeviceDataManagerObservableObject: ObservableObject {
+public class DeviceDataManagerObservableObject: ObservableObject {
     @Published var pumpManager: PumpManagerUI?
     @Published var cgmManager: CGMManager?
     @Published var insulinOnBoard: Double = 0.0
@@ -160,8 +160,10 @@ class LocalDeviceDataManager: DeviceDataManager {
     var cgmHasValidSensorSession: Bool = false
     var lastLoopCompleted: Date = .distantPast
     
-    let cgmManagerDelegate = MosCgmManagerDelegate()
-    let pumpManagerDelegate = MosPumpManagerDelegate()
+    // These are non isolated because we use a dispatch queue to synchronize
+    // access to them outside of the actor abstraction
+    nonisolated let cgmManagerDelegate = MosCgmManagerDelegate()
+    nonisolated let pumpManagerDelegate = MosPumpManagerDelegate()
     
     /// The last error recorded by a device manager
     /// Should be accessed only on the main queue

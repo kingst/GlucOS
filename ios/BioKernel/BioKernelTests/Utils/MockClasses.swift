@@ -7,6 +7,7 @@
 
 import Foundation
 import BioKernel
+import HealthKit
 import LoopKit
 import LoopKitUI
 
@@ -43,6 +44,18 @@ class MockSettingsStorage: SettingsStorage {
     func update(useMicroBolus: Bool, useMachineLearningClosedLoop: Bool, useBiologicalInvariant: Bool) {
         self.useMicroBolus = useMicroBolus
         self.useMachineLearningClosedLoop = useMachineLearningClosedLoop
+        self.useBiologicalInvariant = useBiologicalInvariant
+    }
+    
+    func update(maxBasalRateUnitsPerHour: Double) {
+        self.maxBasalRateUnitsPerHour = maxBasalRateUnitsPerHour
+    }
+    
+    func update(freshnessIntervalInSeconds: TimeInterval) {
+        self.freshnessIntervalInSeconds = freshnessIntervalInSeconds
+    }
+    
+    func update(useBiologicalInvariant: Bool) {
         self.useBiologicalInvariant = useBiologicalInvariant
     }
     
@@ -107,3 +120,174 @@ class MockInsulinStorageConstantAutomaticTempBasal: MockInsulinStorage {
 
     override func insulinDeliveredFromAutomaticTempBasal(startDate: Date, endDate: Date) async -> Double { return automaticTempBasal }
 }
+
+class MockGlucoseStorage: GlucoseStorage {
+    private var glucoseReadings: [NewGlucoseSample] = []
+    
+    func addCgmEvents(glucoseReadings: [NewGlucoseSample]) async {
+        self.glucoseReadings.append(contentsOf: glucoseReadings)
+    }
+    
+    func lastReading() async -> NewGlucoseSample? {
+        return glucoseReadings.max(by: { $0.date < $1.date })
+    }
+    
+    func readingsBetween(startDate: Date, endDate: Date) async -> [NewGlucoseSample] {
+        return glucoseReadings.filter { reading in
+            reading.date >= startDate && reading.date <= endDate
+        }
+    }
+    
+    // Helper method for tests
+    func addGlucoseReading(quantity: HKQuantity, date: Date) async {
+        let sample = NewGlucoseSample(
+            date: date,
+            quantity: quantity,
+            condition: nil,
+            trend: nil,
+            trendRate: nil,
+            isDisplayOnly: false,
+            wasUserEntered: false,
+            syncIdentifier: UUID().uuidString
+        )
+        await addCgmEvents(glucoseReadings: [sample])
+    }
+}
+
+/*
+class MockDeviceDataManager: DeviceDataManager {
+    var mockPumpManager: PumpManagerUI?
+    var mockCgmManager: CGMManager?
+    let mockObservableObject = DeviceDataManagerObservableObject()
+    private var lastError: (date: Date, error: Error)?
+    
+    var pumpManager: PumpManagerUI? {
+        get { mockPumpManager }
+        set { mockPumpManager = newValue }
+    }
+    
+    var cgmManager: CGMManager? {
+        get { mockCgmManager }
+        set { mockCgmManager = newValue }
+    }
+    
+    func pumpSettingsUI() -> PumpManagerViewController? {
+        return nil
+    }
+    
+    func pumpSettingsUI(for pumpManager: PumpManagerUI) -> PumpManagerViewController {
+        return MockPumpManagerViewController()
+    }
+    
+    func setupPumpManagerUI(withIdentifier identifier: String) -> Result<SetupUIResult<PumpManagerViewController, PumpManagerUI>, Error> {
+        .success(.userInteractionRequired(MockPumpManagerViewController()))
+    }
+    
+    func pumpManagerDescriptors() -> [PumpManagerDescriptor] {
+        return []
+    }
+    
+    func cgmSettingsUI(for cgmManager: CGMManagerUI) -> CGMManagerViewController {
+        return MockCGMManagerViewController()
+    }
+    
+    func cgmSettingsUI() -> CGMManagerViewController? {
+        return nil
+    }
+    
+    func setupCGMManagerUI(withIdentifier identifier: String) -> Result<SetupUIResult<CGMManagerViewController, CGMManagerUI>, Error> {
+        .success(.userInteractionRequired(MockCGMManagerViewController()))
+    }
+    
+    func cgmManagerDescriptors() -> [CGMManagerDescriptor] {
+        return []
+    }
+    
+    func observableObject() -> DeviceDataManagerObservableObject {
+        return mockObservableObject
+    }
+    
+    func refreshCgmAndPumpDataFromUI() async {
+        // No-op for mock
+    }
+    
+    func checkCgmDataAndLoop() async {
+        // No-op for mock
+    }
+    
+    func setLastError(error: Error) {
+        self.lastError = (date: Date(), error: error)
+    }
+    
+    func updateCgmManager(to manager: CGMManager?) {
+        self.mockCgmManager = manager
+    }
+    
+    func newCgmDataAvailable(readingResult: CGMReadingResult) async {
+        // No-op for mock
+    }
+    
+    func updateRawCgmManager(to rawValue: [String : Any]?) {
+        // No-op for mock
+    }
+    
+    func updateCgm(hasValidSensorSession: Bool) {
+        // No-op for mock
+    }
+    
+    func updatePumpManager(to manager: PumpManagerUI?) {
+        self.mockPumpManager = manager
+    }
+    
+    func updateRawPumpManager(to rawValue: [String : Any]?) {
+        // No-op for mock
+    }
+    
+    func updatePumpIsAllowingAutomation(status: PumpManagerStatus) {
+        // No-op for mock
+    }
+    
+    func update(insulinOnBoard: Double, pumpAlarm: PumpAlarmType?) {
+        mockObservableObject.insulinOnBoard = insulinOnBoard
+        mockObservableObject.pumpAlarm = pumpAlarm
+    }
+    
+    func update(activeAlert: Alert?) {
+        mockObservableObject.activeAlert = activeAlert
+    }
+    
+    func update(glucoseChartData: [GlucoseChartPoint]) {
+        mockObservableObject.glucoseChartData = glucoseChartData
+    }
+    
+    func update(totalAmount: Double, bolusProgressReporter: DoseProgressReporter) {
+        mockObservableObject.doseProgress.update(totalUnits: totalAmount, doseProgressReporter: bolusProgressReporter)
+    }
+    
+    func cgmPumpMetadata() async -> CgmPumpMetadata {
+        return CgmPumpMetadata(cgmStartedAt: nil, cgmExpiresAt: nil, pumpStartedAt: nil, pumpExpiresAt: nil, pumpResevoirPercentRemaining: nil)
+    }
+}
+
+// Mock view controllers needed for UI-related methods
+class MockPumpManagerViewController: PumpManagerViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    }
+}
+
+class MockCGMManagerViewController: CGMManagerViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    }
+}
+
+// Mock dose progress reporter for testing dose updates
+class MockDoseProgressReporter: DoseProgressReporter {
+    private(set) var progress: DoseProgress?
+    
+    func updateProgress(_ progress: DoseProgress) {
+        self.progress = progress
+    }
+}
+*/

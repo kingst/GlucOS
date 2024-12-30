@@ -8,13 +8,13 @@
 import HealthKit
 import LoopKit
 
-protocol GlucoseStorage {
+public protocol GlucoseStorage {
     func addCgmEvents(glucoseReadings: [NewGlucoseSample]) async
     func lastReading() async -> NewGlucoseSample?
     func readingsBetween(startDate: Date, endDate: Date) async -> [NewGlucoseSample]
 }
 
-struct GlucoseChartPoint {
+public struct GlucoseChartPoint {
     let created: Date
     let readingInMgDl: Double
 }

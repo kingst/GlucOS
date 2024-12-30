@@ -11,9 +11,9 @@ import LoopKit
 import G7SensorKit
 
 let getBluetoothProvider: () -> BluetoothProvider = Dependency.bind { BluetoothStateManager.shared }
-let getDeviceDataManager: () -> DeviceDataManager = Dependency.bind { LocalDeviceDataManager.shared }
+@MainActor let getDeviceDataManager: () -> DeviceDataManager = Dependency.bind { LocalDeviceDataManager.shared }
 let getInsulinStorage: () -> InsulinStorage = Dependency.bind { LocalInsulinStorage.shared }
-let getSettingsStorage: () -> SettingsStorage = Dependency.bind { LocalSettingsStorage.shared }
+@MainActor let getSettingsStorage: () -> SettingsStorage = Dependency.bind { LocalSettingsStorage.shared }
 let getGlucoseStorage: () -> GlucoseStorage = Dependency.bind { LocalGlucoseStorage.shared }
 let getClosedLoopService: () -> ClosedLoopService = Dependency.bind { LocalClosedLoopService.shared }
 let getStoredObject: () -> StoredObject.Type = Dependency.bind { StoredJsonObject.self }
@@ -25,8 +25,8 @@ let getMachineLearning: () -> MachineLearning = Dependency.bind { LocalMachineLe
 let getPhysiologicalModels: () -> PhysiologicalModels = Dependency.bind { LocalPhysiologicalModels.shared }
 let getSafetyService: () -> SafetyService = Dependency.bind { LocalSafetyService.shared }
 let getDebugLogger: () -> G7DebugLogger = Dependency.bind { LocalEventLogger.shared }
-let getBackgroundService: () -> BackgroundService = Dependency.bind { LocalBackgroundService.shared }
-let getGlucoseAlertsService: () -> GlucoseAlertStorage = Dependency.bind { PredictiveGlucoseAlertStorage.shared }
+@MainActor let getBackgroundService: () -> BackgroundService = Dependency.bind { LocalBackgroundService.shared }
+@MainActor let getGlucoseAlertsService: () -> GlucoseAlertStorage = Dependency.bind { PredictiveGlucoseAlertStorage.shared }
 let getWatchComms: () -> WatchComms = Dependency.bind { LocalWatchComms.shared }
 @MainActor let getWorkoutStatusService: () -> WorkoutStatusService = Dependency.bind { LocalWorkoutStatusService.shared }
 let getTargetGlucoseService: () -> TargetGlucoseService = Dependency.bind { LocalTargetGlucoseService.shared }

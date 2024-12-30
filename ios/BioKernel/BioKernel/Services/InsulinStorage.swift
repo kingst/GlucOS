@@ -317,7 +317,7 @@ actor LocalInsulinStorage: InsulinStorage {
     }
 }
 
-extension NewPumpEvent: Encodable, Decodable {
+extension NewPumpEvent: @retroactive Encodable, @retroactive Decodable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
