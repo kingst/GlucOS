@@ -25,7 +25,7 @@ struct StateGlucoseReadings: Codable {
     let trend: String?
 }
 
-struct BioKernelState: Codable {
+public struct BioKernelState: Codable {
     let timestamp: Date
     let glucoseReadings: [StateGlucoseReadings]
     let predictedGlucose: Double

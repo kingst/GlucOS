@@ -12,7 +12,6 @@ import LoopKit
 import HealthKit
 
 final class ClosedLoopSafetyTests: XCTestCase {
-    /*
     let iobAccuracy = 0.00000000001
     
     @MainActor override func setUpWithError() throws {
@@ -70,7 +69,6 @@ final class ClosedLoopSafetyTests: XCTestCase {
     }
     
     // MARK: - Stale Data Tests
-    
     func testStaleCGMData() async throws {
         let closedLoop = LocalClosedLoopService()
         let settings = await MockSettingsStorage()
@@ -95,7 +93,6 @@ final class ClosedLoopSafetyTests: XCTestCase {
     }
     
     // MARK: - Recovery Tests
-    
     func testRecoveryFromSafetyViolations() async throws {
         let closedLoop = LocalClosedLoopService()
         let settings = await MockSettingsStorage()
@@ -192,8 +189,58 @@ final class ClosedLoopSafetyTests: XCTestCase {
         XCTAssertLessThanOrEqual(loopDuration, 5.0, "Loop cycle took too long to complete")
     }
     
-    // MARK: - Adverse Conditions Tests
+    @MainActor func testNegativeBasalRateClampedToZero() async throws {
+        let closedLoop = LocalClosedLoopService()
+        let settings = MockSettingsStorage()
+        
+        let result = await closedLoop.applyGuardrails(
+            glucoseInMgDl: 120,
+            predictedGlucoseInMgDl: 130,
+            newBasalRateRaw: -0.5,
+            settings: settings.snapshot(),
+            roundToSupportedBasalRate: { $0 }
+        )
+        
+        XCTAssertEqual(result, 0.0, accuracy: iobAccuracy, "Negative basal rate should be clamped to zero")
+    }
+
+    @MainActor func testShutOffBasalRateWhenCurrentGlucoseBelowThreshold() async throws {
+        let closedLoop = LocalClosedLoopService()
+        let settings = MockSettingsStorage()
+        settings.update(shutOffGlucoseInMgDl: 80.0)
+        
+        let result = await closedLoop.applyGuardrails(
+            glucoseInMgDl: 75.0, // Below threshold
+            predictedGlucoseInMgDl: 85.0, // Above threshold
+            newBasalRateRaw: 1.0,
+            settings: settings.snapshot(),
+            roundToSupportedBasalRate: { $0 }
+        )
+        
+        XCTAssertEqual(result, 0.0, accuracy: iobAccuracy, "Basal rate should be zero when current glucose is below shutoff threshold")
+    }
+
+    @MainActor func testShutOffBasalRateWhenPredictedGlucoseBelowThreshold() async throws {
+        let closedLoop = LocalClosedLoopService()
+        let settings = MockSettingsStorage()
+        settings.update(shutOffGlucoseInMgDl: 80.0)
+        
+        let result = await closedLoop.applyGuardrails(
+            glucoseInMgDl: 85.0, // Above threshold
+            predictedGlucoseInMgDl: 75.0, // Below threshold
+            newBasalRateRaw: 1.0,
+            settings: settings.snapshot(),
+            roundToSupportedBasalRate: { $0 }
+        )
+        
+        XCTAssertEqual(result, 0.0, accuracy: iobAccuracy, "Basal rate should be zero when predicted glucose is below shutoff threshold")
+    }
     
+    // MARK: - Adverse Conditions Tests
+    // We should have some adverse conditions tests but let's be more
+    // thoughtful about it first. This test shows an example of what one
+    // might look like
+    /*
     func testAdverseConditions() async throws {
         let closedLoop = LocalClosedLoopService()
         let settings = await MockSettingsStorage()
@@ -214,6 +261,7 @@ final class ClosedLoopSafetyTests: XCTestCase {
             )
         }
         Dependency.mock { mockGlucoseStorage as GlucoseStorage }
+        Dependency.mock { MockInsulinStorage() as InsulinStorage }
         
         // Verify system responds appropriately to erratic data
         let result: Bool = await closedLoop.loop(at: Date())

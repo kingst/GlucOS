@@ -8,14 +8,18 @@
 import Foundation
 import LoopKit
 
-protocol SafetyService {
+public protocol SafetyService {
     func tempBasal(at: Date, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval) async -> SafetyTempBasal
     func updateAfterProgrammingPump(at: Date, programmedTempBasalUnitsPerHour: Double, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval, programmedMicroBolus: Double, safetyMicroBolus: Double, machineLearningMicroBolus: Double, biologicalInvariantViolation: Bool) async
 }
 
-struct SafetyTempBasal {
+public struct SafetyTempBasal {
     let tempBasal: Double
     let machineLearningInsulinLastThreeHours: Double
+    public init(tempBasal: Double, machineLearningInsulinLastThreeHours: Double) {
+        self.tempBasal = tempBasal
+        self.machineLearningInsulinLastThreeHours = machineLearningInsulinLastThreeHours
+    }
 }
 
 public struct SafetyState: Codable {

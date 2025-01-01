@@ -8,21 +8,35 @@
 import Foundation
 import LoopKit
 
-struct PIDTempBasalResult: Codable {
-    let at: Date
-    let Kp: Double
-    let Ki: Double
-    let Kd: Double
-    let error: Double
-    let tempBasal: Double
-    let accumulatedError: Double
-    let derivative: Double?
-    let lastGlucose: Double?
-    let lastGlucoseAt: Date?
-    let deltaGlucoseError: Double?
+public struct PIDTempBasalResult: Codable {
+    public let at: Date
+    public let Kp: Double
+    public let Ki: Double
+    public let Kd: Double
+    public let error: Double
+    public let tempBasal: Double
+    public let accumulatedError: Double
+    public let derivative: Double?
+    public let lastGlucose: Double?
+    public let lastGlucoseAt: Date?
+    public let deltaGlucoseError: Double?
+    
+    public init(at: Date, Kp: Double, Ki: Double, Kd: Double, error: Double, tempBasal: Double, accumulatedError: Double, derivative: Double?, lastGlucose: Double?, lastGlucoseAt: Date?, deltaGlucoseError: Double?) {
+        self.at = at
+        self.Kp = Kp
+        self.Ki = Ki
+        self.Kd = Kd
+        self.error = error
+        self.tempBasal = tempBasal
+        self.accumulatedError = accumulatedError
+        self.derivative = derivative
+        self.lastGlucose = lastGlucose
+        self.lastGlucoseAt = lastGlucoseAt
+        self.deltaGlucoseError = deltaGlucoseError
+    }
 }
 
-protocol PhysiologicalModels {
+public protocol PhysiologicalModels {
     func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> PIDTempBasalResult
     func predictGlucoseIn15Minutes(from: Date) async -> Double?
     func deltaGlucoseError(settings: CodableSettings, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> Double?

@@ -21,6 +21,14 @@ public struct CgmPumpMetadata: Codable {
     public let pumpStartedAt: Date?
     public let pumpExpiresAt: Date?
     public let pumpResevoirPercentRemaining: Double?
+    
+    public init(cgmStartedAt: Date?, cgmExpiresAt: Date?, pumpStartedAt: Date?, pumpExpiresAt: Date?, pumpResevoirPercentRemaining: Double?) {
+        self.cgmStartedAt = cgmStartedAt
+        self.cgmExpiresAt = cgmExpiresAt
+        self.pumpStartedAt = pumpStartedAt
+        self.pumpExpiresAt = pumpExpiresAt
+        self.pumpResevoirPercentRemaining = pumpResevoirPercentRemaining
+    }
 }
 
 @MainActor
@@ -62,16 +70,20 @@ public protocol DeviceDataManager {
 
 @MainActor
 public class DeviceDataManagerObservableObject: ObservableObject {
-    @Published var pumpManager: PumpManagerUI?
-    @Published var cgmManager: CGMManager?
-    @Published var insulinOnBoard: Double = 0.0
-    @Published var pumpAlarm: PumpAlarmType?
-    @Published var lastGlucoseReading: NewGlucoseSample? = nil
-    @Published var displayGlucoseUnit: DisplayGlucoseUnitObservable = DisplayGlucoseUnitObservable(displayGlucoseUnit: .milligramsPerDeciliter)
-    @Published var lastClosedLoopRun: ClosedLoopResult? = nil
-    @Published var activeAlert: LoopKit.Alert? = nil
-    @Published var glucoseChartData: [GlucoseChartPoint] = []
-    @Published var doseProgress: DoseProgress = DoseProgress()
+    @Published public var pumpManager: PumpManagerUI?
+    @Published public var cgmManager: CGMManager?
+    @Published public var insulinOnBoard: Double = 0.0
+    @Published public var pumpAlarm: PumpAlarmType?
+    @Published public var lastGlucoseReading: NewGlucoseSample? = nil
+    @Published public var displayGlucoseUnit: DisplayGlucoseUnitObservable = DisplayGlucoseUnitObservable(displayGlucoseUnit: .milligramsPerDeciliter)
+    @Published public var lastClosedLoopRun: ClosedLoopResult? = nil
+    @Published public var activeAlert: LoopKit.Alert? = nil
+    @Published public var glucoseChartData: [GlucoseChartPoint] = []
+    @Published public var doseProgress: DoseProgress = DoseProgress()
+    
+    public init() {
+
+    }
     
     func tempBasal() -> String {
         guard let closedLoop = lastClosedLoopRun, closedLoop.action == .setTempBasal, Date().timeIntervalSince(closedLoop.at) < 30.minutesToSeconds(), let tempBasal = closedLoop.tempBasal else {

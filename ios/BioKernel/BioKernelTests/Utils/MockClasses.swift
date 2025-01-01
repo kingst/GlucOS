@@ -8,8 +8,40 @@
 import Foundation
 import BioKernel
 import HealthKit
+import MockKit
 import LoopKit
 import LoopKitUI
+import G7SensorKit
+
+class MockPumpManagerDelegate: PumpManagerDelegate {
+    func pumpManagerBLEHeartbeatDidFire(_ pumpManager: any LoopKit.PumpManager) { }
+    func pumpManagerMustProvideBLEHeartbeat(_ pumpManager: any LoopKit.PumpManager) -> Bool { return true }
+    func pumpManagerWillDeactivate(_ pumpManager: any LoopKit.PumpManager) { }
+    func pumpManagerPumpWasReplaced(_ pumpManager: any LoopKit.PumpManager) { }
+    func pumpManager(_ pumpManager: any LoopKit.PumpManager, didUpdatePumpRecordsBasalProfileStartEvents pumpRecordsBasalProfileStartEvents: Bool) { }
+    func pumpManager(_ pumpManager: any LoopKit.PumpManager, didError error: LoopKit.PumpManagerError) { }
+    func pumpManager(_ pumpManager: any LoopKit.PumpManager, hasNewPumpEvents events: [LoopKit.NewPumpEvent], lastReconciliation: Date?, completion: @escaping ((any Error)?) -> Void) {
+        completion(nil)
+    }
+    func pumpManager(_ pumpManager: any LoopKit.PumpManager, didReadReservoirValue units: Double, at date: Date, completion: @escaping (Result<(newValue: any LoopKit.ReservoirValue, lastValue: (any LoopKit.ReservoirValue)?, areStoredValuesContinuous: Bool), any Error>) -> Void) { }
+    func pumpManager(_ pumpManager: any LoopKit.PumpManager, didAdjustPumpClockBy adjustment: TimeInterval) { }
+    func pumpManagerDidUpdateState(_ pumpManager: any LoopKit.PumpManager) { }
+    func startDateToFilterNewPumpEvents(for manager: any LoopKit.PumpManager) -> Date { return Date() }
+    
+    var detectedSystemTimeOffset: TimeInterval = 0
+    
+    func deviceManager(_ manager: any LoopKit.DeviceManager, logEventForDeviceIdentifier deviceIdentifier: String?, type: LoopKit.DeviceLogEntryType, message: String, completion: (((any Error)?) -> Void)?) {
+        completion?(nil)
+    }
+    
+    func pumpManager(_ pumpManager: any LoopKit.PumpManager, didUpdate status: LoopKit.PumpManagerStatus, oldStatus: LoopKit.PumpManagerStatus) { }
+    func issueAlert(_ alert: LoopKit.Alert) { }
+    func retractAlert(identifier: LoopKit.Alert.Identifier) { }
+    func doesIssuedAlertExist(identifier: LoopKit.Alert.Identifier, completion: @escaping (Result<Bool, any Error>) -> Void) { }
+    func lookupAllUnretracted(managerIdentifier: String, completion: @escaping (Result<[LoopKit.PersistedAlert], any Error>) -> Void) { }
+    func lookupAllUnacknowledgedUnretracted(managerIdentifier: String, completion: @escaping (Result<[LoopKit.PersistedAlert], any Error>) -> Void) { }
+    func recordRetractedAlert(_ alert: LoopKit.Alert, at date: Date) { }
+}
 
 class MockSettingsStorage: SettingsStorage {
     func viewModel() -> BioKernel.SettingsViewModel {
@@ -59,6 +91,10 @@ class MockSettingsStorage: SettingsStorage {
         self.useBiologicalInvariant = useBiologicalInvariant
     }
     
+    func update(shutOffGlucoseInMgDl: Double) {
+        self.shutOffGlucoseInMgDl = shutOffGlucoseInMgDl
+    }
+    
     func snapshot() -> BioKernel.CodableSettings {
         return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: pumpBasalRateUnitsPerHour, insulinSensitivityInMgDlPerUnit: insulinSensitivityInMgDlPerUnit, maxBasalRateUnitsPerHour: maxBasalRateUnitsPerHour, maxBolusUnits: maxBolusUnits, shutOffGlucoseInMgDl: shutOffGlucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, closedLoopEnabled: closedLoopEnabled, useMachineLearningClosedLoop: useMachineLearningClosedLoop, useMicroBolus: useMicroBolus, microBolusDoseFactor: microBolusDoseFactor, learnedBasalRateUnitsPerHour: learnedBasalRateUnitsPerHour, learnedInsulinSensitivityInMgDlPerUnit: learnedInsulinSensitivityInMgDlPerUnit, bolusAmountForLess: bolusAmountForLess, bolusAmountForUsual: bolusAmountForUsual, bolusAmountForMore: bolusAmountForMore, pidIntegratorGain: pidIntegratorGain, pidDerivativeGain: pidDerivativeGain, useBiologicalInvariant: useBiologicalInvariant, adjustTargetGlucoseDuringExercise: adjustTargetGlucoseDuringExercise)
     }
@@ -66,6 +102,44 @@ class MockSettingsStorage: SettingsStorage {
     func writeToDisk(settings: BioKernel.CodableSettings) throws {
         // don't do anything
     }
+}
+
+class MockMachineLearning: MachineLearning {
+    func tempBasal(settings: BioKernel.CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [BioKernel.AddedGlucoseDataRow]?, at: Date) async -> Double? {
+        return nil
+    }
+}
+
+class MockG7DebugLogger: G7DebugLogger {
+    func log(category: String, type: String, message: String) { }
+}
+
+class MockSafetyService: SafetyService {
+    func tempBasal(at: Date, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval) async -> BioKernel.SafetyTempBasal {
+        return SafetyTempBasal(tempBasal: 0, machineLearningInsulinLastThreeHours: 0)
+    }
+    
+    func updateAfterProgrammingPump(at: Date, programmedTempBasalUnitsPerHour: Double, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval, programmedMicroBolus: Double, safetyMicroBolus: Double, machineLearningMicroBolus: Double, biologicalInvariantViolation: Bool) async {
+        
+    }
+}
+
+class MockWorkoutStatusService: WorkoutStatusService {
+    var mockIsExercising: Bool = false
+    
+    func observableObject() -> BioKernel.WorkoutStatus { return WorkoutStatus() }
+    func isExercising(at: Date) -> Bool { return mockIsExercising }
+    func contextDidUpdate(_ context: BioKernel.BioKernelState) { }
+    func didRecieveMessage(at: Date, workoutMessage: BioKernel.WorkoutMessage) { }
+}
+
+class MockPhysiologicalModels: PhysiologicalModels {
+    func tempBasal(settings: BioKernel.CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [BioKernel.AddedGlucoseDataRow]?, at: Date) async -> BioKernel.PIDTempBasalResult {
+        return PIDTempBasalResult(at: at, Kp: 1, Ki: 1, Kd: 1, error: 0, tempBasal: 0, accumulatedError: 0, derivative: nil, lastGlucose: nil, lastGlucoseAt: nil, deltaGlucoseError: nil)
+    }
+    
+    func predictGlucoseIn15Minutes(from: Date) async -> Double? { return nil }
+    func deltaGlucoseError(settings: BioKernel.CodableSettings, dataFrame: [BioKernel.AddedGlucoseDataRow]?, at: Date) async -> Double? { return nil }
 }
 
 class MockStoredObject: StoredObject {
@@ -105,9 +179,11 @@ class MockInsulinStorage: InsulinStorage {
     func pumpAlarm() async -> LoopKit.PumpAlarmType? { nil }
     func setPumpRecordsBasalProfileStartEvents(_ flag: Bool) async { }
     func currentInsulinType() async -> LoopKit.InsulinType { .humalog }
-    func lastPumpSync() async -> Date? { nil }
+    func lastPumpSync() async -> Date? { mockLastPumpSync }
     func activeBolus(at: Date) async -> LoopKit.DoseEntry? { nil }
     func insulinDeliveredFromAutomaticTempBasal(startDate: Date, endDate: Date) async -> Double { return 0.0 }
+    
+    var mockLastPumpSync: Date? = nil
 }
 
 class MockInsulinStorageConstantAutomaticTempBasal: MockInsulinStorage {
@@ -154,7 +230,7 @@ class MockGlucoseStorage: GlucoseStorage {
     }
 }
 
-/*
+
 class MockDeviceDataManager: DeviceDataManager {
     var mockPumpManager: PumpManagerUI?
     var mockCgmManager: CGMManager?
@@ -271,12 +347,20 @@ class MockDeviceDataManager: DeviceDataManager {
 
 // Mock view controllers needed for UI-related methods
 class MockPumpManagerViewController: PumpManagerViewController {
+    var completionDelegate: (any LoopKitUI.CompletionDelegate)? = nil
+    
+    var pumpManagerOnboardingDelegate: (any LoopKitUI.PumpManagerOnboardingDelegate)? = nil
+    
     override func viewDidLoad() {
         super.viewDidLoad()
     }
 }
 
 class MockCGMManagerViewController: CGMManagerViewController {
+    var cgmManagerOnboardingDelegate: (any LoopKitUI.CGMManagerOnboardingDelegate)? = nil
+    
+    var completionDelegate: (any LoopKitUI.CompletionDelegate)? = nil
+    
     override func viewDidLoad() {
         super.viewDidLoad()
     }
@@ -284,10 +368,14 @@ class MockCGMManagerViewController: CGMManagerViewController {
 
 // Mock dose progress reporter for testing dose updates
 class MockDoseProgressReporter: DoseProgressReporter {
-    private(set) var progress: DoseProgress?
+    var progress: LoopKit.DoseProgress = LoopKit.DoseProgress(deliveredUnits: 1, percentComplete: 0.1)
     
-    func updateProgress(_ progress: DoseProgress) {
-        self.progress = progress
+    func addObserver(_ observer: any LoopKit.DoseProgressObserver) {
+        
     }
+    
+    func removeObserver(_ observer: any LoopKit.DoseProgressObserver) {
+        
+    }
+    
 }
-*/

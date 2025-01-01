@@ -22,6 +22,8 @@
 		3B3C9B182C46EAB700BB7CCF /* GlucoseAlertsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B3C9B172C46EAB700BB7CCF /* GlucoseAlertsViewModel.swift */; };
 		3B3C9B1A2C46EDD700BB7CCF /* GlucoseAlertStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B3C9B192C46EDD700BB7CCF /* GlucoseAlertStorage.swift */; };
 		3B4052302B6DA87A004D232D /* AddedGlucoseModel.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 3B40522F2B6DA87A004D232D /* AddedGlucoseModel.mlpackage */; };
+		3B40DE672D243C6C0032328F /* MicroBolusAmountTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B40DE662D243C6C0032328F /* MicroBolusAmountTest.swift */; };
+		3B40DE692D24453F0032328F /* LoopFunctionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B40DE682D24453F0032328F /* LoopFunctionTests.swift */; };
 		3B4CFE1C2C223B8900BDB1CB /* CGMBLEKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B4CFE132C2230D800BDB1CB /* CGMBLEKit.framework */; };
 		3B4CFE1D2C223B8900BDB1CB /* CGMBLEKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3B4CFE132C2230D800BDB1CB /* CGMBLEKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3B4CFE1E2C223B9300BDB1CB /* CGMBLEKitUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B4CFE162C2230DF00BDB1CB /* CGMBLEKitUI.framework */; };
@@ -228,6 +230,8 @@
 		3B3C9B172C46EAB700BB7CCF /* GlucoseAlertsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseAlertsViewModel.swift; sourceTree = "<group>"; };
 		3B3C9B192C46EDD700BB7CCF /* GlucoseAlertStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseAlertStorage.swift; sourceTree = "<group>"; };
 		3B40522F2B6DA87A004D232D /* AddedGlucoseModel.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = AddedGlucoseModel.mlpackage; sourceTree = "<group>"; };
+		3B40DE662D243C6C0032328F /* MicroBolusAmountTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicroBolusAmountTest.swift; sourceTree = "<group>"; };
+		3B40DE682D24453F0032328F /* LoopFunctionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopFunctionTests.swift; sourceTree = "<group>"; };
 		3B4CFE132C2230D800BDB1CB /* CGMBLEKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CGMBLEKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B4CFE162C2230DF00BDB1CB /* CGMBLEKitUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CGMBLEKitUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B53294F2B5D8451000DED1A /* AddedGlucoseDataFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddedGlucoseDataFrame.swift; sourceTree = "<group>"; };
@@ -620,6 +624,8 @@
 				3CAAFC8D2B0D739200597055 /* InsulinPersistantStorageTests.swift */,
 				3B7C6D9B2B0C09320030DFA7 /* InsulinStorageTests.swift */,
 				3CBFB9892AFE02E90020FC90 /* InulinOnBoardTests.swift */,
+				3B40DE682D24453F0032328F /* LoopFunctionTests.swift */,
+				3B40DE662D243C6C0032328F /* MicroBolusAmountTest.swift */,
 				3B348DAD2B5DAFB0000A40E9 /* SafetyServiceTests.swift */,
 				3BF163212D21A9B400287BA0 /* WorkoutStatusServiceTests.swift */,
 				3C15FE482B0C9C5000CA1FD4 /* Resources */,
@@ -913,11 +919,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				3CAAFC8C2B0D71AE00597055 /* ReplayLogs.swift in Sources */,
+				3B40DE692D24453F0032328F /* LoopFunctionTests.swift in Sources */,
 				3B7F08412B2DDE33002930A4 /* ClosedLoopTests.swift in Sources */,
 				3CAAFC902B0D73C400597055 /* MockClasses.swift in Sources */,
 				3BA00A572D231CA00002B051 /* ClosedLoopSafetyTests.swift in Sources */,
 				3B348DAE2B5DAFB0000A40E9 /* SafetyServiceTests.swift in Sources */,
 				3CAAFC8E2B0D739200597055 /* InsulinPersistantStorageTests.swift in Sources */,
+				3B40DE672D243C6C0032328F /* MicroBolusAmountTest.swift in Sources */,
 				3B7C6D9C2B0C09320030DFA7 /* InsulinStorageTests.swift in Sources */,
 				3BEE4E202B5FF4A000A09203 /* DateTime.swift in Sources */,
 				3CBFB98A2AFE02E90020FC90 /* InulinOnBoardTests.swift in Sources */,

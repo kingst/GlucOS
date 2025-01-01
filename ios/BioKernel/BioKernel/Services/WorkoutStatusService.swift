@@ -9,15 +9,16 @@ import Foundation
 import SwiftUI
 
 @MainActor
-protocol WorkoutStatusService: SessionUpdateDelegate {
+public protocol WorkoutStatusService: SessionUpdateDelegate {
     func observableObject() -> WorkoutStatus
     func isExercising(at: Date) -> Bool
 }
 
 @MainActor
-class WorkoutStatus: ObservableObject {
+public class WorkoutStatus: ObservableObject {
     @Published var lastWorkoutMessage: WorkoutMessage? = nil
     @Published var isExercising: Bool = false
+    public init() { }
 }
 
 @MainActor

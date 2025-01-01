@@ -55,6 +55,7 @@ actor LocalClosedLoopService: ClosedLoopService {
         // Calculate the insulin amount based on temp basal and basal rate
         let correctionDurationHours = settings.correctionDurationInSeconds / 60.minutesToSeconds()
         
+        // Note: We hard code the duration in settings so this can't trigger
         guard correctionDurationHours > 0 else {
             return nil
         }
@@ -247,4 +248,12 @@ actor LocalClosedLoopService: ClosedLoopService {
         
         return newBasalRate
     }
+}
+
+extension LocalClosedLoopService {
+    #if DEBUG
+    func setLastMicroBolusForTesting(date: Date?) async {
+        self.lastMicroBolus = date
+    }
+    #endif
 }
