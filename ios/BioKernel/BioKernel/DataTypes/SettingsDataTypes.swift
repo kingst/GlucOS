@@ -96,6 +96,16 @@ public struct CodableSettings: Codable {
         return learnedBasalRatesUnitsPerHour.value(at: at) ?? pumpBasalRateUnitsPerHour
     }
     
+    func maxBasalRate() -> Double {
+        return [learnedBasalRatesUnitsPerHour.midnightToFour,
+                learnedBasalRatesUnitsPerHour.fourToEight,
+                learnedBasalRatesUnitsPerHour.eightToTwelve,
+                learnedBasalRatesUnitsPerHour.twelveToSixteen,
+                learnedBasalRatesUnitsPerHour.sixteenToTwenty,
+                learnedBasalRatesUnitsPerHour.twentyToTwentyFour,
+                pumpBasalRateUnitsPerHour].compactMap({ $0 }).max() ?? pumpBasalRateUnitsPerHour
+    }
+    
     func getBolusAmountForLess() -> Double { bolusAmountForLess ?? CodableSettings.bolusAmountForLessDefault }
     func getBolusAmountForUsual() -> Double { bolusAmountForUsual ?? CodableSettings.bolusAmountForUsualDefault }
     func getBolusAmountForMore() -> Double { bolusAmountForMore ?? CodableSettings.bolusAmountForMoreDefault}

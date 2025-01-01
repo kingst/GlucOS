@@ -34,15 +34,15 @@ struct MainViewSummaryView: View {
             
             Grid {
                 GridRow {
-                    Text("Acc Error").bold()
+                    Text("Digestion").bold()
                     Text("Predicted").bold()
                     Text("IoB").bold()
                 }
                 .frame(maxWidth: .infinity)
                 GridRow {
                     let iob = deviceManagerObservable.insulinOnBoard
-                    if let accumulatedError = deviceManagerObservable.accumulatedError() {
-                        AccErrorGauge(current: accumulatedError.clamp(low: -240, high: 240))
+                    if let digestion = deviceManagerObservable.digestionGlucosePerHour() {
+                        DigestionErrorGauge(current: digestion.clamp(low: -60, high: 340))
                     } else {
                         Text("-")
                     }

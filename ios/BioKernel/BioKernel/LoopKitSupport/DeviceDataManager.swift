@@ -85,62 +85,8 @@ public class DeviceDataManagerObservableObject: ObservableObject {
 
     }
     
-    func tempBasal() -> String {
-        guard let closedLoop = lastClosedLoopRun, closedLoop.action == .setTempBasal, Date().timeIntervalSince(closedLoop.at) < 30.minutesToSeconds(), let tempBasal = closedLoop.tempBasal else {
-            return "-"
-        }
-        
-        return String(format: "%0.2f", tempBasal)
-    }
-    
-    func microBolus() -> String {
-        guard let closedLoop = lastClosedLoopRun, closedLoop.action == .setTempBasal, Date().timeIntervalSince(closedLoop.at) < 30.minutesToSeconds(), let microBolusAmount = closedLoop.microBolusAmount else {
-            return "-"
-        }
-        
-        return String(format: "%0.2f", microBolusAmount)
-    }
-    
-    func insulinActionPerHour() -> Double? {
-        guard let closedLoop = lastClosedLoopRun, closedLoop.action == .setTempBasal, Date().timeIntervalSince(closedLoop.at) < 30.minutesToSeconds(), let dataFrame = closedLoop.shadowAddedGlucoseDataFrame else {
-            return nil
-        }
-        
-        let nsteps = 4
-        let recentFrame = dataFrame.dropFirst(dataFrame.count - nsteps - 1).map{ $0 }
-        guard let first = recentFrame.first, let last = recentFrame.last else { return nil }
-        let insulinActive = first.insulinOnBoard - last.insulinOnBoard + recentFrame.dropFirst().map({ $0.insulinDelivered }).reduce(0, +)
-        print("ddg: insulinActive: \(insulinActive)")
-        for row in recentFrame {
-            print("- ddg: g: \(row.glucose) iob: \(row.insulinOnBoard) id: \(row.insulinDelivered)")
-        }
-        return insulinActive * 12 / Double(nsteps)
-    }
-    
-    func accumulatedError() -> Double? {
-        guard let closedLoop = lastClosedLoopRun, closedLoop.action == .setTempBasal, Date().timeIntervalSince(closedLoop.at) < 30.minutesToSeconds() else {
-            return nil
-        }
-        
-        return closedLoop.pidTempBasalResult?.accumulatedError
-    }
-    
     func digestionGlucosePerHour() -> Double? {
-        guard let closedLoop = lastClosedLoopRun, closedLoop.action == .setTempBasal, Date().timeIntervalSince(closedLoop.at) < 30.minutesToSeconds(), let dataFrame = closedLoop.shadowAddedGlucoseDataFrame, let insulinSensitivity = closedLoop.insulinSensitivity, let basalRate = closedLoop.basalRate else {
-            return nil
-        }
-        
-        let nsteps = 4
-        let recentFrame = dataFrame.dropFirst(dataFrame.count - nsteps - 1).map{ $0 }
-        guard let first = recentFrame.first, let last = recentFrame.last, recentFrame.count == (nsteps + 1) else { return nil }
-        let deltaGlucose = last.glucose - first.glucose
-        let insulinActive = first.insulinOnBoard - last.insulinOnBoard + recentFrame.dropFirst().map({ $0.insulinDelivered }).reduce(0, +)
-        let basalInsulin = basalRate * Double(nsteps) / 12
-        let theoreticalDeltaGlucose = (basalInsulin - insulinActive) * insulinSensitivity
-        
-        print("ddg: deltaGlucose: \(deltaGlucose) theory: \(theoreticalDeltaGlucose)")
-        
-        return (deltaGlucose - theoreticalDeltaGlucose) * 12 / Double(nsteps)
+        return lastClosedLoopRun?.shadowPredictedAddedGlucose
     }
 }
 

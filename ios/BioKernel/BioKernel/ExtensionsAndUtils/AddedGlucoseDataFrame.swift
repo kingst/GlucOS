@@ -26,15 +26,14 @@ extension Array<AddedGlucoseDataRow> {
     func addedGlucosePerHour(numberOfRows: Int, insulinSensitivity: Double) -> Double? {
         guard self.count >= numberOfRows, numberOfRows > 1 else { return nil }
         let dataFrame = self.dropFirst(self.count - numberOfRows)
-        guard let first = dataFrame.first, let last = dataFrame.last else { return nil }
-
-        // we'll use the raw glucose readings for delta glucose
-        let deltaGlucose = last.glucose - first.glucose
         
-        // drop the first insulin delivered since that was delivered before
-        // this dataFrame started
-        let insulinDelivered = dataFrame.dropFirst().map({ $0.insulinDelivered }).reduce(0, +)
-        let addedGlucose = deltaGlucose + (first.insulinOnBoard - last.insulinOnBoard + insulinDelivered) * insulinSensitivity
+        let addedGlucosePerStep = zip(dataFrame, dataFrame.dropFirst()).map { (prev, curr) -> Double in
+            let deltaGlucose = curr.glucose - prev.glucose
+            let insulinActive = prev.insulinOnBoard - curr.insulinOnBoard + curr.insulinDelivered
+            return deltaGlucose + insulinActive * insulinSensitivity
+        }
+        let addedGlucose = addedGlucosePerStep.reduce(0, +)
+        
         return addedGlucose * 12 / Double(numberOfRows - 1) // convert to per hour
     }
     

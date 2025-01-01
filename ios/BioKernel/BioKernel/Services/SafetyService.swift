@@ -9,7 +9,7 @@ import Foundation
 import LoopKit
 
 public protocol SafetyService {
-    func tempBasal(at: Date, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval) async -> SafetyTempBasal
+    func tempBasal(at: Date, settings: CodableSettings, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval) async -> SafetyTempBasal
     func updateAfterProgrammingPump(at: Date, programmedTempBasalUnitsPerHour: Double, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval, programmedMicroBolus: Double, safetyMicroBolus: Double, machineLearningMicroBolus: Double, biologicalInvariantViolation: Bool) async
 }
 
@@ -58,35 +58,18 @@ public struct SafetyState: Codable {
 actor LocalSafetyService: SafetyService {
     static let shared = LocalSafetyService()
     
-    // FIXME: these should all be settings
-    let upperBoundInsulinUnits: Double
-    let lowerBoundInsulinUnits: Double
-    let timeHorizon: TimeInterval
+    let timeHorizon: TimeInterval = 3.hoursToSeconds()
     
     var safetyStates: [SafetyState]
     private let storage = getStoredObject().create(fileName: "safety_states.json")
     
     init() {
         safetyStates = (try? storage.read()) ?? []
-        upperBoundInsulinUnits = 9.0
-        lowerBoundInsulinUnits = -9.0
-        timeHorizon = 3.hoursToSeconds()
-    }
-    
-    init(lowerBoundInsulinUnits: Double, upperBoundInsulinUnits: Double) {
-        safetyStates = (try? storage.read()) ?? []
-        self.upperBoundInsulinUnits = upperBoundInsulinUnits
-        self.lowerBoundInsulinUnits = lowerBoundInsulinUnits
-        timeHorizon = 3.hoursToSeconds()
-    }
-    
-    static func forUnitTests() -> LocalSafetyService {
-        return LocalSafetyService(lowerBoundInsulinUnits: -3, upperBoundInsulinUnits: 2)
     }
     
     // Note: we ignore actual insulin delivered and use the
     // programmed values for the safety service
-    func tempBasal(at: Date, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval) async ->  SafetyTempBasal {
+    func tempBasal(at: Date, settings: CodableSettings, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval) async ->  SafetyTempBasal {
         
         let start = at - timeHorizon
         let events = safetyStates.filter { $0.at >= (start - duration) && $0.at < at }
@@ -97,9 +80,14 @@ actor LocalSafetyService: SafetyService {
             historicalMlInsulin += event.deltaUnitsDeliveredByMachineLearning(from: start, to: nextTime)
         }
                 
-        // convert tempBasal rates to units of insulin, assuming it runs for the entire 30m
+        // convert tempBasal rates to units of insulin, assuming it runs for the entire duration
         let mlTempBasalUnits = machineLearningTempBasalUnitsPerHour * duration / 1.hoursToSeconds()
         let safetyTempBasalUnits = safetyTempBasalUnitsPerHour * duration / 1.hoursToSeconds()
+        
+        // calculate our bounds based on the basal rate
+        let safetyBounds = settings.maxBasalRate() * timeHorizon / 1.hoursToSeconds()
+        let upperBoundInsulinUnits = safetyBounds
+        let lowerBoundInsulinUnits = -safetyBounds
         
         // make sure that the upperBound doesn't go below 0
         // and that the lowerBound doesn't go above 0

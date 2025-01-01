@@ -18,8 +18,6 @@ final class SafetyServiceTests: XCTestCase {
     
     @MainActor override func setUpWithError() throws {
         Dependency.useMockConstructors = true
-        let settings = MockSettingsStorage()
-        Dependency.mock { settings as SettingsStorage }
         Dependency.mock { MockStoredObject.self as StoredObject.Type }
         Dependency.mock { MockReplayLogger() as EventLogger }
     }
@@ -76,13 +74,15 @@ final class SafetyServiceTests: XCTestCase {
     // one unit of insulin each. Then on the third the system should instead
     // use the safety insulin value since we've exausted our ML insulin
     func testExtraInsulinClamp() async {
-        let safetyService = LocalSafetyService.forUnitTests()
+        let safetyService = LocalSafetyService()
+        let settings = await MockSettingsStorage()
+        await settings.update(pumpBasalRateUnitsPerHour: 2.0 / 3)
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
         
         // our first dose that will run for 30 minutes
         await safetyService.updateAfterProgrammingPump(at: startDate, programmedTempBasalUnitsPerHour: 3.0, safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds(), programmedMicroBolus: 0, safetyMicroBolus: 0, machineLearningMicroBolus: 0, biologicalInvariantViolation: false)
         
-        let firstTempBasal = await safetyService.tempBasal(at: startDate + 30.minutesToSeconds(), safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
+        let firstTempBasal = await safetyService.tempBasal(at: startDate + 30.minutesToSeconds(), settings: settings.snapshot(), safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
         
         XCTAssertEqual(firstTempBasal.tempBasal, 3.0, accuracy: insulinAccuracy)
         
@@ -90,13 +90,15 @@ final class SafetyServiceTests: XCTestCase {
         
         // at this point we have already delivered 2 units from ML, which is
         // our cap so the system should fall back to the safety tempBasal
-        let secondTempBasal = await safetyService.tempBasal(at: startDate + 60.minutesToSeconds(), safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
+        let secondTempBasal = await safetyService.tempBasal(at: startDate + 60.minutesToSeconds(), settings: settings.snapshot(), safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
         
         XCTAssertEqual(secondTempBasal.tempBasal, 1.0, accuracy: insulinAccuracy)
     }
     
     func testBasalAndBolus() async throws {
-        let safetyService = LocalSafetyService.forUnitTests()
+        let safetyService = LocalSafetyService()
+        let settings = await MockSettingsStorage()
+        await settings.update(pumpBasalRateUnitsPerHour: 2.0 / 3)
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
         
         // our first dose is a temp basal
@@ -105,29 +107,28 @@ final class SafetyServiceTests: XCTestCase {
         // add a micro bolus after 5 minutes
         await safetyService.updateAfterProgrammingPump(at: startDate + 5.minutesToSeconds(), programmedTempBasalUnitsPerHour: 0, safetyTempBasalUnitsPerHour: 0, machineLearningTempBasalUnitsPerHour: 0, duration: 30.minutesToSeconds(), programmedMicroBolus: 2.9, safetyMicroBolus: 0, machineLearningMicroBolus: 2.9, biologicalInvariantViolation: false)
         
-        let secondTempBasal = await safetyService.tempBasal(at: startDate + 60.minutesToSeconds(), safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
+        let secondTempBasal = await safetyService.tempBasal(at: startDate + 60.minutesToSeconds(), settings: settings.snapshot(), safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
         
         XCTAssertEqual(secondTempBasal.tempBasal, 1.0, accuracy: insulinAccuracy)
     }
     
     func testLessInsulinClamp() async {
-        let safetyService = LocalSafetyService.forUnitTests()
+        let safetyService = LocalSafetyService()
+        let settings = await MockSettingsStorage()
+        await settings.update(pumpBasalRateUnitsPerHour: 2.0 / 3)
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
         
-        // our first dose that will run for 30 minutes
-        await safetyService.updateAfterProgrammingPump(at: startDate, programmedTempBasalUnitsPerHour: 0, safetyTempBasalUnitsPerHour: 3.0, machineLearningTempBasalUnitsPerHour: 0, duration: 30.minutesToSeconds(), programmedMicroBolus: 0, safetyMicroBolus: 0, machineLearningMicroBolus: 0, biologicalInvariantViolation: false)
-        
-        let firstTempBasal = await safetyService.tempBasal(at: startDate + 30.minutesToSeconds(), safetyTempBasalUnitsPerHour: 3.0, machineLearningTempBasalUnitsPerHour: 0.0, duration: 30.minutesToSeconds())
+        let firstTempBasal = await safetyService.tempBasal(at: startDate, settings: settings.snapshot(), safetyTempBasalUnitsPerHour: 4.0, machineLearningTempBasalUnitsPerHour: 0.0, duration: 30.minutesToSeconds())
         
         XCTAssertEqual(firstTempBasal.tempBasal, 0.0, accuracy: insulinAccuracy)
         
-        await safetyService.updateAfterProgrammingPump(at: startDate + 30.minutesToSeconds(), programmedTempBasalUnitsPerHour: 0, safetyTempBasalUnitsPerHour: 3.0, machineLearningTempBasalUnitsPerHour: 0, duration: 30.minutesToSeconds(), programmedMicroBolus: 0, safetyMicroBolus: 0, machineLearningMicroBolus: 0, biologicalInvariantViolation: false)
+        await safetyService.updateAfterProgrammingPump(at: startDate, programmedTempBasalUnitsPerHour: 0, safetyTempBasalUnitsPerHour: 4.0, machineLearningTempBasalUnitsPerHour: 0, duration: 30.minutesToSeconds(), programmedMicroBolus: 0, safetyMicroBolus: 0, machineLearningMicroBolus: 0, biologicalInvariantViolation: false)
                 
-        // at this point we have a deficit of 3 units from ML, which is
+        // at this point we have a deficit of 2 units from ML, which is
         // our cap so the system should fall back to the safety tempBasal
-        let secondTempBasal = await safetyService.tempBasal(at: startDate + 60.minutesToSeconds(), safetyTempBasalUnitsPerHour: 3.0, machineLearningTempBasalUnitsPerHour: 0.0, duration: 30.minutesToSeconds())
+        let secondTempBasal = await safetyService.tempBasal(at: startDate + 30.minutesToSeconds(), settings: settings.snapshot(), safetyTempBasalUnitsPerHour: 4.0, machineLearningTempBasalUnitsPerHour: 0.0, duration: 30.minutesToSeconds())
         
-        XCTAssertEqual(secondTempBasal.tempBasal, 3.0, accuracy: insulinAccuracy)
+        XCTAssertEqual(secondTempBasal.tempBasal, 4.0, accuracy: insulinAccuracy)
     }
     /*
     func testLessThenExtra() async {
