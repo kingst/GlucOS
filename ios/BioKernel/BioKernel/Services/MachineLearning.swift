@@ -44,6 +44,33 @@ struct MLUtilities {
     }
 }
 
+actor LocalAIDosing: MachineLearning {
+    static let shared = LocalAIDosing()
+    let aiDosingGain = 2.0
+    
+    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> Double? {
+        
+        // make sure we have enough data
+        guard let dataFrame = dataFrame else { return nil }
+
+        // only dose during "waking hours" for now
+        let hour = Calendar.current.component(.hour, from: at)
+        guard hour < 22 && hour > 8 else { return nil }
+        
+        // make sure that glucose is rising
+        guard let predicted = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: at) else { return nil }
+        guard glucoseInMgDl >= 180, predicted > glucoseInMgDl else { return nil }
+        
+        // calculate added glucose
+        let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
+        guard let addedGlucose = dataFrame.addedGlucosePerHour30m(insulinSensitivity: insulinSensitivity) else { return nil }
+        
+        // ok, let's go ahead and dose
+        let insulinNeeded = addedGlucose / insulinSensitivity - insulinOnBoard
+        return aiDosingGain * insulinNeeded  * 1.hoursToSeconds() / settings.correctionDurationInSeconds
+    }
+}
+
 actor LocalMachineLearning: MachineLearning {
     static let shared = LocalMachineLearning()
     
