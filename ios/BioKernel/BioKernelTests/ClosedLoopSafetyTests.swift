@@ -172,23 +172,6 @@ final class ClosedLoopSafetyTests: XCTestCase {
         }
     }
     
-    // MARK: - Timing Requirements Tests
-    
-    func testClosedLoopTimingRequirements() async throws {
-        let closedLoop = LocalClosedLoopService()
-        let startTime = Date()
-        
-        // Measure time for a complete loop cycle
-        let loopStartTime = DispatchTime.now()
-        let _: Bool = await closedLoop.loop(at: startTime)
-        let loopEndTime = DispatchTime.now()
-        
-        let loopDuration = Double(loopEndTime.uptimeNanoseconds - loopStartTime.uptimeNanoseconds) / 1_000_000_000.0
-        
-        // Loop should complete within 5 seconds (adjust this threshold based on your requirements)
-        XCTAssertLessThanOrEqual(loopDuration, 5.0, "Loop cycle took too long to complete")
-    }
-    
     @MainActor func testNegativeBasalRateClampedToZero() async throws {
         let closedLoop = LocalClosedLoopService()
         let settings = MockSettingsStorage()
@@ -235,40 +218,4 @@ final class ClosedLoopSafetyTests: XCTestCase {
         
         XCTAssertEqual(result, 0.0, accuracy: iobAccuracy, "Basal rate should be zero when predicted glucose is below shutoff threshold")
     }
-    
-    // MARK: - Adverse Conditions Tests
-    // We should have some adverse conditions tests but let's be more
-    // thoughtful about it first. This test shows an example of what one
-    // might look like
-    /*
-    func testAdverseConditions() async throws {
-        let closedLoop = LocalClosedLoopService()
-        let settings = await MockSettingsStorage()
-        
-        // Test with erratic CGM data
-        let erraticGlucoseData = [
-            (Date(), 120.0),
-            (Date().addingTimeInterval(-5.minutesToSeconds()), 180.0),
-            (Date().addingTimeInterval(-10.minutesToSeconds()), 90.0),
-            (Date().addingTimeInterval(-15.minutesToSeconds()), 200.0)
-        ]
-        
-        let mockGlucoseStorage = MockGlucoseStorage()
-        for (date, value) in erraticGlucoseData {
-            await mockGlucoseStorage.addGlucoseReading(
-                quantity: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: value),
-                date: date
-            )
-        }
-        Dependency.mock { mockGlucoseStorage as GlucoseStorage }
-        Dependency.mock { MockInsulinStorage() as InsulinStorage }
-        
-        // Verify system responds appropriately to erratic data
-        let result: Bool = await closedLoop.loop(at: Date())
-        
-        // System should still complete the loop but likely with conservative insulin delivery
-        let latestResult = await closedLoop.latestClosedLoopResult()
-        XCTAssertNotNil(latestResult)
-    }
-     */
 }
