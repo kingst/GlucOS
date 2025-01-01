@@ -22,7 +22,7 @@ extension Notification.Name {
 //
 
 @MainActor
-protocol SessionUpdateDelegate: AnyObject {
+public protocol SessionUpdateDelegate: AnyObject {
     func contextDidUpdate(_ context: BioKernelState)
     func didRecieveMessage(at: Date, workoutMessage: WorkoutMessage)
 }

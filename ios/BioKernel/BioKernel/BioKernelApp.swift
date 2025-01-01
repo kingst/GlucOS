@@ -15,6 +15,7 @@ struct BioKernelApp: App {
     
     init() {
         //G7CGMManager.debugLogger = getDebugLogger()
+        guard !isRunningTests else { return }
         getBackgroundService().registerBackgroundTask()
         appDelegate.sessionDelegator.delegate = getWorkoutStatusService()
     }
@@ -39,6 +40,8 @@ class MyAppDelegate: NSObject, UIApplicationDelegate {
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
 
+        guard !isRunningTests else { return true }
+        
         assert(WCSession.isSupported())
         WCSession.default.delegate = sessionDelegator
         WCSession.default.activate()
@@ -53,6 +56,8 @@ class MyAppDelegate: NSObject, UIApplicationDelegate {
     }
     
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        guard !isRunningTests else { return }
+        
         let hexToken = deviceToken.map { String(format: "%02hhx", $0) }.joined()
         print("BACK: didRegisterForRemoteNotifications, hextoken: \(hexToken)")
         Task {
@@ -63,6 +68,8 @@ class MyAppDelegate: NSObject, UIApplicationDelegate {
     
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any]) async -> UIBackgroundFetchResult {
 
+        guard !isRunningTests else { return .failed }
+        
         await getEventLogger().add(debugMessage: "\(Date()): PUSH Running in background")
         guard let cgmManager = getDeviceDataManager().cgmManager else {
             await getEventLogger().add(debugMessage: "\(Date()): PUSH No CGM manager")

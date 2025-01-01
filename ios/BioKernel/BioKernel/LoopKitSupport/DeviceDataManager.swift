@@ -15,16 +15,24 @@ import Combine
 import SwiftUI
 import G7SensorKit
 
-struct CgmPumpMetadata: Codable {
-    let cgmStartedAt: Date?
-    let cgmExpiresAt: Date?
-    let pumpStartedAt: Date?
-    let pumpExpiresAt: Date?
-    let pumpResevoirPercentRemaining: Double?
+public struct CgmPumpMetadata: Codable {
+    public let cgmStartedAt: Date?
+    public let cgmExpiresAt: Date?
+    public let pumpStartedAt: Date?
+    public let pumpExpiresAt: Date?
+    public let pumpResevoirPercentRemaining: Double?
+    
+    public init(cgmStartedAt: Date?, cgmExpiresAt: Date?, pumpStartedAt: Date?, pumpExpiresAt: Date?, pumpResevoirPercentRemaining: Double?) {
+        self.cgmStartedAt = cgmStartedAt
+        self.cgmExpiresAt = cgmExpiresAt
+        self.pumpStartedAt = pumpStartedAt
+        self.pumpExpiresAt = pumpExpiresAt
+        self.pumpResevoirPercentRemaining = pumpResevoirPercentRemaining
+    }
 }
 
 @MainActor
-protocol DeviceDataManager {
+public protocol DeviceDataManager {
     var pumpManager: PumpManagerUI? { get }
     func pumpSettingsUI() -> PumpManagerViewController?
     func pumpSettingsUI(for pumpManager: PumpManagerUI) -> PumpManagerViewController
@@ -61,17 +69,21 @@ protocol DeviceDataManager {
 }
 
 @MainActor
-class DeviceDataManagerObservableObject: ObservableObject {
-    @Published var pumpManager: PumpManagerUI?
-    @Published var cgmManager: CGMManager?
-    @Published var insulinOnBoard: Double = 0.0
-    @Published var pumpAlarm: PumpAlarmType?
-    @Published var lastGlucoseReading: NewGlucoseSample? = nil
-    @Published var displayGlucoseUnit: DisplayGlucoseUnitObservable = DisplayGlucoseUnitObservable(displayGlucoseUnit: .milligramsPerDeciliter)
-    @Published var lastClosedLoopRun: ClosedLoopResult? = nil
-    @Published var activeAlert: LoopKit.Alert? = nil
-    @Published var glucoseChartData: [GlucoseChartPoint] = []
-    @Published var doseProgress: DoseProgress = DoseProgress()
+public class DeviceDataManagerObservableObject: ObservableObject {
+    @Published public var pumpManager: PumpManagerUI?
+    @Published public var cgmManager: CGMManager?
+    @Published public var insulinOnBoard: Double = 0.0
+    @Published public var pumpAlarm: PumpAlarmType?
+    @Published public var lastGlucoseReading: NewGlucoseSample? = nil
+    @Published public var displayGlucoseUnit: DisplayGlucoseUnitObservable = DisplayGlucoseUnitObservable(displayGlucoseUnit: .milligramsPerDeciliter)
+    @Published public var lastClosedLoopRun: ClosedLoopResult? = nil
+    @Published public var activeAlert: LoopKit.Alert? = nil
+    @Published public var glucoseChartData: [GlucoseChartPoint] = []
+    @Published public var doseProgress: DoseProgress = DoseProgress()
+    
+    public init() {
+
+    }
     
     func tempBasal() -> String {
         guard let closedLoop = lastClosedLoopRun, closedLoop.action == .setTempBasal, Date().timeIntervalSince(closedLoop.at) < 30.minutesToSeconds(), let tempBasal = closedLoop.tempBasal else {
@@ -160,8 +172,10 @@ class LocalDeviceDataManager: DeviceDataManager {
     var cgmHasValidSensorSession: Bool = false
     var lastLoopCompleted: Date = .distantPast
     
-    let cgmManagerDelegate = MosCgmManagerDelegate()
-    let pumpManagerDelegate = MosPumpManagerDelegate()
+    // These are non isolated because we use a dispatch queue to synchronize
+    // access to them outside of the actor abstraction
+    nonisolated let cgmManagerDelegate = MosCgmManagerDelegate()
+    nonisolated let pumpManagerDelegate = MosPumpManagerDelegate()
     
     /// The last error recorded by a device manager
     /// Should be accessed only on the main queue

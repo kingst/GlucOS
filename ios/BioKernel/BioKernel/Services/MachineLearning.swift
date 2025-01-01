@@ -9,7 +9,7 @@ import Foundation
 import CoreML
 import LoopKit
 
-protocol MachineLearning {
+public protocol MachineLearning {
     func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> Double?
 }
 

@@ -23,7 +23,7 @@ extension PumpManager {
     }
 }
 
-extension PumpManagerDescriptor: Hashable, Identifiable {
+extension PumpManagerDescriptor: @retroactive Hashable, @retroactive Identifiable {
     public var id: String { self.identifier }
     
     public func hash(into hasher: inout Hasher) {
@@ -35,7 +35,7 @@ extension PumpManagerDescriptor: Hashable, Identifiable {
     }
 }
 
-extension CGMManagerDescriptor: Hashable, Identifiable {
+extension CGMManagerDescriptor: @retroactive Hashable, @retroactive Identifiable {
     public var id: String { self.identifier }
     
     public func hash(into hasher: inout Hasher) {

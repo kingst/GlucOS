@@ -9,7 +9,7 @@ import Foundation
 import Combine
 import LoopKit
 
-class DoseProgress: ObservableObject, DoseProgressObserver {
+public class DoseProgress: ObservableObject, DoseProgressObserver {
     @Published var deliveredUnits: Double = 0.0
     @Published var percentComplete: Double = 0.0
     @Published var totalUnits: Double = 0.0
@@ -18,7 +18,7 @@ class DoseProgress: ObservableObject, DoseProgressObserver {
     
     var doseProgressReporter: DoseProgressReporter? = nil
     
-    func update(totalUnits: Double, doseProgressReporter: DoseProgressReporter) {
+    public func update(totalUnits: Double, doseProgressReporter: DoseProgressReporter) {
         deliveredUnits = doseProgressReporter.progress.deliveredUnits
         percentComplete = doseProgressReporter.progress.percentComplete
         isComplete = doseProgressReporter.progress.isComplete
@@ -35,7 +35,7 @@ class DoseProgress: ObservableObject, DoseProgressObserver {
         self.isComplete = true
     }
         
-    func doseProgressReporterDidUpdate(_ doseProgressReporter: LoopKit.DoseProgressReporter) {
+    public func doseProgressReporterDidUpdate(_ doseProgressReporter: LoopKit.DoseProgressReporter) {
         deliveredUnits = doseProgressReporter.progress.deliveredUnits
         percentComplete = doseProgressReporter.progress.percentComplete
         isComplete = doseProgressReporter.progress.isComplete
