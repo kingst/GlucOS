@@ -95,6 +95,10 @@ class MockSettingsStorage: SettingsStorage {
         self.shutOffGlucoseInMgDl = shutOffGlucoseInMgDl
     }
     
+    func update(pumpBasalRateUnitsPerHour: Double) {
+        self.pumpBasalRateUnitsPerHour = pumpBasalRateUnitsPerHour
+    }
+    
     func snapshot() -> BioKernel.CodableSettings {
         return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: pumpBasalRateUnitsPerHour, insulinSensitivityInMgDlPerUnit: insulinSensitivityInMgDlPerUnit, maxBasalRateUnitsPerHour: maxBasalRateUnitsPerHour, maxBolusUnits: maxBolusUnits, shutOffGlucoseInMgDl: shutOffGlucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, closedLoopEnabled: closedLoopEnabled, useMachineLearningClosedLoop: useMachineLearningClosedLoop, useMicroBolus: useMicroBolus, microBolusDoseFactor: microBolusDoseFactor, learnedBasalRateUnitsPerHour: learnedBasalRateUnitsPerHour, learnedInsulinSensitivityInMgDlPerUnit: learnedInsulinSensitivityInMgDlPerUnit, bolusAmountForLess: bolusAmountForLess, bolusAmountForUsual: bolusAmountForUsual, bolusAmountForMore: bolusAmountForMore, pidIntegratorGain: pidIntegratorGain, pidDerivativeGain: pidDerivativeGain, useBiologicalInvariant: useBiologicalInvariant, adjustTargetGlucoseDuringExercise: adjustTargetGlucoseDuringExercise)
     }
@@ -115,7 +119,7 @@ class MockG7DebugLogger: G7DebugLogger {
 }
 
 class MockSafetyService: SafetyService {
-    func tempBasal(at: Date, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval) async -> BioKernel.SafetyTempBasal {
+    func tempBasal(at: Date, settings: CodableSettings, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval) async -> BioKernel.SafetyTempBasal {
         return SafetyTempBasal(tempBasal: 0, machineLearningInsulinLastThreeHours: 0)
     }
     

@@ -40,7 +40,7 @@
 		3B6063C32B593821009D9CBC /* PhysiologicalModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6063C22B593821009D9CBC /* PhysiologicalModels.swift */; };
 		3B66FFA12C892EF600DB8CF2 /* SaveDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B66FFA02C892EF600DB8CF2 /* SaveDataView.swift */; };
 		3B66FFA32C89324100DB8CF2 /* SaveDataViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B66FFA22C89324100DB8CF2 /* SaveDataViewModel.swift */; };
-		3B6EC2322BD8131A008BFD4D /* AccErrorGauge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6EC2312BD8131A008BFD4D /* AccErrorGauge.swift */; };
+		3B6EC2322BD8131A008BFD4D /* DigestionErrorGauge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6EC2312BD8131A008BFD4D /* DigestionErrorGauge.swift */; };
 		3B709A7B2AF4929D004E5885 /* BioKernelApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B709A7A2AF4929D004E5885 /* BioKernelApp.swift */; };
 		3B709A7F2AF492A0004E5885 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3B709A7E2AF492A0004E5885 /* Assets.xcassets */; };
 		3B709A822AF492A0004E5885 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3B709A812AF492A0004E5885 /* Preview Assets.xcassets */; };
@@ -242,7 +242,7 @@
 		3B6063C22B593821009D9CBC /* PhysiologicalModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhysiologicalModels.swift; sourceTree = "<group>"; };
 		3B66FFA02C892EF600DB8CF2 /* SaveDataView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveDataView.swift; sourceTree = "<group>"; };
 		3B66FFA22C89324100DB8CF2 /* SaveDataViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveDataViewModel.swift; sourceTree = "<group>"; };
-		3B6EC2312BD8131A008BFD4D /* AccErrorGauge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccErrorGauge.swift; sourceTree = "<group>"; };
+		3B6EC2312BD8131A008BFD4D /* DigestionErrorGauge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigestionErrorGauge.swift; sourceTree = "<group>"; };
 		3B709A772AF4929D004E5885 /* BioKernel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BioKernel.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B709A7A2AF4929D004E5885 /* BioKernelApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BioKernelApp.swift; sourceTree = "<group>"; };
 		3B709A7E2AF492A0004E5885 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -568,7 +568,7 @@
 		3C7553E02AFDBF6D00FAD880 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				3B6EC2312BD8131A008BFD4D /* AccErrorGauge.swift */,
+				3B6EC2312BD8131A008BFD4D /* DigestionErrorGauge.swift */,
 				3C7553D92AFD961600FAD880 /* AddCGMView.swift */,
 				3C07C89A2AF969F1008F604C /* AddPumpView.swift */,
 				3B36F67C2B311C0800008F4A /* AppColors.swift */,
@@ -846,7 +846,7 @@
 				3B4052302B6DA87A004D232D /* AddedGlucoseModel.mlpackage in Sources */,
 				3BF1631E2D20D69F00287BA0 /* WorkoutStatusView.swift in Sources */,
 				3C7553CE2AFD610B00FAD880 /* StoredJsonObject.swift in Sources */,
-				3B6EC2322BD8131A008BFD4D /* AccErrorGauge.swift in Sources */,
+				3B6EC2322BD8131A008BFD4D /* DigestionErrorGauge.swift in Sources */,
 				3BD793832AF564EA00E5FDC9 /* DateExtensions.swift in Sources */,
 				3B709AB92AF496C7004E5885 /* BluetoothStateManager.swift in Sources */,
 				3BE629B52AFCC8B6001526D4 /* SettingsStorage.swift in Sources */,

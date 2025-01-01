@@ -182,7 +182,7 @@ actor LocalClosedLoopService: ClosedLoopService {
         
         // run it through the safety service
         let safetyStart = Date()
-        let safetyTempBasalResult = await getSafetyService().tempBasal(at: at, safetyTempBasalUnitsPerHour: physiologicalTempBasal, machineLearningTempBasalUnitsPerHour: mlTempBasal, duration: settings.correctionDurationInSeconds)
+        let safetyTempBasalResult = await getSafetyService().tempBasal(at: at, settings: settings, safetyTempBasalUnitsPerHour: physiologicalTempBasal, machineLearningTempBasalUnitsPerHour: mlTempBasal, duration: settings.correctionDurationInSeconds)
         let safetyTempBasal = applyGuardrails(glucoseInMgDl: glucoseInMgDl, predictedGlucoseInMgDl: predictedGlucoseInMgDl, newBasalRateRaw: safetyTempBasalResult.tempBasal, settings: settings, roundToSupportedBasalRate: roundToSupportedBasalRate)
         let safetyDuration = Date().timeIntervalSince(safetyStart)
         
@@ -195,7 +195,10 @@ actor LocalClosedLoopService: ClosedLoopService {
         
         let dose = determineDose(settings: settings, safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: physiologicalTempBasal, mlTempBasal: mlTempBasal, safetyTempBasal: safetyTempBasal, microBolusPhysiological: microBolusPhysiological, microBolusSafety: microBolusSafety, biologicalInvariant: biologicalInvariant, isExercising: isExercising)
         
-        return ClosedLoopAlgorithmResult(tempBasal: dose.tempBasal, microBolusAmount: dose.microBolus, shadowTempBasal: 0.0, shadowPredictedAddedGlucose: 0.0, learnedInsulinSensitivity: insulinSensitivity, learnedBasalRate: basalRate, shadowMlAddedGlucose: 0.0, shadowAddedGlucoseDataFrame: dataFrame, safetyResult: dose.safetyResult, mlDurationInSeconds: mlDuration, safetyDurationInSeconds: safetyDuration, proportionalControllerDurationInSeconds: proportionalControllerDuration, predictedGlucoseInMgDl: predictedGlucoseInMgDl, pidTempBasalResult: pidTempBasal, targetGlucoseInMgDl: targetGlucoseInMgDl)
+        // just for logging for now
+        let addedGlucose = dataFrame?.addedGlucosePerHour30m(insulinSensitivity: insulinSensitivity) ?? 0
+        
+        return ClosedLoopAlgorithmResult(tempBasal: dose.tempBasal, microBolusAmount: dose.microBolus, shadowTempBasal: 0.0, shadowPredictedAddedGlucose: addedGlucose, learnedInsulinSensitivity: insulinSensitivity, learnedBasalRate: basalRate, shadowMlAddedGlucose: 0.0, shadowAddedGlucoseDataFrame: dataFrame, safetyResult: dose.safetyResult, mlDurationInSeconds: mlDuration, safetyDurationInSeconds: safetyDuration, proportionalControllerDurationInSeconds: proportionalControllerDuration, predictedGlucoseInMgDl: predictedGlucoseInMgDl, pidTempBasalResult: pidTempBasal, targetGlucoseInMgDl: targetGlucoseInMgDl)
     }
     
     /// post condition: either tempBasal _or_ microBolus can be > 0 but not both
