@@ -52,9 +52,13 @@ struct MetricsView: View {
 // Update your preview provider
 struct MetricsView_Previews: PreviewProvider {
     static var previews: some View {
-        MetricsView()
-            .environmentObject(WorkoutManager.preview())
-            .environmentObject(StateViewModel.preview())
+        let workoutManager = WorkoutManager.preview()
+        let alertManager = GlucoseAlertManager(workoutManager: workoutManager)
+        let stateViewModel = StateViewModel.preview(alertManager: alertManager)
+        
+        return MetricsView()
+            .environmentObject(workoutManager)
+            .environmentObject(stateViewModel)
     }
 }
 

@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct WatchMainView: View {
-    @StateObject private var workoutManager = WorkoutManager()
+    @EnvironmentObject private var workoutManager: WorkoutManager
     @State private var showingWorkout = false
     @State private var normalModeSelection = 0
     @State private var workoutModeSelection = 0
@@ -41,10 +41,8 @@ struct WatchMainView: View {
                     workoutModeSelection = 1
                 })
                     .tag(0)
-                    .environmentObject(workoutManager)
                 MetricsView()
                     .tag(1)
-                    .environmentObject(workoutManager)
                 VStack {
                     GlucoseView()
                     GlucoseChart()

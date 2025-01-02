@@ -84,7 +84,10 @@ struct PredictionValueView: View {
 }
 
 #Preview {
+    let workoutManager = WorkoutManager()
+    let alertManager = GlucoseAlertManager(workoutManager: workoutManager)
+    let viewModel = StateViewModel(alertManager: alertManager)
     MetricsGridView()
-        .environmentObject(WorkoutManager())
-        .environmentObject(StateViewModel())
+        .environmentObject(workoutManager)
+        .environmentObject(viewModel)
 }

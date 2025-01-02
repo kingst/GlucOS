@@ -10,11 +10,13 @@ import SwiftUI
 
 @MainActor
 class StateViewModel: ObservableObject, SessionUpdateDelegate {
+    let alertManager: GlucoseAlertManager
+    
+    let storage = StoredJsonObject.create(fileName: "appState.json")
+    
     func didRecieveMessage(at: Date, workoutMessage: WorkoutMessage) {
         print("not implemented")
     }
-    
-    let storage = StoredJsonObject.create(fileName: "appState.json")
     func contextDidUpdate(_ context: BioKernelState) {
         print("WC: StateViewModel: contextDidUpdate")
         do {
@@ -22,10 +24,12 @@ class StateViewModel: ObservableObject, SessionUpdateDelegate {
         } catch {
             print("unable to store app context: \(error)")
         }
+        alertManager.handleStateUpdate(oldState: appState, newState: context)
         appState = context
     }
     
-    init() {
+    init(alertManager: GlucoseAlertManager) {
+        self.alertManager = alertManager
         appState = try? storage.read()
     }
     
@@ -57,8 +61,8 @@ extension BioKernelState {
 
 // Create a preview state with realistic glucose values
 extension StateViewModel {
-    static func preview() -> StateViewModel {
-        let model = StateViewModel()
+    static func preview(alertManager: GlucoseAlertManager) -> StateViewModel {
+        let model = StateViewModel(alertManager: alertManager)
         model.appState = BioKernelState.preview()
         return model
     }
