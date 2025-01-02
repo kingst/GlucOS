@@ -60,6 +60,11 @@ struct GlucoseView: View {
 }
 
 #Preview {
+    let workoutManager = WorkoutManager.preview()
+    let alertManager = GlucoseAlertManager(workoutManager: workoutManager)
+    let viewModel = StateViewModel.preview(alertManager: alertManager)
+        
     GlucoseView()
-        .environmentObject(StateViewModel())
+        .environmentObject(viewModel)
+        .environmentObject(workoutManager)
 }
