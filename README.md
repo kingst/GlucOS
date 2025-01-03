@@ -1,7 +1,13 @@
 # GlucOS <img src="biohacker.png" width="48" align="top">
 
 <div align="center">
-  <img src="biokernel.jpeg" width="200">
+<table border="0" cellspacing="0" cellpadding="0" style="border: 1px solid transparent">
+<tr>
+<td><img src="biokernel.jpeg" width="200"></td>
+<td><img src="biokernel-exercise.jpeg" width="200"></td>
+<td><img src="watch.png" width="150"><br><img src="watch-exercise.png" width="150"></td>
+</tr>
+</table>
 </div>
 
 ## Security, correctness, and simplicity for automated insulin delivery
