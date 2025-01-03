@@ -9,8 +9,8 @@ import SwiftUI
 
 struct DigestionErrorGauge: View {
     let current: Double
-    let minValue = -60.0
-    let maxValue = 340.0
+    let minValue = 0.0
+    let maxValue = 100.0
 
     let gradient = Gradient(colors: [AppColors.green, AppColors.yellow, AppColors.orange, AppColors.red])
     

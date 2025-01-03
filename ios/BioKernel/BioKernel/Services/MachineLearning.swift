@@ -47,30 +47,42 @@ struct MLUtilities {
 actor AIDosing: MachineLearning {
     static let shared = AIDosing()
     
+    private func log(_ str: String) async {
+        //let at = Date().description(with: .current)
+        let at = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .short)
+        let logString = "\(at): AI temp basal: \(str)"
+        print(logString)
+        await getEventLogger().add(debugMessage: logString)
+    }
+    
     func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> Double? {
         
-        print("AI temp basal")
+        await log("start")
         // make sure we have enough data
-        guard let dataFrame = dataFrame else { return nil }
+        guard let dataFrame = dataFrame else { await log("no frame"); return nil }
 
         // only dose during "waking hours" for now
         let hour = Calendar.current.component(.hour, from: at)
-        guard hour < 22 && hour > 8 else { return nil }
+        guard hour < 22 && hour >= 7 else { await log ("hour \(hour) outside waking hours"); return nil }
         
-        print("AI temp basal hour: (\(hour)), checking glucose rising")
+        // don't dose while exercising, we only want to handle spikes from meals
+        await log("(\(hour)), checking if we're exercising")
+        guard await !getWorkoutStatusService().isExercising(at: at) else { await log("is working out"); return nil }
+        
+        await log("AI temp basal checking if glucose is rising")
         // make sure that glucose is rising
-        guard let predicted = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: at) else { return nil }
-        guard predicted >= 180, predicted > glucoseInMgDl else { return nil }
+        guard let predicted = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: at) else { await log("no predicted glucose"); return nil }
+        guard predicted >= 180, predicted > glucoseInMgDl else { await log("Predict \(String(format: "%0.0f", predicted)) mg/dl vs \(String(format: "%0.0f", glucoseInMgDl)) mg/dl not actionable"); return nil }
         
-        print("AI temp basal final calcs")
+        await log("final calcs")
         // calculate added glucose and dose
         let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
-        guard let addedGlucose = dataFrame.addedGlucosePerHour30m(insulinSensitivity: insulinSensitivity) else { return nil }
+        guard let addedGlucose = dataFrame.addedGlucosePerHour30m(insulinSensitivity: insulinSensitivity) else { await log("can't calc added glucose"); return nil }
         let insulinNeeded = addedGlucose / insulinSensitivity - insulinOnBoard
 
         let aiDosingGain = settings.getMachineLearningGain()
         let dose = aiDosingGain * insulinNeeded  * 1.hoursToSeconds() / settings.correctionDurationInSeconds
-        print("AI temp basal @ \(dose) for 30m")
+        await log("dose \(dose)U/h for 30m")
         
         return dose
     }
