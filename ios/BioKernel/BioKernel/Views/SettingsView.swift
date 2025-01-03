@@ -106,6 +106,7 @@ struct SettingsView: View {
                     DecimalPicker(title: "µBolus dose factor", selection: $settingsViewModel.microBolusDoseFactor, items: settingsViewModel.microBolusDoseFactorValues, hasModifications: $hasModifications)
                     DecimalPicker(title: "PID Integrator gain", selection: $settingsViewModel.pidIntegratorGain, items: settingsViewModel.pidIntegratorValues, hasModifications: $hasModifications)
                     DecimalPicker(title: "PID Derivative gain", selection: $settingsViewModel.pidDerivativeGain, items: settingsViewModel.pidDerivativeValues, hasModifications: $hasModifications)
+                    DecimalPicker(title: "ML gain", selection: $settingsViewModel.machineLearningGain, items: settingsViewModel.machineLearningGainValues, hasModifications: $hasModifications)
                 }
                 
                 Section("ML Insulin Sensitivity Schedule") {

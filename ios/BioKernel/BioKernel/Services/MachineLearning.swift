@@ -44,8 +44,40 @@ struct MLUtilities {
     }
 }
 
-actor LocalMachineLearning: MachineLearning {
-    static let shared = LocalMachineLearning()
+actor AIDosing: MachineLearning {
+    static let shared = AIDosing()
+    
+    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> Double? {
+        
+        print("AI temp basal")
+        // make sure we have enough data
+        guard let dataFrame = dataFrame else { return nil }
+
+        // only dose during "waking hours" for now
+        let hour = Calendar.current.component(.hour, from: at)
+        guard hour < 22 && hour > 8 else { return nil }
+        
+        print("AI temp basal hour: (\(hour)), checking glucose rising")
+        // make sure that glucose is rising
+        guard let predicted = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: at) else { return nil }
+        guard predicted >= 180, predicted > glucoseInMgDl else { return nil }
+        
+        print("AI temp basal final calcs")
+        // calculate added glucose and dose
+        let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
+        guard let addedGlucose = dataFrame.addedGlucosePerHour30m(insulinSensitivity: insulinSensitivity) else { return nil }
+        let insulinNeeded = addedGlucose / insulinSensitivity - insulinOnBoard
+
+        let aiDosingGain = settings.getMachineLearningGain()
+        let dose = aiDosingGain * insulinNeeded  * 1.hoursToSeconds() / settings.correctionDurationInSeconds
+        print("AI temp basal @ \(dose) for 30m")
+        
+        return dose
+    }
+}
+
+actor DNNDosing: MachineLearning {
+    static let shared = DNNDosing()
     
     // our current prediction uses an ML model to predict addedGlucose
     // then runs it through the same calculations that we use for

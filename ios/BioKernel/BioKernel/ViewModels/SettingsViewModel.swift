@@ -57,6 +57,7 @@ public class SettingsViewModel: ObservableObject {
         DecimalSetting(value: $0, units: gainUnits) }
     let pidDerivativeValues = stride(from: 0.0, through: 5.0, by: 0.2).map {
         DecimalSetting(value: $0, units: gainUnits) }
+    let machineLearningGainValues = stride(from: 0.5, through: 4.0, by: 0.25 ).map { DecimalSetting(value: $0, units: gainUnits) }
     
     // This function will handle the case when the current settings have a value
     // set that isn't represented by the items that we specify here. In this case
@@ -90,6 +91,7 @@ public class SettingsViewModel: ObservableObject {
     @Published var pidDerivativeGain: DecimalSetting
     @Published var useBiologicalInvariant: Bool
     @Published var adjustTargetGlucoseDuringExercise: Bool
+    @Published var machineLearningGain: DecimalSetting
     
     var mlBasalSchedule: DecimalSettingSchedule
     var mlInsulinSensitivitySchedule: DecimalSettingSchedule
@@ -156,6 +158,7 @@ public class SettingsViewModel: ObservableObject {
         pidDerivativeGain = DecimalSetting(value: settings.getPidDerivativeGain(), units: SettingsViewModel.gainUnits)
         useBiologicalInvariant = settings.isBiologicalInvariantEnabled()
         adjustTargetGlucoseDuringExercise = settings.isTargetGlucoseAdjustedDuringExerciseEnabled()
+        machineLearningGain = DecimalSetting(value: settings.getMachineLearningGain(), units: SettingsViewModel.gainUnits)
     }
     
     public init(settings: CodableSettings) {
@@ -178,12 +181,13 @@ public class SettingsViewModel: ObservableObject {
         pidDerivativeGain = DecimalSetting(value: settings.getPidDerivativeGain(), units: SettingsViewModel.gainUnits)
         useBiologicalInvariant = settings.isBiologicalInvariantEnabled()
         adjustTargetGlucoseDuringExercise = settings.isTargetGlucoseAdjustedDuringExerciseEnabled()
+        machineLearningGain = DecimalSetting(value: settings.getMachineLearningGain(), units: SettingsViewModel.gainUnits)
     }
     
     func snapshot() -> CodableSettings {
         let learnedBasalRate = LearnedSettingsSchedule.from(schedule: mlBasalSchedule)
         let learnedInsulinSensitivity = LearnedSettingsSchedule.from(schedule: mlInsulinSensitivitySchedule)
-        return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: pumpBasalRate.value, insulinSensitivityInMgDlPerUnit: insulinSensitivity.value, maxBasalRateUnitsPerHour: maxBasalRate.value, maxBolusUnits: maxBolus.value, shutOffGlucoseInMgDl: glucoseSafetyShutoff.value, targetGlucoseInMgDl: glucoseTarget.value, closedLoopEnabled: closedLoopEnabled, useMachineLearningClosedLoop: useMachineLearningClosedLoop, useMicroBolus: useMicroBolus, microBolusDoseFactor: microBolusDoseFactor.value, learnedBasalRateUnitsPerHour: learnedBasalRate, learnedInsulinSensitivityInMgDlPerUnit: learnedInsulinSensitivity, bolusAmountForLess: bolusAmountForLess.value, bolusAmountForUsual: bolusAmountForUsual.value, bolusAmountForMore: bolusAmountForMore.value, pidIntegratorGain: pidIntegratorGain.value, pidDerivativeGain: pidDerivativeGain.value, useBiologicalInvariant: useBiologicalInvariant, adjustTargetGlucoseDuringExercise: adjustTargetGlucoseDuringExercise)
+        return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: pumpBasalRate.value, insulinSensitivityInMgDlPerUnit: insulinSensitivity.value, maxBasalRateUnitsPerHour: maxBasalRate.value, maxBolusUnits: maxBolus.value, shutOffGlucoseInMgDl: glucoseSafetyShutoff.value, targetGlucoseInMgDl: glucoseTarget.value, closedLoopEnabled: closedLoopEnabled, useMachineLearningClosedLoop: useMachineLearningClosedLoop, useMicroBolus: useMicroBolus, microBolusDoseFactor: microBolusDoseFactor.value, learnedBasalRateUnitsPerHour: learnedBasalRate, learnedInsulinSensitivityInMgDlPerUnit: learnedInsulinSensitivity, bolusAmountForLess: bolusAmountForLess.value, bolusAmountForUsual: bolusAmountForUsual.value, bolusAmountForMore: bolusAmountForMore.value, pidIntegratorGain: pidIntegratorGain.value, pidDerivativeGain: pidDerivativeGain.value, useBiologicalInvariant: useBiologicalInvariant, adjustTargetGlucoseDuringExercise: adjustTargetGlucoseDuringExercise, machineLearningGain: machineLearningGain.value)
     }
 }
 
