@@ -41,8 +41,8 @@ struct MainViewSummaryView: View {
                 .frame(maxWidth: .infinity)
                 GridRow {
                     let iob = deviceManagerObservable.insulinOnBoard
-                    if let digestion = deviceManagerObservable.digestionGlucosePerHour() {
-                        DigestionErrorGauge(current: digestion.clamp(low: -60, high: 340))
+                    if let digestion = deviceManagerObservable.digestionCalibrated() {
+                        DigestionGauge(current: digestion)
                     } else {
                         Text("-")
                     }

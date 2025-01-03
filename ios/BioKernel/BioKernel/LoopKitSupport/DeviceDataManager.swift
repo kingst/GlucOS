@@ -85,8 +85,21 @@ public class DeviceDataManagerObservableObject: ObservableObject {
 
     }
     
-    func digestionGlucosePerHour() -> Double? {
-        return lastClosedLoopRun?.shadowPredictedAddedGlucose
+    func digestionCalibrated() -> Double? {
+        guard let lastRun = lastClosedLoopRun else { return nil }
+        
+        let tooOld = Date() - 16.minutesToSeconds()
+        guard lastRun.at > tooOld else { return nil }
+        
+        guard let addedGlucose = lastRun.shadowPredictedAddedGlucose else { return nil }
+        guard let basalRate = lastRun.basalRate else { return nil }
+        guard let insulinSensitivity = lastRun.insulinSensitivity else { return nil }
+        
+        // added glucose is for an hour, so the basalRate = basalInsulin
+        let basalGlucose = insulinSensitivity * basalRate
+        
+        // assume that 200 mg/dl is the max added glucose, aim for 0 -> 100
+        return 100 * (addedGlucose - basalGlucose) / 200
     }
 }
 

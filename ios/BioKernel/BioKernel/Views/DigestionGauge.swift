@@ -7,10 +7,10 @@
 
 import SwiftUI
 
-struct DigestionErrorGauge: View {
+struct DigestionGauge: View {
     let current: Double
-    let minValue = -60.0
-    let maxValue = 340.0
+    let minValue = 0.0
+    let maxValue = 100.0
 
     let gradient = Gradient(colors: [AppColors.green, AppColors.yellow, AppColors.orange, AppColors.red])
     
@@ -98,7 +98,7 @@ struct IoBGauge: View {
 
 #Preview {
     HStack {
-        DigestionErrorGauge(current: -11.0).background(.blue)
+        DigestionGauge(current: -11.0).background(.blue)
         InsulinActionGauge(current: 1.1).background(.blue)
     }
 }
