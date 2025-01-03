@@ -42,7 +42,7 @@ struct MainViewSummaryView: View {
                 GridRow {
                     let iob = deviceManagerObservable.insulinOnBoard
                     if let digestion = deviceManagerObservable.digestionCalibrated() {
-                        DigestionErrorGauge(current: digestion)
+                        DigestionGauge(current: digestion)
                     } else {
                         Text("-")
                     }

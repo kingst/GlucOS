@@ -86,16 +86,15 @@ public class DeviceDataManagerObservableObject: ObservableObject {
     }
     
     func digestionCalibrated() -> Double? {
-        let tooOld = Date() - 16.minutesToSeconds()
-        guard let lastRunAt = lastClosedLoopRun?.at, lastRunAt > tooOld else { return nil }
+        guard let lastRun = lastClosedLoopRun else { return nil }
         
-        guard let addedGlucose = lastClosedLoopRun?.shadowPredictedAddedGlucose else { return nil }
-        guard let basalRate = lastClosedLoopRun?.basalRate else {
-            return nil
-        }
-        guard let insulinSensitivity = lastClosedLoopRun?.insulinSensitivity else {
-            return nil
-        }
+        let tooOld = Date() - 16.minutesToSeconds()
+        guard lastRun.at > tooOld else { return nil }
+        
+        guard let addedGlucose = lastRun.shadowPredictedAddedGlucose else { return nil }
+        guard let basalRate = lastRun.basalRate else { return nil }
+        guard let insulinSensitivity = lastRun.insulinSensitivity else { return nil }
+        
         // added glucose is for an hour, so the basalRate = basalInsulin
         let basalGlucose = insulinSensitivity * basalRate
         
