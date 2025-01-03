@@ -54,10 +54,6 @@ for anyone other than "Bob" from our paper.
 Also, we haven't moved the `event-log` server or our formal methods
 proofs to this public repo yet.
 
-## Built using LoopKit
-
-GlucOS is a clean-slate design and implementation for automated insulin delivery, but we use [LoopKit](https://github.com/LoopKit) for support. LoopKit is amazing software and handles CGM and pump drivers plus basic abstractions that any automated insulin delivery system would need. By using LoopKit in GlucOS, we can focus on the novel parts of our automated insulin delivery system.
-
 ## Getting started
 
 If you'd like to play around with the code and run it in the
