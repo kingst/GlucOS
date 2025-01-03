@@ -117,7 +117,7 @@ final class ClosedLoopTests: XCTestCase {
         // this is just for logging
         let safetyTempBasalResult = SafetyTempBasal(tempBasal: 1.0, machineLearningInsulinLastThreeHours: 0.0)
 
-        var dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil, isExercising: true)
+        let dose = await closedLoop.determineDose(settings: settings.snapshot(), safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil, isExercising: true)
         
         XCTAssertEqual(dose.tempBasal, 1.0, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
