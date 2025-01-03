@@ -54,9 +54,11 @@ If you'd like to play around with the code and run it in the
 simulator, you can build it like this:
 
 ```bash
+$ git clone https://github.com/kingst/GlucOS.git
+$ cd GlucOS
 $ git submodule update --init --recursive
 $ open ios/MetabolicOS.xcworkspace
 ```
 
 We also have a version running on TestFlight, contact Professor Sam
-King (<a href="mailto:kingst@ucdavis.edu">email</a>) from UC Davis about it if you're interested in getting added.
+King (<a href="https://bob.cs.ucdavis.edu">website</a>, <a href="mailto:kingst@ucdavis.edu">email</a>) from UC Davis about it if you're interested in getting added.
