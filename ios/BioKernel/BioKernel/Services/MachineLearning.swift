@@ -48,7 +48,6 @@ actor AIDosing: MachineLearning {
     static let shared = AIDosing()
     
     private func log(_ str: String) async {
-        //let at = Date().description(with: .current)
         let at = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .short)
         let logString = "\(at): AI temp basal: \(str)"
         print(logString)
@@ -66,25 +65,25 @@ actor AIDosing: MachineLearning {
         guard hour < 22 && hour >= 7 else { await log ("hour \(hour) outside waking hours"); return nil }
         
         // don't dose while exercising, we only want to handle spikes from meals
-        await log("(\(hour)), checking if we're exercising")
+        await log("Checking if we're exercising")
         guard await !getWorkoutStatusService().isExercising(at: at) else { await log("is working out"); return nil }
         
-        await log("AI temp basal checking if glucose is rising")
+        await log("Checking if glucose is rising")
         // make sure that glucose is rising
         guard let predicted = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: at) else { await log("no predicted glucose"); return nil }
         guard predicted >= 180, predicted > glucoseInMgDl else { await log("Predict \(String(format: "%0.0f", predicted)) mg/dl vs \(String(format: "%0.0f", glucoseInMgDl)) mg/dl not actionable"); return nil }
         
-        await log("final calcs")
+        await log("Final calcs")
         // calculate added glucose and dose
         let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
         guard let addedGlucose = dataFrame.addedGlucosePerHour30m(insulinSensitivity: insulinSensitivity) else { await log("can't calc added glucose"); return nil }
-        let insulinNeeded = addedGlucose / insulinSensitivity - insulinOnBoard
-
-        let aiDosingGain = settings.getMachineLearningGain()
-        let dose = aiDosingGain * insulinNeeded  * 1.hoursToSeconds() / settings.correctionDurationInSeconds
-        await log("dose \(dose)U/h for 30m")
         
-        return dose
+        let aiGain = settings.getMachineLearningGain()
+        let insulinNeeded = aiGain * addedGlucose / insulinSensitivity - insulinOnBoard
+        let tempBasal = insulinNeeded  * 1.hoursToSeconds() / settings.correctionDurationInSeconds
+        await log("***tempBasal \(String(format: "%0.1f", tempBasal)) U/h for 30m")
+        
+        return tempBasal
     }
 }
 
