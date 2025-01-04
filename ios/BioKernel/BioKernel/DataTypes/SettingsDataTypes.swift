@@ -80,7 +80,7 @@ public struct CodableSettings: Codable {
     static let bolusAmountForMoreDefault = 4.0
     static let pidIntegratorGainDefault = 0.055
     static let pidDerivativeGainDefault = 3.0
-    static let machineLearningGainDefault = 2.0
+    static let machineLearningGainDefault = 1.5
     
     func learnedInsulinSensitivity(at: Date) -> Double {
         return learnedInsulinSensivityInMgDlPerUnit.value(at: at) ?? insulinSensitivityInMgDlPerUnit
