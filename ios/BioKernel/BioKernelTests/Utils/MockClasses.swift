@@ -110,7 +110,7 @@ class MockSettingsStorage: SettingsStorage {
 }
 
 class MockMachineLearning: MachineLearning {
-    func tempBasal(settings: BioKernel.CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [BioKernel.AddedGlucoseDataRow]?, at: Date) async -> Double? {
+    func tempBasal(settings: BioKernel.CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [BioKernel.AddedGlucoseDataRow]?, at: Date, pidTempBasal: PIDTempBasalResult) async -> Double? {
         return nil
     }
 }
