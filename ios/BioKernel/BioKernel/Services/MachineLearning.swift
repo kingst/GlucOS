@@ -10,7 +10,7 @@ import CoreML
 import LoopKit
 
 public protocol MachineLearning {
-    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> Double?
+    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date, pidTempBasal: PIDTempBasalResult) async -> Double?
 }
 
 struct MLUtilities {
@@ -53,8 +53,10 @@ actor AIDosing: MachineLearning {
         print(logString)
         await getEventLogger().add(debugMessage: logString)
     }
-    
-    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> Double? {
+
+    // This version of the algorithm is specifically to dose more insulin during
+    // active digestion
+    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date, pidTempBasal: PIDTempBasalResult) async -> Double? {
         
         await log("start")
         // make sure we have enough data
@@ -81,7 +83,12 @@ actor AIDosing: MachineLearning {
         let aiGain = settings.getMachineLearningGain()
         let insulinNeeded = aiGain * addedGlucose / insulinSensitivity - insulinOnBoard
         let tempBasal = insulinNeeded  * 1.hoursToSeconds() / settings.correctionDurationInSeconds
-        await log("***tempBasal \(String(format: "%0.1f", tempBasal)) U/h for 30m")
+        
+        // if we're going to dose less than the PID controller would, just
+        // bail. The whole point of this model is to dose more than PID would
+        guard tempBasal > pidTempBasal.tempBasal else { await log("tempBasal <= pidTempBasal: \(String(format: "%0.1f", tempBasal)) <= \(String(format: "%0.1f", pidTempBasal.tempBasal))"); return nil }
+        
+        await log("***Setting tempBasal \(String(format: "%0.1f", tempBasal)) U/h for 30m, pidTempBasal: \(String(format: "%0.1f", pidTempBasal.tempBasal))")
         
         return tempBasal
     }
@@ -93,7 +100,7 @@ actor DNNDosing: MachineLearning {
     // our current prediction uses an ML model to predict addedGlucose
     // then runs it through the same calculations that we use for
     // our physiological models
-    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> Double? {
+    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date, pidTempBasal: PIDTempBasalResult) async -> Double? {
         
         // For now we will always return nil for ML, the current model is highly
         // personalized for one individual and not appropriate for use in general.
