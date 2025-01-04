@@ -1,23 +1,11 @@
 # GlucOS <img src="images/biohacker.png" width="48" align="top">
 
 <div align="center">
-<table border="0" cellspacing="0" cellpadding="0" style="border: none">
-<tr style="border: none">
-<td style="border: none; text-align: center; vertical-align: top">
-  <img src="images/biokernel.jpeg" width="200" style="border: 1px solid #ddd"><br>
-  <div style="width: 200px; text-align: center"><em>Home View</em></div>
-</td>
-<td style="border: none; text-align: center; vertical-align: top">
-  <img src="images/biokernel-exercise.jpeg" width="200" style="border: 1px solid #ddd"><br>
-  <div style="width: 200px; text-align: center"><em>During exercise</em></div>
-</td>
-<td style="border: none; text-align: center; vertical-align: top">
-  <img src="images/watch.png" width="150" style="border: 1px solid #ddd"><br>
-  <img src="images/watch-exercise.png" width="150" style="border: 1px solid #ddd"><br>
-  <div style="width: 150px; text-align: center"><em>Watch app</em></div>
-</td>
-</tr>
-</table>
+  
+| Home view | During exercise | Watch app |
+|-----------|-----------------|-----------|
+| <img src="images/biokernel.jpeg" width="200"> | <img src="images/biokernel-exercise.jpeg" width="200"> |   <img src="images/watch.png" width="150"><br><img src="images/watch-exercise.png" width="150"> |
+
 </div>
 
 ## Security, correctness, and simplicity for automated insulin delivery
