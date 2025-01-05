@@ -13,6 +13,8 @@ import G7SensorKit
 @testable import BioKernel
 
 final class LoopFunctionTests: XCTestCase {
+    let tempBasalAccuracy = 0.00000000001
+    
     var closedLoop: LocalClosedLoopService!
     var settings: MockSettingsStorage!
     var glucoseStorage: MockGlucoseStorage!
@@ -214,5 +216,75 @@ final class LoopFunctionTests: XCTestCase {
         XCTAssertFalse(result, "Loop should return false when pump returns error")
         let lastResult = await closedLoop.latestClosedLoopResult()
         XCTAssertEqual(lastResult?.action, .pumpError, "Action should be pumpError")
+    }
+    
+    // MARK: - Microbolus tests
+    @MainActor func testLoopWithMicrobolusSuccess() async throws {
+        // Configure settings for microbolus
+        settings.update(maxBasalRateUnitsPerHour: 2.0)
+        settings.update(useMicroBolus: true, useMachineLearningClosedLoop: false, useBiologicalInvariant: false)
+        
+        // Clear any previous micro bolus timestamp
+        await closedLoop.setLastMicroBolusForTesting(date: nil)
+        
+        // Mock physiological models to return rising glucose prediction
+        let mockPhysiological = MockPhysiologicalModels()
+        mockPhysiological.mockPredictGlucose = 185  // Rising glucose
+        mockPhysiological.mockTempBasalResult = 2.0
+        Dependency.mock { mockPhysiological as PhysiologicalModels }
+        
+        // Mock current data - significantly above target
+        await glucoseStorage.addGlucoseReading(
+            quantity: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 180), // 80 mg/dl above target
+            date: now
+        )
+        insulinStorage.mockLastPumpSync = now
+        
+        // Execute loop
+        let loopResult: ClosedLoopResult = await closedLoop.loop(at: now)
+        XCTAssertEqual(loopResult.action, .setTempBasal, "Loop should complete successfully with microbolus")
+        
+        // Verify microbolus was set
+        XCTAssertNotNil(loopResult.microBolusAmount)
+        XCTAssertGreaterThan(loopResult.microBolusAmount ?? 0, 0)
+        
+        // Verify temp basal was zero (since we delivered microbolus)
+        XCTAssertEqual(loopResult.tempBasal ?? 0, 0.0, accuracy: tempBasalAccuracy)
+    }
+    
+    @MainActor func testLoopWithMicrobolusError() async throws {
+        // Configure settings for microbolus
+        settings.update(maxBasalRateUnitsPerHour: 2.0)
+        settings.update(useMicroBolus: true, useMachineLearningClosedLoop: false, useBiologicalInvariant: false)
+        
+        // Clear any previous micro bolus timestamp
+        await closedLoop.setLastMicroBolusForTesting(date: nil)
+        
+        // Mock physiological models to return rising glucose prediction
+        let mockPhysiological = MockPhysiologicalModels()
+        mockPhysiological.mockPredictGlucose = 185  // Rising glucose
+        mockPhysiological.mockTempBasalResult = 2.0
+        Dependency.mock { mockPhysiological as PhysiologicalModels }
+        
+        // Mock current data - significantly above target
+        await glucoseStorage.addGlucoseReading(
+            quantity: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 180), // 80 mg/dl above target
+            date: now
+        )
+        insulinStorage.mockLastPumpSync = now
+        
+        // Configure pump to return an error for bolus delivery
+        pumpManager.state.bolusEnactmentShouldError = true
+        
+        // Execute loop
+        let result: Bool = await closedLoop.loop(at: now)
+        
+        // Verify
+        XCTAssertFalse(result, "Loop should return false when pump returns error during micro bolus")
+        let lastResult = await closedLoop.latestClosedLoopResult()
+        XCTAssertEqual(lastResult?.action, .pumpError, "Action should be pumpError")
+        XCTAssertNotNil(lastResult?.microBolusAmount, "Micro bolus amount should be set even though delivery failed")
+        XCTAssertGreaterThan(lastResult?.microBolusAmount ?? 0, 0, "Micro bolus amount should be greater than 0")
+        XCTAssertEqual(lastResult?.tempBasal ?? 0, 0.0, accuracy: tempBasalAccuracy, "Temp basal should be 0 since micro bolus was attempted")
     }
 }
