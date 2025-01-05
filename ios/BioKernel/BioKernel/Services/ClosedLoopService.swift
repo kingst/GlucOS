@@ -133,7 +133,17 @@ actor LocalClosedLoopService: ClosedLoopService {
         // if we got here the temp basal command was sent to the pump
         // successfully
         if let safetyResult = closedLoopAlgorithmResult.safetyResult {
-            await getSafetyService().updateAfterProgrammingPump(at: at, programmedTempBasalUnitsPerHour: safetyResult.tempBasalAfterSafetyChecks, safetyTempBasalUnitsPerHour: safetyResult.physiologicalTempBasal, machineLearningTempBasalUnitsPerHour: safetyResult.machineLearningTempBasal, duration: settings.correctionDurationInSeconds, programmedMicroBolus: safetyResult.actualMicroBolus, safetyMicroBolus: safetyResult.physiologicalMicroBolus, machineLearningMicroBolus: safetyResult.machineLearningMicroBolus, biologicalInvariantViolation: safetyResult.biologicalInvariantViolation)
+            await getSafetyService().updateAfterProgrammingPump(
+                at: at,
+                programmedTempBasalUnitsPerHour: safetyResult.actualTempBasal,
+                safetyTempBasalUnitsPerHour: safetyResult.physiologicalTempBasal,
+                machineLearningTempBasalUnitsPerHour: safetyResult.machineLearningTempBasal,
+                duration: settings.correctionDurationInSeconds,
+                programmedMicroBolus: safetyResult.actualMicroBolus,
+                safetyMicroBolus: safetyResult.physiologicalMicroBolus,
+                machineLearningMicroBolus: safetyResult.machineLearningMicroBolus,
+                biologicalInvariantViolation: safetyResult.biologicalInvariantViolation
+            )
         }
 
         
@@ -193,7 +203,7 @@ actor LocalClosedLoopService: ClosedLoopService {
         let microBolusPhysiological = await microBolusAmount(tempBasal: physiologicalTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, basalRate: basalRate, predictedGlucoseInMgDl: predictedGlucoseInMgDl, at: at) ?? 0.0
         let biologicalInvariant = await getPhysiologicalModels().deltaGlucoseError(settings: settings, dataFrame: dataFrame, at: at)
         
-        let dose = determineDose(settings: settings, safetyTempBasalResult: safetyTempBasalResult, physiologicalTempBasal: physiologicalTempBasal, mlTempBasal: mlTempBasal, safetyTempBasal: safetyTempBasal, microBolusPhysiological: microBolusPhysiological, microBolusSafety: microBolusSafety, biologicalInvariant: biologicalInvariant, isExercising: isExercising)
+        let dose = determineDose(settings: settings, physiologicalTempBasal: physiologicalTempBasal, mlTempBasal: mlTempBasal, safetyTempBasal: safetyTempBasal, microBolusPhysiological: microBolusPhysiological, microBolusSafety: microBolusSafety, biologicalInvariant: biologicalInvariant, isExercising: isExercising, machineLearningInsulinLastThreeHours: safetyTempBasalResult.machineLearningInsulinLastThreeHours)
         
         // just for logging for now
         let addedGlucose = dataFrame?.addedGlucosePerHour30m(insulinSensitivity: insulinSensitivity) ?? 0
@@ -202,7 +212,7 @@ actor LocalClosedLoopService: ClosedLoopService {
     }
     
     /// post condition: either tempBasal _or_ microBolus can be > 0 but not both
-    func determineDose(settings: CodableSettings, safetyTempBasalResult: SafetyTempBasal, physiologicalTempBasal: Double, mlTempBasal: Double, safetyTempBasal: Double, microBolusPhysiological: Double, microBolusSafety: Double, biologicalInvariant: Double?, isExercising: Bool) -> (tempBasal: Double, microBolus: Double, safetyResult: SafetyResult) {
+    func determineDose(settings: CodableSettings, physiologicalTempBasal: Double, mlTempBasal: Double, safetyTempBasal: Double, microBolusPhysiological: Double, microBolusSafety: Double, biologicalInvariant: Double?, isExercising: Bool, machineLearningInsulinLastThreeHours: Double) -> (tempBasal: Double, microBolus: Double, safetyResult: SafetyResult) {
         var tempBasal: Double
         var microBolus: Double
         var microBolusCandidate: Double
@@ -219,14 +229,14 @@ actor LocalClosedLoopService: ClosedLoopService {
         if settings.isBiologicalInvariantEnabled(), let biologicalInvariant = biologicalInvariant, biologicalInvariant < -35 {
             microBolus = 0.0
             tempBasal = 0.0
-            safetyResult = SafetyResult.withBiologicalInvariantViolation(biologicalInvariantMgDlPerHour: biologicalInvariant, machineLearningInsulinLastThreeHours: safetyTempBasalResult.machineLearningInsulinLastThreeHours)
+            safetyResult = SafetyResult.withBiologicalInvariantViolation(biologicalInvariantMgDlPerHour: biologicalInvariant, machineLearningInsulinLastThreeHours: machineLearningInsulinLastThreeHours)
         } else if settings.isMicroBolusEnabled(), microBolusCandidate > 0.025, !isExercising {
             microBolus = microBolusCandidate
             tempBasal = 0.0
-            safetyResult = SafetyResult.withMicroBolus(machineLearningMicroBolus: microBolusSafety, physiologicalMicroBolus: microBolusPhysiological, actualMicroBolus: microBolus, machineLearningInsulinLastThreeHours: safetyTempBasalResult.machineLearningInsulinLastThreeHours, biologicalInvariantMgDlPerHour: biologicalInvariant)
+            safetyResult = SafetyResult.withMicroBolus(machineLearningMicroBolus: microBolusSafety, physiologicalMicroBolus: microBolusPhysiological, actualMicroBolus: microBolus, machineLearningInsulinLastThreeHours: machineLearningInsulinLastThreeHours, biologicalInvariantMgDlPerHour: biologicalInvariant)
         } else {
             microBolus = 0.0
-            safetyResult = SafetyResult.withTempBasal(machineLearningTempBasal: mlTempBasal, physiologicalTempBasal: physiologicalTempBasal, tempBasalAfterSafetyChecks: safetyTempBasal, machineLearningInsulinLastThreeHours: safetyTempBasalResult.machineLearningInsulinLastThreeHours, biologicalInvariantMgDlPerHour: biologicalInvariant)
+            safetyResult = SafetyResult.withTempBasal(machineLearningTempBasal: mlTempBasal, physiologicalTempBasal: physiologicalTempBasal, actualTempBasal: tempBasal, machineLearningInsulinLastThreeHours: machineLearningInsulinLastThreeHours, biologicalInvariantMgDlPerHour: biologicalInvariant)
         }
         
         return (tempBasal: tempBasal, microBolus: microBolus, safetyResult: safetyResult)

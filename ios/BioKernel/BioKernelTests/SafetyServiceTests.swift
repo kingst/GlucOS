@@ -130,37 +130,4 @@ final class SafetyServiceTests: XCTestCase {
         
         XCTAssertEqual(secondTempBasal.tempBasal, 4.0, accuracy: insulinAccuracy)
     }
-    /*
-    func testLessThenExtra() async {
-        // ML sets tempBasal to 0
-        let insulinStorage = MockInsulinStorageConstantAutomaticTempBasal(automaticTempBasal: 0)
-        Dependency.mock { insulinStorage as InsulinStorage }
-        
-        let safetyService = LocalSafetyService.forUnitTests()
-        let startDate = Date.f("2018-07-15 03:34:29 +0000")
-        
-        // our first dose that will run for 30 minutes
-        await safetyService.updateAfterSettingTempBasal(at: startDate, programmedTempBasalUnitsPerHour: 0, safetyTempBasalUnitsPerHour: 3.0, machineLearningTempBasalUnitsPerHour: 0)
-        
-        let firstTempBasal = await safetyService.tempBasal(at: startDate + 30.minutesToSeconds(), safetyTempBasalUnitsPerHour: 3.0, machineLearningTempBasalUnitsPerHour: 0.0)
-        
-        XCTAssertEqual(firstTempBasal.tempBasal, 0.0, accuracy: insulinAccuracy)
-        
-        await safetyService.updateAfterSettingTempBasal(at: startDate + 30.minutesToSeconds(), programmedTempBasalUnitsPerHour: firstTempBasal.tempBasal, safetyTempBasalUnitsPerHour: 3.0, machineLearningTempBasalUnitsPerHour: 0.0)
-        
-        // at this point we have a deficit of 3 units from ML, which is
-        // our cap so the system should fall back to the safety tempBasal
-        let secondTempBasal = await safetyService.tempBasal(at: startDate + 60.minutesToSeconds(), safetyTempBasalUnitsPerHour: 3.0, machineLearningTempBasalUnitsPerHour: 0.0)
-        
-        XCTAssertEqual(secondTempBasal.tempBasal, 3.0, accuracy: insulinAccuracy)
-        
-        await safetyService.updateAfterSettingTempBasal(at: startDate + 60.minutesToSeconds(), programmedTempBasalUnitsPerHour: 3.0, safetyTempBasalUnitsPerHour: 3.0, machineLearningTempBasalUnitsPerHour: 0.0)
-
-        // we now have a deficit of 3 units so we can deliver 5 for
-        // a temp basal of 10 running for 30 minutes
-        let thirdTempBasal = await safetyService.tempBasal(at: startDate + 90.minutesToSeconds(), safetyTempBasalUnitsPerHour: 0.0, machineLearningTempBasalUnitsPerHour: 10.0)
-        
-        XCTAssertEqual(thirdTempBasal.tempBasal, 10.0, accuracy: insulinAccuracy)
-    }
-    */
 }

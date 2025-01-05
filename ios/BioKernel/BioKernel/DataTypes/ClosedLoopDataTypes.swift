@@ -19,7 +19,7 @@ public enum ClosedLoopAction: String, Codable {
 public struct SafetyResult: Codable {
     let machineLearningTempBasal: Double
     let physiologicalTempBasal: Double
-    let tempBasalAfterSafetyChecks: Double
+    let actualTempBasal: Double
     let machineLearningMicroBolus: Double
     let physiologicalMicroBolus: Double
     let actualMicroBolus: Double
@@ -27,18 +27,18 @@ public struct SafetyResult: Codable {
     let biologicalInvariantMgDlPerHour: Double?
     let biologicalInvariantViolation: Bool
     
-    static func withTempBasal(machineLearningTempBasal: Double, physiologicalTempBasal: Double, tempBasalAfterSafetyChecks: Double, machineLearningInsulinLastThreeHours: Double, biologicalInvariantMgDlPerHour: Double?) -> SafetyResult {
+    static func withTempBasal(machineLearningTempBasal: Double, physiologicalTempBasal: Double, actualTempBasal: Double, machineLearningInsulinLastThreeHours: Double, biologicalInvariantMgDlPerHour: Double?) -> SafetyResult {
         
-        return SafetyResult(machineLearningTempBasal: machineLearningTempBasal, physiologicalTempBasal: physiologicalTempBasal, tempBasalAfterSafetyChecks: tempBasalAfterSafetyChecks, machineLearningMicroBolus: 0.0, physiologicalMicroBolus: 0.0, actualMicroBolus: 0.0, machineLearningInsulinLastThreeHours: machineLearningInsulinLastThreeHours, biologicalInvariantMgDlPerHour: biologicalInvariantMgDlPerHour, biologicalInvariantViolation: false)
+        return SafetyResult(machineLearningTempBasal: machineLearningTempBasal, physiologicalTempBasal: physiologicalTempBasal, actualTempBasal: actualTempBasal, machineLearningMicroBolus: 0.0, physiologicalMicroBolus: 0.0, actualMicroBolus: 0.0, machineLearningInsulinLastThreeHours: machineLearningInsulinLastThreeHours, biologicalInvariantMgDlPerHour: biologicalInvariantMgDlPerHour, biologicalInvariantViolation: false)
     }
     
     static func withMicroBolus(machineLearningMicroBolus: Double, physiologicalMicroBolus: Double, actualMicroBolus: Double, machineLearningInsulinLastThreeHours: Double, biologicalInvariantMgDlPerHour: Double?) -> SafetyResult {
 
-        return SafetyResult(machineLearningTempBasal: 0.0, physiologicalTempBasal: 0.0, tempBasalAfterSafetyChecks: 0.0, machineLearningMicroBolus: machineLearningMicroBolus, physiologicalMicroBolus: physiologicalMicroBolus, actualMicroBolus: actualMicroBolus, machineLearningInsulinLastThreeHours: machineLearningInsulinLastThreeHours, biologicalInvariantMgDlPerHour: biologicalInvariantMgDlPerHour, biologicalInvariantViolation: false)
+        return SafetyResult(machineLearningTempBasal: 0.0, physiologicalTempBasal: 0.0, actualTempBasal: 0.0, machineLearningMicroBolus: machineLearningMicroBolus, physiologicalMicroBolus: physiologicalMicroBolus, actualMicroBolus: actualMicroBolus, machineLearningInsulinLastThreeHours: machineLearningInsulinLastThreeHours, biologicalInvariantMgDlPerHour: biologicalInvariantMgDlPerHour, biologicalInvariantViolation: false)
     }
     
     static func withBiologicalInvariantViolation(biologicalInvariantMgDlPerHour: Double, machineLearningInsulinLastThreeHours: Double) -> SafetyResult {
-        return SafetyResult(machineLearningTempBasal: 0, physiologicalTempBasal: 0, tempBasalAfterSafetyChecks: 0, machineLearningMicroBolus: 0, physiologicalMicroBolus: 0, actualMicroBolus: 0, machineLearningInsulinLastThreeHours: machineLearningInsulinLastThreeHours, biologicalInvariantMgDlPerHour: biologicalInvariantMgDlPerHour, biologicalInvariantViolation: true)
+        return SafetyResult(machineLearningTempBasal: 0, physiologicalTempBasal: 0, actualTempBasal: 0, machineLearningMicroBolus: 0, physiologicalMicroBolus: 0, actualMicroBolus: 0, machineLearningInsulinLastThreeHours: machineLearningInsulinLastThreeHours, biologicalInvariantMgDlPerHour: biologicalInvariantMgDlPerHour, biologicalInvariantViolation: true)
     }
 }
 
