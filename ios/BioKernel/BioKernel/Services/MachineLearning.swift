@@ -54,13 +54,61 @@ actor AIDosing: MachineLearning {
         await getEventLogger().add(debugMessage: logString)
     }
 
-    // This version of the algorithm is specifically to dose more insulin during
-    // active digestion
+    // This version of the algorithm is specifically to dose more insulin
     func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date, pidTempBasal: PIDTempBasalResult) async -> Double? {
         
         await log("start")
         // make sure we have enough data
         guard let dataFrame = dataFrame else { await log("no frame"); return nil }
+        
+        // since this model is just about dosing more, if we have been low at
+        // all in the past two hours just bail
+        let min = dataFrame.map({ $0.glucose }).min() ?? 65
+        guard min >= 70 else { await log("low in dataFrame, bail"); return nil }
+        
+        guard let predicted = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: at) else { await log("no predicted glucose"); return nil }
+        
+        let digestion = await tempBasalStartingDigestion(settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at, pidTempBasal: pidTempBasal, predicted: predicted)
+        
+        // for now we're going to log the stuck model just to see how it does
+        let _ = await tempBasalStuckHigh(settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at, pidTempBasal: pidTempBasal, predicted: predicted)
+        
+        return digestion
+    }
+
+    func tempBasalStuckHigh(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow], at: Date, pidTempBasal: PIDTempBasalResult, predicted: Double) async -> Double? {
+        let min = dataFrame.map({ $0.glucose }).min() ?? 100
+        let max = dataFrame.map({ $0.glucose }).max() ?? 400
+        
+        // make sure that we're stuck above 220 and that we're not already going down
+        // and that we haven't had large drops already in the last two hours
+        guard glucoseInMgDl >= 220, min >= 220, (max - min) < 100 else { await log("not stuck high, min: \(min), max: \(max)"); return nil }
+        guard predicted >= glucoseInMgDl else { await log("Predict \(String(format: "%0.0f", predicted)) mg/dl vs \(String(format: "%0.0f", glucoseInMgDl)) mg/dl not actionable"); return nil }
+        
+        // this calculation does basic glucose math where it's trying to calculate
+        // a correction that would be needed + IoB from the basal rate, then
+        // adding basalRate * 3 to it to try to kick start the decrease for
+        // a stuck high (basically borrowing basal insulin from the future)
+        let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
+        let basalRate = settings.learnedBasalRate(at: at)
+        let error = glucoseInMgDl - settings.targetGlucoseInMgDl
+        let insulinType = await getInsulinStorage().currentInsulinType()
+        let basalIoB = PhysiologicalUtilities.calculateBasalBaselineInsulinOnBoard(basalRate: basalRate, insulinType: insulinType)
+        let iobTarget = error / insulinSensitivity + basalIoB + basalRate * 3
+        
+        let insulinNeeded = iobTarget - insulinOnBoard
+        let tempBasal = insulinNeeded  * 1.hoursToSeconds() / settings.correctionDurationInSeconds
+        
+        // if we're going to dose less than the PID controller would, just
+        // bail. The whole point of this model is to dose more than PID would
+        guard tempBasal > pidTempBasal.tempBasal else { await log("Stuck tempBasal <= pidTempBasal: \(String(format: "%0.1f", tempBasal)) <= \(String(format: "%0.1f", pidTempBasal.tempBasal))"); return nil }
+        
+        await log("***Setting stuck tempBasal \(String(format: "%0.1f", tempBasal)) U/h for 30m, pidTempBasal: \(String(format: "%0.1f", pidTempBasal.tempBasal))")
+        
+        return tempBasal
+    }
+    
+    func tempBasalStartingDigestion(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow], at: Date, pidTempBasal: PIDTempBasalResult, predicted: Double) async -> Double? {
 
         // only dose during "waking hours" for now
         let hour = Calendar.current.component(.hour, from: at)
@@ -72,7 +120,6 @@ actor AIDosing: MachineLearning {
         
         await log("Checking if glucose is rising")
         // make sure that glucose is rising
-        guard let predicted = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: at) else { await log("no predicted glucose"); return nil }
         guard predicted >= 180, predicted > glucoseInMgDl else { await log("Predict \(String(format: "%0.0f", predicted)) mg/dl vs \(String(format: "%0.0f", glucoseInMgDl)) mg/dl not actionable"); return nil }
         
         await log("Final calcs")
@@ -86,9 +133,9 @@ actor AIDosing: MachineLearning {
         
         // if we're going to dose less than the PID controller would, just
         // bail. The whole point of this model is to dose more than PID would
-        guard tempBasal > pidTempBasal.tempBasal else { await log("tempBasal <= pidTempBasal: \(String(format: "%0.1f", tempBasal)) <= \(String(format: "%0.1f", pidTempBasal.tempBasal))"); return nil }
+        guard tempBasal > pidTempBasal.tempBasal else { await log("Digestion tempBasal <= pidTempBasal: \(String(format: "%0.1f", tempBasal)) <= \(String(format: "%0.1f", pidTempBasal.tempBasal))"); return nil }
         
-        await log("***Setting tempBasal \(String(format: "%0.1f", tempBasal)) U/h for 30m, pidTempBasal: \(String(format: "%0.1f", pidTempBasal.tempBasal))")
+        await log("***Setting digestion tempBasal \(String(format: "%0.1f", tempBasal)) U/h for 30m, pidTempBasal: \(String(format: "%0.1f", pidTempBasal.tempBasal))")
         
         return tempBasal
     }
