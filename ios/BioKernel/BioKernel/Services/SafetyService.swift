@@ -98,8 +98,7 @@ actor LocalSafetyService: SafetyService {
         // now convert units back to tempBasal and add it to our safety value
         let deltaTempBasal = deltaUnits * 1.hoursToSeconds() / duration
         
-        return SafetyTempBasal(tempBasal: safetyTempBasalUnitsPerHour + deltaTempBasal,
-                               machineLearningInsulinLastThreeHours: historicalMlInsulin)
+        return SafetyTempBasal(tempBasal: safetyTempBasalUnitsPerHour + deltaTempBasal, machineLearningInsulinLastThreeHours: historicalMlInsulin)
     }
     
     func updateAfterProgrammingPump(at: Date, programmedTempBasalUnitsPerHour: Double, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval, programmedMicroBolus: Double, safetyMicroBolus: Double, machineLearningMicroBolus: Double, biologicalInvariantViolation: Bool) async {

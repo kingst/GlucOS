@@ -70,6 +70,34 @@ final class SafetyServiceTests: XCTestCase {
         XCTAssertEqual(mlInsulin4, 0.1, accuracy: insulinAccuracy)
     }
     
+    func testSafetyStateTempBasal() async throws {
+        let startDate = Date.f("2018-07-15 03:34:29 +0000")
+        let safetyStateEqual = SafetyState(at: startDate, duration: 30.minutesToSeconds(), programmedTempBasalUnitsPerHour: 1.2, safetyTempBasalUnitsPerHour: 0, machineLearningTempBasalUnitsPerHour: 1.2, programmedMicroBolus: 0, safetyMicroBolus: 0, machineLearningMicroBolus: 0, biologicalInvariantViolation: false)
+        
+        var mlInsulin = safetyStateEqual.deltaUnitsDeliveredByMachineLearning(from: startDate + 30.minutesToSeconds(), to: startDate + 60.minutesToSeconds())
+        XCTAssertEqual(mlInsulin, 0.0, accuracy: insulinAccuracy)
+        
+        mlInsulin = safetyStateEqual.deltaUnitsDeliveredByMachineLearning(from: startDate - 30.minutesToSeconds(), to: startDate)
+        XCTAssertEqual(mlInsulin, 0.0, accuracy: insulinAccuracy)
+    }
+    
+    func testSafetyStateMicroBolus() async throws {
+        let startDate = Date.f("2018-07-15 03:34:29 +0000")
+        let safetyStateEqual = SafetyState(at: startDate, duration: 1.minutesToSeconds(), programmedTempBasalUnitsPerHour: 0, safetyTempBasalUnitsPerHour: 0, machineLearningTempBasalUnitsPerHour: 0, programmedMicroBolus: 2.0, safetyMicroBolus: 0, machineLearningMicroBolus: 2.0, biologicalInvariantViolation: false)
+        
+        // checks to make sure that we're accounting for a micro bolus
+        var mlInsulin = safetyStateEqual.deltaUnitsDeliveredByMachineLearning(from: startDate, to: startDate + 30.minutesToSeconds())
+        XCTAssertEqual(mlInsulin, 2.0, accuracy: insulinAccuracy)
+        
+        // check before
+        mlInsulin = safetyStateEqual.deltaUnitsDeliveredByMachineLearning(from: startDate - 30.minutesToSeconds(), to: startDate)
+        XCTAssertEqual(mlInsulin, 0.0, accuracy: insulinAccuracy)
+        
+        // check after
+        mlInsulin = safetyStateEqual.deltaUnitsDeliveredByMachineLearning(from: startDate + 30.minutesToSeconds(), to: startDate + 60.minutesToSeconds())
+        XCTAssertEqual(mlInsulin, 0.0, accuracy: insulinAccuracy)
+    }
+    
     // for this test we will deliver two ML doses that provide an excess of
     // one unit of insulin each. Then on the third the system should instead
     // use the safety insulin value since we've exausted our ML insulin
