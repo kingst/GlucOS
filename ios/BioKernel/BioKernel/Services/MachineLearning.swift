@@ -48,7 +48,10 @@ actor AIDosing: MachineLearning {
     static let shared = AIDosing()
     
     private func log(_ str: String) async {
-        let at = DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .short)
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ssZZZZZ"
+        let at = dateFormatter.string(from: Date())
+        
         let logString = "\(at): AI temp basal: \(str)"
         print(logString)
         await getEventLogger().add(debugMessage: logString)
@@ -68,12 +71,15 @@ actor AIDosing: MachineLearning {
         
         guard let predicted = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: at) else { await log("no predicted glucose"); return nil }
         
+        // don't dose while exercising, we only want to handle spikes from meals
+        await log("Checking if we're exercising")
+        guard await !getWorkoutStatusService().isExercising(at: at) else { await log("is working out"); return nil }
+        
         let digestion = await tempBasalStartingDigestion(settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at, pidTempBasal: pidTempBasal, predicted: predicted)
         
-        // for now we're going to log the stuck model just to see how it does
-        let _ = await tempBasalStuckHigh(settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at, pidTempBasal: pidTempBasal, predicted: predicted)
+        let stuckHigh = await tempBasalStuckHigh(settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at, pidTempBasal: pidTempBasal, predicted: predicted)
         
-        return digestion
+        return digestion ?? stuckHigh
     }
 
     func tempBasalStuckHigh(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow], at: Date, pidTempBasal: PIDTempBasalResult, predicted: Double) async -> Double? {
@@ -113,10 +119,6 @@ actor AIDosing: MachineLearning {
         // only dose during "waking hours" for now
         let hour = Calendar.current.component(.hour, from: at)
         guard hour < 22 && hour >= 7 else { await log ("hour \(hour) outside waking hours"); return nil }
-        
-        // don't dose while exercising, we only want to handle spikes from meals
-        await log("Checking if we're exercising")
-        guard await !getWorkoutStatusService().isExercising(at: at) else { await log("is working out"); return nil }
         
         await log("Checking if glucose is rising")
         // make sure that glucose is rising
