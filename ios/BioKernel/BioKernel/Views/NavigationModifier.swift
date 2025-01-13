@@ -16,5 +16,15 @@ struct NavigationModifier: ViewModifier {
             .toolbarBackground(AppColors.primary, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
+            .onAppear {
+                let appearance = UINavigationBarAppearance()
+                appearance.backgroundColor = UIColor(AppColors.primary)
+                appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
+                appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+
+                UINavigationBar.appearance().standardAppearance = appearance
+                UINavigationBar.appearance().compactAppearance = appearance
+                UINavigationBar.appearance().scrollEdgeAppearance = appearance
+            }
     }
 }
