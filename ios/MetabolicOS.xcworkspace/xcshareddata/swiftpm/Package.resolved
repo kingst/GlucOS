@@ -1,4 +1,5 @@
 {
+  "originHash" : "504ae43971cad567b5c6d0f8396c90825f8820d9ed6eae20cc1181d802bcb6a2",
   "pins" : [
     {
       "identity" : "cryptoswift",
@@ -7,6 +8,15 @@
       "state" : {
         "revision" : "db51c407d3be4a051484a141bf0bff36c43d3b1e",
         "version" : "1.8.0"
+      }
+    },
+    {
+      "identity" : "slidebutton",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/no-comment/SlideButton",
+      "state" : {
+        "branch" : "main",
+        "revision" : "5eacebba4d7deeb693592bc9a62ab2d2181e133b"
       }
     },
     {
@@ -19,5 +29,5 @@
       }
     }
   ],
-  "version" : 2
+  "version" : 3
 }

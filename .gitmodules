@@ -1,18 +1,20 @@
 [submodule "ios/LoopKit"]
 	path = ios/LoopKit
-	url = https://github.com/kingst/LoopKit
+	url = https://github.com/loopandlearn/LoopKit.git
+	branch = trio
 [submodule "ios/OmniBLE"]
 	path = ios/OmniBLE
-	url = https://github.com/kingst/OmniBLE.git
-[submodule "ios/MKRingProgressView"]
-	path = ios/MKRingProgressView
-	url = https://github.com/kingst/MKRingProgressView.git
+	url = https://github.com/loopandlearn/OmniBLE.git
+	branch = trio
 [submodule "ios/G7SensorKit"]
 	path = ios/G7SensorKit
-	url = https://github.com/kingst/G7SensorKit.git
+	url = https://github.com/loopandlearn/G7SensorKit.git
+	branch = trio
 [submodule "ios/CGMBLEKit"]
 	path = ios/CGMBLEKit
-	url = https://github.com/kingst/CGMBLEKit.git
+	url = https://github.com/loopandlearn/CGMBLEKit.git
+	branch = trio
 [submodule "ios/dexcom-share-client-swift"]
 	path = ios/dexcom-share-client-swift
-	url = https://github.com/kingst/libre-share-client-swift.git
+	url = https://github.com/loopandlearn/dexcom-share-client-swift.git
+	branch = trio

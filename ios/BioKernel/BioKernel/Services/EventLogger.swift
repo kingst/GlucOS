@@ -34,7 +34,7 @@ struct DeviceTokenResponse: Codable {
     let result: String
 }
 
-actor LocalEventLogger: EventLogger, G7DebugLogger {
+actor LocalEventLogger: EventLogger {
     nonisolated func log(category: String, type: String, message: String) {
         let at = Date()
         let debugMessage = "G7DebugLogger: [\(at)] [\(category)] [\(type)] \(message)"

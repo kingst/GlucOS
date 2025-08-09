@@ -10,6 +10,16 @@ import LoopKitUI
 
 // MARK: - PumpManagerDelegate
 class MosPumpManagerDelegate: PumpManagerDelegate {
+    func pumpManager(_ pumpManager: any LoopKit.PumpManager, hasNewPumpEvents events: [LoopKit.NewPumpEvent], lastReconciliation: Date?, replacePendingEvents: Bool, completion: @escaping ((any Error)?) -> Void) {
+        // figure this out later
+    }
+    
+    func pumpManager(_ pumpManager: any LoopKit.PumpManager, didRequestBasalRateScheduleChange basalRateSchedule: LoopKit.BasalRateSchedule, completion: @escaping ((any Error)?) -> Void) {
+        // figure this out later
+    }
+    
+    var automaticDosingEnabled: Bool = false
+    
     let dispatchQueue = InOrderTaskQueue.dispatchQueue
     let log = DiagnosticLog(category: "MosPumpManagerDelegate")
     var pumpManagerMustProvideBLEHeartbeat = true
@@ -100,7 +110,7 @@ class MosPumpManagerDelegate: PumpManagerDelegate {
     }
     
     func pumpManagerWillDeactivate(_ pumpManager: PumpManager) {
-        log.default("Pump manager with identifier '%{public}@' will deactivate", pumpManager.managerIdentifier)
+        log.default("Pump manager with identifier '%{public}@' will deactivate", pumpManager.pluginIdentifier)
         dispatchQueue.async { await getDeviceDataManager().updatePumpManager(to: nil) }
     }
     
@@ -160,7 +170,7 @@ class MosPumpManagerDelegate: PumpManagerDelegate {
 // These will all run on the Main queue
 extension MosPumpManagerDelegate: PumpManagerOnboardingDelegate {
     func pumpManagerOnboarding(didCreatePumpManager pumpManager: PumpManagerUI) {
-        log.default("Pump manager with identifier '%{public}@' created", pumpManager.managerIdentifier)
+        log.default("Pump manager with identifier '%{public}@' created", pumpManager.pluginIdentifier)
         dispatchQueue.async {
             await getDeviceDataManager().updatePumpManager(to: pumpManager)
         }
@@ -168,7 +178,7 @@ extension MosPumpManagerDelegate: PumpManagerOnboardingDelegate {
 
     func pumpManagerOnboarding(didOnboardPumpManager pumpManager: PumpManagerUI) {
         precondition(pumpManager.isOnboarded)
-        log.default("Pump manager with identifier '%{public}@' onboarded", pumpManager.managerIdentifier)
+        log.default("Pump manager with identifier '%{public}@' onboarded", pumpManager.pluginIdentifier)
 
         // FIXME: I would love analysis that shows when to use Task vs dispatchQueue.async
         // We're using Task here because the refreshCgmAndPumpDataFromUI call is complex

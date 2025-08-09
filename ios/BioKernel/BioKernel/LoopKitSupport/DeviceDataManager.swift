@@ -5,7 +5,7 @@
 //  Created by Sam King on 11/3/23.
 //
 
-import LoopKit
+@preconcurrency import LoopKit
 import LoopKitUI
 import MockKit
 import MockKitUI
@@ -75,7 +75,7 @@ public class DeviceDataManagerObservableObject: ObservableObject {
     @Published public var insulinOnBoard: Double = 0.0
     @Published public var pumpAlarm: PumpAlarmType?
     @Published public var lastGlucoseReading: NewGlucoseSample? = nil
-    @Published public var displayGlucoseUnit: DisplayGlucoseUnitObservable = DisplayGlucoseUnitObservable(displayGlucoseUnit: .milligramsPerDeciliter)
+    @Published public var displayGlucosePreference: DisplayGlucosePreference = DisplayGlucosePreference(displayGlucoseUnit: .milligramsPerDeciliter)
     @Published public var lastClosedLoopRun: ClosedLoopResult? = nil
     @Published public var activeAlert: LoopKit.Alert? = nil
     @Published public var glucoseChartData: [GlucoseChartPoint] = []
@@ -106,12 +106,12 @@ public class DeviceDataManagerObservableObject: ObservableObject {
 let omniBLEManagerIdentifier: String = "Omnipod-Dash"
 let omniBLELocalizedTitle = "Omnipod DASH"
 let staticPumpManagersByIdentifier: [String: PumpManagerUI.Type] = [
-    MockPumpManager.managerIdentifier : MockPumpManager.self,
+    MockPumpManager.pluginIdentifier : MockPumpManager.self,
     omniBLEManagerIdentifier: OmniBLEPumpManager.self
 ]
 
 var availableStaticPumpManagers: [PumpManagerDescriptor] {
-    return [PumpManagerDescriptor(identifier: MockPumpManager.managerIdentifier,
+    return [PumpManagerDescriptor(identifier: MockPumpManager.pluginIdentifier,
                                   localizedTitle: MockPumpManager.localizedTitle),
             PumpManagerDescriptor(identifier: omniBLEManagerIdentifier,
                                   localizedTitle: omniBLELocalizedTitle)]
@@ -229,7 +229,7 @@ class LocalDeviceDataManager: DeviceDataManager {
         didSet {
             dispatchPrecondition(condition: .onQueue(.main))
             setupPump()
-            print("Setting pump manager: \(pumpManager?.managerIdentifier ?? "nil"), old value: \(oldValue?.managerIdentifier ?? "nil")")
+            print("Setting pump manager: \(pumpManager?.pluginIdentifier ?? "nil"), old value: \(oldValue?.pluginIdentifier ?? "nil")")
             rawPumpManager = pumpManager?.rawValue
             
             // we'll set the pump manager later because this propery can be set directly from a SwiftUI
@@ -470,7 +470,7 @@ class LocalDeviceDataManager: DeviceDataManager {
         let rateSchedule = BasalRateSchedule(dailyItems: [schedule])!
         let initialSettings = PumpManagerSetupSettings(maxBasalRateUnitsPerHour: maxBasal, maxBolusUnits: maxBolus, basalSchedule: rateSchedule)
         
-        let result = pumpManagerUIType.setupViewController(initialSettings: initialSettings, bluetoothProvider: bluetoothProvider, colorPalette: .default, allowDebugFeatures: allowDebugFeatures, allowedInsulinTypes: allowedInsulinTypes)
+        let result = pumpManagerUIType.setupViewController(initialSettings: initialSettings, bluetoothProvider: bluetoothProvider, colorPalette: .default, allowDebugFeatures: allowDebugFeatures, prefersToSkipUserInteraction: false, allowedInsulinTypes: allowedInsulinTypes)
         switch result {
         case .userInteractionRequired(var setupViewController):
             setupViewController.pumpManagerOnboardingDelegate = pumpManagerDelegate
@@ -483,8 +483,8 @@ class LocalDeviceDataManager: DeviceDataManager {
     }
     
     func cgmSettingsUI(for cgmManager: CGMManagerUI) -> CGMManagerViewController {
-        let displayGlucoseUnit = observableObject().displayGlucoseUnit
-        var settingsViewController = cgmManager.settingsViewController(bluetoothProvider: bluetoothProvider, displayGlucoseUnitObservable: displayGlucoseUnit, colorPalette: .default, allowDebugFeatures: allowDebugFeatures)
+        let displayGlucoseUnit = observableObject().displayGlucosePreference
+        var settingsViewController = cgmManager.settingsViewController(bluetoothProvider: bluetoothProvider, displayGlucosePreference: displayGlucoseUnit, colorPalette: .default, allowDebugFeatures: allowDebugFeatures)
         settingsViewController.cgmManagerOnboardingDelegate = cgmManagerDelegate
         return settingsViewController
     }
@@ -499,8 +499,8 @@ class LocalDeviceDataManager: DeviceDataManager {
             return .failure(UnknownCGMManagerIdentifierError())
         }
         
-        let displayGlucoseUnit = observableObject().displayGlucoseUnit
-        let result = cgmManagerUIType.setupViewController(bluetoothProvider: bluetoothProvider, displayGlucoseUnitObservable: displayGlucoseUnit, colorPalette: .default, allowDebugFeatures: allowDebugFeatures)
+        let displayGlucoseUnit = observableObject().displayGlucosePreference
+        let result = cgmManagerUIType.setupViewController(bluetoothProvider: bluetoothProvider, displayGlucosePreference: displayGlucoseUnit, colorPalette: .default, allowDebugFeatures: allowDebugFeatures, prefersToSkipUserInteraction: false)
         switch result {
         case .userInteractionRequired(var setupViewController):
             setupViewController.cgmManagerOnboardingDelegate = cgmManagerDelegate
