@@ -11,6 +11,7 @@ import LoopKit
 import LoopKitUI
 
 struct AddCGMView: View {
+    @Environment(\.dismiss) var dismiss
     @State var descriptor: CGMManagerDescriptor?
     
     var body: some View {
@@ -26,7 +27,7 @@ struct AddCGMView: View {
         }
         .modifier(NavigationModifier())
         .navigationTitle("Add CGM")
-        .fullScreenCover(item: $descriptor, onDismiss: didDismiss) { detail in
+        .sheet(item: $descriptor, onDismiss: didDismiss) { detail in
             let deviceManager = getDeviceDataManager()
             switch deviceManager.setupCGMManagerUI(withIdentifier: detail.identifier) {
             case .failure(let error):
@@ -42,10 +43,10 @@ struct AddCGMView: View {
         }
     }
     func didDismiss() {
-        // no action needed
+        dismiss()
     }
 }
 
 #Preview {
-    AddPumpView()
+    AddCGMView()
 }
