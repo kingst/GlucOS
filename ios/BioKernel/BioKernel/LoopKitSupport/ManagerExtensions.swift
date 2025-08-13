@@ -17,7 +17,7 @@ extension PumpManager {
     
     var rawValue: RawValue {
         return [
-            "managerIdentifier": self.managerIdentifier,
+            "managerIdentifier": self.pluginIdentifier,
             "state": self.rawState
         ]
     }

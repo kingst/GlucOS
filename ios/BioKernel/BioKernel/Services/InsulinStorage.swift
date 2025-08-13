@@ -175,6 +175,9 @@ actor LocalInsulinStorage: InsulinStorage {
             case .none:
                 // FIXME: I'm not sure when this would happen???
                 break
+            case .some(.replaceComponent(componentType: _)):
+                // FIXME: not sure what this is for
+                break
             }
         }
         
@@ -317,6 +320,37 @@ actor LocalInsulinStorage: InsulinStorage {
     }
 }
 
+extension PumpEventType {
+    init?(rawValue: String) {
+        switch rawValue {
+        case "AlarmPump":
+            self = .alarm
+        case "ClearAlarm":
+            self = .alarmClear
+        case "BasalProfileStart":
+            self = .basal
+        case "Bolus":
+            self = .bolus
+        case "Prime":
+            self = .prime
+        case "PumpResume":
+            self = .resume
+        case "Rewind":
+            self = .rewind
+        case "PumpSuspend":
+            self = .suspend
+        case "TempBasal":
+            self = .tempBasal
+        default:
+            if rawValue.starts(with: "Replace"), let value = ReplaceableComponent(rawValue: String(rawValue.dropFirst(7))) {
+                self = .replaceComponent(componentType: value)
+            } else {
+                return nil
+            }
+        }
+    }
+}
+
 extension NewPumpEvent: @retroactive Encodable, @retroactive Decodable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -360,7 +394,12 @@ struct InsulinDelivered {
     func insulinOnBoard(at: Date) -> Double {
         guard at > self.at else { return 0.0 }
         
-        let model = PresetInsulinModelProvider(defaultRapidActingModel: nil).model(for: insulinType)
+        let model: InsulinModel
+        if insulinType == .lyumjev {
+            model = ExponentialInsulinModel(actionDuration: 6.hoursToSeconds(), peakActivityTime: 45.minutesToSeconds())
+        } else {
+            model = PresetInsulinModelProvider(defaultRapidActingModel: nil).model(for: insulinType)
+        }
         return units * model.percentEffectRemaining(at: at.timeIntervalSince(self.at))
     }
 }

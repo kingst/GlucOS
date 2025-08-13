@@ -18,6 +18,10 @@ import LoopKitUI
 
 // MARK: - CGMManagerDelegate
 class MosCgmManagerDelegate: CGMManagerDelegate {
+    func cgmManager(_ manager: any LoopKit.CGMManager, hasNew events: [LoopKit.PersistedCgmEvent]) {
+        // figure this out later
+    }
+    
     let dispatchQueue = InOrderTaskQueue.dispatchQueue
     
     // This value is a cache set by the DeviceManager after getting new glucose readings
@@ -55,7 +59,7 @@ class MosCgmManagerDelegate: CGMManagerDelegate {
     
     let log = DiagnosticLog(category: "MosCgmManagerDelegate")
     func cgmManagerWantsDeletion(_ manager: CGMManager) {
-        log.default("CGM manager with identifier '%{public}@' wants deletion", manager.managerIdentifier)
+        log.default("CGM manager with identifier '%{public}@' wants deletion", manager.pluginIdentifier)
         dispatchQueue.async { await getDeviceDataManager().updateCgmManager(to: nil) }
     }
 
@@ -91,13 +95,13 @@ class MosCgmManagerDelegate: CGMManagerDelegate {
 
 extension MosCgmManagerDelegate: CGMManagerOnboardingDelegate {
     func cgmManagerOnboarding(didCreateCGMManager cgmManager: CGMManagerUI) {
-        log.default("CGM manager with identifier '%{public}@' created", cgmManager.managerIdentifier)
+        log.default("CGM manager with identifier '%{public}@' created", cgmManager.pluginIdentifier)
         dispatchQueue.async { await getDeviceDataManager().updateCgmManager(to: cgmManager) }
     }
 
     func cgmManagerOnboarding(didOnboardCGMManager cgmManager: CGMManagerUI) {
         precondition(cgmManager.isOnboarded)
-        log.default("CGM manager with identifier '%{public}@' onboarded", cgmManager.managerIdentifier)
+        log.default("CGM manager with identifier '%{public}@' onboarded", cgmManager.pluginIdentifier)
         Task {
             await dispatchQueue.waitForEventsToRun()
             await getDeviceDataManager().refreshCgmAndPumpDataFromUI()

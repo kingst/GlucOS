@@ -24,7 +24,6 @@ let getHealthKitStorage: () -> HealthKitStorage = Dependency.bind { LocalHealthK
 let getMachineLearning: () -> MachineLearning = Dependency.bind { AIDosing.shared }
 let getPhysiologicalModels: () -> PhysiologicalModels = Dependency.bind { LocalPhysiologicalModels.shared }
 let getSafetyService: () -> SafetyService = Dependency.bind { LocalSafetyService.shared }
-let getDebugLogger: () -> G7DebugLogger = Dependency.bind { LocalEventLogger.shared }
 @MainActor let getBackgroundService: () -> BackgroundService = Dependency.bind { LocalBackgroundService.shared }
 @MainActor let getGlucoseAlertsService: () -> GlucoseAlertStorage = Dependency.bind { PredictiveGlucoseAlertStorage.shared }
 let getWatchComms: () -> WatchComms = Dependency.bind { LocalWatchComms.shared }

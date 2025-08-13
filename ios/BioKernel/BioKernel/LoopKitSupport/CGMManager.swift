@@ -18,14 +18,14 @@ let g6ManagerIdentifier: String = "DexG6Transmitter"
 let g6LocalizedTitle = "Dexcom G6"
 
 let staticCGMManagersByIdentifier: [String: CGMManager.Type] = [
-    MockCGMManager.managerIdentifier: MockCGMManager.self,
+    MockCGMManager.pluginIdentifier: MockCGMManager.self,
     g7ManagerIdentifier: G7CGMManager.self,
     g6ManagerIdentifier: G6CGMManager.self
 ]
 
 var availableStaticCGMManagers: [CGMManagerDescriptor] {
     return [
-            CGMManagerDescriptor(identifier: MockCGMManager.managerIdentifier, localizedTitle: MockCGMManager.localizedTitle),
+            CGMManagerDescriptor(identifier: MockCGMManager.pluginIdentifier, localizedTitle: MockCGMManager.localizedTitle),
             CGMManagerDescriptor(identifier: g7ManagerIdentifier, localizedTitle: g7LocalizedTitle),
             CGMManagerDescriptor(identifier: g6ManagerIdentifier, localizedTitle: g6LocalizedTitle)
         ]
@@ -48,7 +48,7 @@ extension CGMManager {
     
     var rawValue: [String: Any] {
         return [
-            "managerIdentifier": managerIdentifier,
+            "managerIdentifier": pluginIdentifier,
             "state": self.rawState
         ]
     }
