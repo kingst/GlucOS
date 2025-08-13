@@ -28,7 +28,7 @@ struct BioKernelApp: App {
                 Text("Running tests")
             } else {
                 MainView()
-                    .modifier(NavigationModifier())
+                    .toolbarColorScheme(.dark, for: .navigationBar)
             }
         }
     }

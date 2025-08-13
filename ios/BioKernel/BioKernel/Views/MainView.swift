@@ -44,8 +44,58 @@ struct MainView: View {
                 }
                 .padding()
             }
-            .navigationBarTitle("BioKernel", displayMode: .inline)
-            .navigationBarItems(leading: leadingButtons, trailing: trailingButtons)
+            .modifier(NavigationModifier())
+            .navigationTitle("BioKernel")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    HStack {
+                        Button {
+                            if deviceManagerObservable.cgmManager == nil {
+                                navigateToAddCgm = true
+                            } else {
+                                navigateToCgmSettings = true
+                            }
+                        } label: {
+                            Image("g7")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 40, height: 40)
+                        }
+                        Button {
+                            if deviceManagerObservable.pumpManager == nil {
+                                navigateToAddPump = true
+                            } else {
+                                navigateToPumpSettings = true
+                            }
+                        } label: {
+                            Image("omnipod")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 40, height: 40)
+                        }
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack {
+                        Button {
+                            navigateToGlucoseAlerts = true
+                        } label: {
+                            if glucoseAlertsViewModel.enabled {
+                                Image(systemName: "bell.fill").tint(.white)
+                            } else {
+                                Image(systemName: "bell.slash.fill").tint(.white)
+                            }
+                        }
+                        Button {
+                            navigateToSettings = true
+                        } label: {
+                            Image(systemName: "gearshape.fill")
+                                .tint(.white)
+                        }
+                    }
+                }
+            }
             .navigationDestination(isPresented: $navigateToSettings) {
                 SettingsView(settingsFromUrl: nil)
                     .modifier(NavigationModifier())
@@ -58,8 +108,8 @@ struct MainView: View {
                 AddCGMView()
             }
             .navigationDestination(isPresented: $navigateToCgmSettings) {
-                if let cgmManager = deviceManagerObservable.cgmManager as? CGMManagerUI {
-                    CGMManagerView(cgmManagerUI: cgmManager)
+                if let cgmManager = deviceManagerObservable.cgmManager, let cgmManagerUI = cgmManager as? CGMManagerUI {
+                    CGMManagerView(cgmManagerUI: cgmManagerUI)
                         .modifier(NavigationModifier())
                 } else {
                     EmptyView()
@@ -83,72 +133,21 @@ struct MainView: View {
                 GlucoseAlertsView()
             }
             .onOpenURL { url in
-                handleOpenURL(url: url)
-            }
-        }
-    }
-
-    private var leadingButtons: some View {
-        HStack {
-            Button {
-                if deviceManagerObservable.cgmManager == nil {
-                    navigateToAddCgm = true
-                } else {
-                    navigateToCgmSettings = true
-                }
-            } label: {
-                Image("g7")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 40, height: 40)
-            }
-            Button {
-                if deviceManagerObservable.pumpManager == nil {
-                    navigateToAddPump = true
-                } else {
-                    navigateToPumpSettings = true
-                }
-            } label: {
-                Image("omnipod")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 40, height: 40)
-            }
-        }
-    }
-
-    private var trailingButtons: some View {
-        HStack {
-            Button {
-                navigateToGlucoseAlerts = true
-            } label: {
-                if glucoseAlertsViewModel.enabled {
-                    Image(systemName: "bell.fill").tint(.white)
-                } else {
-                    Image(systemName: "bell.slash.fill").tint(.white)
+                // we should check to make sure this is for settings
+                guard let json = url.lastPathComponent.replacingOccurrences(of: "+", with: " ").removingPercentEncoding, let data = json.data(using: .utf8) else { return }
+                
+                let decoder = JSONDecoder()
+                decoder.dateDecodingStrategy = .secondsSince1970
+                
+                do {
+                    let settings = try decoder.decode(CodableSettings.self, from: data)
+                    
+                    settingsFromUrl = settings
+                    navigateToSettingsFromUrl = true
+                } catch {
+                    print(error)
                 }
             }
-            Button {
-                navigateToSettings = true
-            } label: {
-                Image(systemName: "gearshape.fill")
-                    .tint(.white)
-            }
-        }
-    }
-
-    private func handleOpenURL(url: URL) {
-        guard let json = url.lastPathComponent.replacingOccurrences(of: "+", with: " ").removingPercentEncoding, let data = json.data(using: .utf8) else { return }
-
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .secondsSince1970
-        
-        do {
-            let settings = try decoder.decode(CodableSettings.self, from: data)
-            settingsFromUrl = settings
-            navigateToSettingsFromUrl = true
-        } catch {
-            print(error)
         }
     }
 }
