@@ -11,7 +11,22 @@ import LoopKitUI
 // MARK: - PumpManagerDelegate
 class MosPumpManagerDelegate: PumpManagerDelegate {
     func pumpManager(_ pumpManager: any LoopKit.PumpManager, hasNewPumpEvents events: [LoopKit.NewPumpEvent], lastReconciliation: Date?, replacePendingEvents: Bool, completion: @escaping ((any Error)?) -> Void) {
-        // figure this out later
+        
+        log.default("PumpManager:%{public}@ hasNewPumpEvents (lastReconciliation = %{public}@)", String(describing: type(of: pumpManager)), String(describing: lastReconciliation))
+        
+        let insulinType = pumpManager.status.insulinType ?? .humalog
+        dispatchQueue.async {
+            let error = await getInsulinStorage().addPumpEvents(events, lastReconciliation: lastReconciliation, insulinType: insulinType)
+            if let error = error {
+                self.log.error("Failed to addPumpEvents to InsulinStorage: %{public}@", String(describing: error))
+            }
+            
+            let insulinOnBoard = await getInsulinStorage().insulinOnBoard(at: Date())
+            let pumpAlarm = await getInsulinStorage().pumpAlarm()
+            await getDeviceDataManager().update(insulinOnBoard: insulinOnBoard, pumpAlarm: pumpAlarm)
+            
+            completion(error)
+        }
     }
     
     func pumpManager(_ pumpManager: any LoopKit.PumpManager, didRequestBasalRateScheduleChange basalRateSchedule: LoopKit.BasalRateSchedule, completion: @escaping ((any Error)?) -> Void) {
@@ -126,24 +141,6 @@ class MosPumpManagerDelegate: PumpManagerDelegate {
         log.error("PumpManager:%{public}@ did error: %{public}@", String(describing: type(of: pumpManager)), String(describing: error))
         
         dispatchQueue.async { await getDeviceDataManager().setLastError(error: error) }
-    }
-    
-    func pumpManager(_ pumpManager: PumpManager, hasNewPumpEvents events: [NewPumpEvent], lastReconciliation: Date?, completion: @escaping (_ error: Error?) -> Void) {
-        log.default("PumpManager:%{public}@ hasNewPumpEvents (lastReconciliation = %{public}@)", String(describing: type(of: pumpManager)), String(describing: lastReconciliation))
-        
-        let insulinType = pumpManager.status.insulinType ?? .humalog
-        dispatchQueue.async {
-            let error = await getInsulinStorage().addPumpEvents(events, lastReconciliation: lastReconciliation, insulinType: insulinType)
-            if let error = error {
-                self.log.error("Failed to addPumpEvents to InsulinStorage: %{public}@", String(describing: error))
-            }
-            
-            let insulinOnBoard = await getInsulinStorage().insulinOnBoard(at: Date())
-            let pumpAlarm = await getInsulinStorage().pumpAlarm()
-            await getDeviceDataManager().update(insulinOnBoard: insulinOnBoard, pumpAlarm: pumpAlarm)
-            
-            completion(error)
-        }
     }
     
     func pumpManager(_ pumpManager: PumpManager, didReadReservoirValue units: Double, at date: Date, completion: @escaping (_ result: Swift.Result<(newValue: ReservoirValue, lastValue: ReservoirValue?, areStoredValuesContinuous: Bool), Error>) -> Void) {

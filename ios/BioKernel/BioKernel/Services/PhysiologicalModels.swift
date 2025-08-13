@@ -80,7 +80,10 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
     var lastGlucose: Double?
     var lastGlucoseAt: Date?
     var accumulatedError = 0.0
+    var lastFilteredGlucose: Double?
     
+    /// deltaGlucoseError should get raw CGM values as it does its own filtering, don't pass
+    /// lowpass filter values here
     func deltaGlucoseError(settings: CodableSettings, dataFrame: [AddedGlucoseDataRow]?, at: Date) -> Double? {
         let numSteps = 4
         let digestionThreshold = 40.0
@@ -108,6 +111,16 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
         return error
     }
     
+    func lowPassFilter(glucose: Double, at: Date) -> Double {
+        guard let lastGlucoseAt = lastGlucoseAt, let lastFilteredGlucose = lastFilteredGlucose else {
+            return glucose
+        }
+        let deltaTime = at.timeIntervalSince(lastGlucoseAt)
+        let timeConstant = TimeInterval(11.3 * 60)
+        let alpha = 1 - exp(-deltaTime / timeConstant)
+        return alpha * glucose + (1 - alpha) * lastFilteredGlucose
+    }
+    
     func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> PIDTempBasalResult {
         let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
         let correctionDuration = settings.correctionDurationInSeconds
@@ -117,13 +130,14 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
         let deltaGlucoseError = deltaGlucoseError(settings: settings, dataFrame: dataFrame, at: at)
         
         // PID controller
-        let error = glucoseInMgDl - targetGlucoseInMgDl
+        let filteredGlucose = lowPassFilter(glucose: glucoseInMgDl, at: at)
+        let error = filteredGlucose - targetGlucoseInMgDl
         var derivative = 0.0
         if let dt = lastGlucoseAt.map({ at.timeIntervalSince($0) }), dt < 11.minutesToSeconds(), let lastGlucose = lastGlucose {
             // these are slighly non-standard for PID but we do it this
             // way to keep our derivative and integral in glucose units
             // to make it easier to set Ki and Kd
-            derivative = (glucoseInMgDl - lastGlucose)
+            derivative = (filteredGlucose - lastGlucose)
             
             // with this check we're trying to only accumulate errors
             // when we're outside of digestion and accumulate deltaGlucose
@@ -157,6 +171,7 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
         let result = PIDTempBasalResult(at: at, Kp: Kp, Ki: Ki, Kd: Kd, error: error, tempBasal: tempBasal, accumulatedError: accumulatedError, derivative: derivative, lastGlucose: lastGlucose, lastGlucoseAt: lastGlucoseAt, deltaGlucoseError: deltaGlucoseError)
         lastGlucose = glucoseInMgDl
         lastGlucoseAt = at
+        lastFilteredGlucose = filteredGlucose
         
         return result
     }

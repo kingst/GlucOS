@@ -394,7 +394,12 @@ struct InsulinDelivered {
     func insulinOnBoard(at: Date) -> Double {
         guard at > self.at else { return 0.0 }
         
-        let model = PresetInsulinModelProvider(defaultRapidActingModel: nil).model(for: insulinType)
+        let model: InsulinModel
+        if insulinType == .lyumjev {
+            model = ExponentialInsulinModel(actionDuration: 6.hoursToSeconds(), peakActivityTime: 45.minutesToSeconds())
+        } else {
+            model = PresetInsulinModelProvider(defaultRapidActingModel: nil).model(for: insulinType)
+        }
         return units * model.percentEffectRemaining(at: at.timeIntervalSince(self.at))
     }
 }

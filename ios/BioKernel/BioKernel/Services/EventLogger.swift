@@ -134,6 +134,11 @@ actor LocalEventLogger: EventLogger {
     }
     
     func uploadEvents(_ requestObject: RequestObject) {
+        // for now we're going to stop logging for now
+        if true {
+            return
+        }
+        
         addToEventsToRetry(requestObject)
         runningRequests.insert(requestObject.identifier)
         
