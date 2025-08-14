@@ -31,11 +31,7 @@ struct GlucoseChartView: View {
     }
 
     private var strideInHours: Int {
-#if os(watchOS)
-        return 3
-#else
         return selectedHours > 6 ? 2 : 1
-#endif
     }
 
     private func chart(geometry: GeometryProxy) -> some View {
@@ -64,7 +60,8 @@ struct GlucoseChartView: View {
                     .foregroundStyle(.purple)
             }
         }
-        .frame(width: geometry.size.width * CGFloat(24 / selectedHours))
+        // avoid divide by 0
+        .frame(width: geometry.size.width * CGFloat(24 / (selectedHours == 0 ? 4 : selectedHours)))
         .chartYScale(domain: 0...maxY)
         .chartXScale(domain: timeWindow.min...timeWindow.max)
         .chartXAxis {

@@ -31,16 +31,15 @@ struct GlucoseChart: View {
 
     private func chart(geometry: GeometryProxy, state: BioKernelState) -> some View {
         Chart {
-            AreaMark(x: .value("Time", timeWindow.start),
-                     yStart: .value("Target range low", 70),
-                     yEnd: .value("Target range high", 140))
+            RectangleMark(
+                xStart: .value("Time", timeWindow.start),
+                xEnd: .value("Time", timeWindow.end),
+                yStart: .value("Target range low", 70),
+                yEnd: .value("Target range high", 140)
+            )
             .foregroundStyle(.green)
             .opacity(0.25)
-            AreaMark(x: .value("Time", timeWindow.end),
-                     yStart: .value("Target range low", 70),
-                     yEnd: .value("Target range high", 140))
-            .foregroundStyle(.green)
-            .opacity(0.25)
+
             ForEach(state.glucoseReadings, id: \.at) { reading in
                 PointMark(
                     x: .value("Time", reading.at),
@@ -50,7 +49,8 @@ struct GlucoseChart: View {
                 .foregroundStyle(.blue)
             }
         }
-        .frame(width: geometry.size.width * CGFloat(24 / selectedHours))
+        // avoid divide by 0
+        .frame(width: geometry.size.width * CGFloat(24 / (selectedHours == 0 ? 4 : selectedHours)))
         .chartYScale(domain: 0...maxY)
         .chartXScale(domain: timeWindow.start...timeWindow.end)
         .chartXVisibleDomain(length: Double(selectedHours).hoursToSeconds())
@@ -80,10 +80,7 @@ struct GlucoseChart: View {
                             selectedHours = timeRanges[nextIndex]
                         }
                     }
-                    .onAppear {
-                        proxy.scrollTo("rightmost", anchor: .trailing)
-                    }
-                    .onChange(of: selectedHours) {
+                    .onChange(of: selectedHours, initial: true) {
                         proxy.scrollTo("rightmost", anchor: .trailing)
                     }
                 }
