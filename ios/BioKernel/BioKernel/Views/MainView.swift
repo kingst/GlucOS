@@ -107,10 +107,9 @@ struct MainView: View {
             .navigationDestination(isPresented: $navigateToAddCgm) {
                 AddCGMView()
             }
-            .navigationDestination(isPresented: $navigateToCgmSettings) {
+            .sheet(isPresented: $navigateToCgmSettings) {
                 if let cgmManager = deviceManagerObservable.cgmManager, let cgmManagerUI = cgmManager as? CGMManagerUI {
                     CGMManagerView(cgmManagerUI: cgmManagerUI)
-                        .modifier(NavigationModifier())
                 } else {
                     EmptyView()
                 }
@@ -118,10 +117,9 @@ struct MainView: View {
             .navigationDestination(isPresented: $navigateToAddPump) {
                 AddPumpView()
             }
-            .navigationDestination(isPresented: $navigateToPumpSettings) {
+            .sheet(isPresented: $navigateToPumpSettings) {
                 if let pumpManager = deviceManagerObservable.pumpManager {
                     PumpManagerView(pumpManagerUI: pumpManager)
-                        .modifier(NavigationModifier())
                 } else {
                     EmptyView()
                 }

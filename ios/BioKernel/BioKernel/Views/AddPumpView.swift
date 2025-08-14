@@ -13,6 +13,8 @@ import LoopKitUI
 struct AddPumpView: View {
     @State var descriptor: PumpManagerDescriptor?
     
+    @Environment(\.dismiss) var dismiss
+    
     var body: some View {
         let pumpDescriptors = getDeviceDataManager().pumpManagerDescriptors()
         List {
@@ -26,7 +28,7 @@ struct AddPumpView: View {
         }
         .modifier(NavigationModifier())
         .navigationTitle("Add pump")
-        .fullScreenCover(item: $descriptor, onDismiss: didDismiss) { detail in
+        .sheet(item: $descriptor, onDismiss: didDismiss) { detail in
             let deviceManager = getDeviceDataManager()
             switch deviceManager.setupPumpManagerUI(withIdentifier: detail.identifier) {
             case .failure(let error):
@@ -42,7 +44,7 @@ struct AddPumpView: View {
         }
     }
     func didDismiss() {
-        // no action needed
+        dismiss()
     }
 }
 
