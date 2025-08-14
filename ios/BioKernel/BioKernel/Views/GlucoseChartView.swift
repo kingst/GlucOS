@@ -12,7 +12,8 @@ struct GlucoseChartView: View {
     @StateObject var deviceManagerObservable = getDeviceDataManager().observableObject()
     var body: some View {
         let maxY = { () -> Int in
-            let maxReading = deviceManagerObservable.glucoseChartData.map({ $0.readingInMgDl }).max() ?? 300
+            let readings = deviceManagerObservable.glucoseChartData.map({ $0.readingInMgDl }) + deviceManagerObservable.filteredGlucoseChartData.map({ $0.glucose })
+            let maxReading = readings.max() ?? 300
             if maxReading > 300 {
                 return 400
             } else if maxReading > 200 {
@@ -44,8 +45,14 @@ struct GlucoseChartView: View {
             ForEach(deviceManagerObservable.glucoseChartData, id: \.created) { reading in
                 PointMark(x: .value("Time", reading.created),
                          y: .value("mg/dL", reading.readingInMgDl))
-                    .symbolSize(10)  // Adjust the size of the points
+                    .symbolSize(20)  // Adjust the size of the points
                     .foregroundStyle(.blue)
+            }
+            ForEach(deviceManagerObservable.filteredGlucoseChartData, id: \.at) { reading in
+                LineMark(x: .value("Time", reading.at),
+                         y: .value("mg/dL", reading.glucose))
+                    .symbolSize(5)  // Adjust the size of the points
+                    .foregroundStyle(.purple)
             }
         }
         .chartYScale(domain: 0...maxY)
