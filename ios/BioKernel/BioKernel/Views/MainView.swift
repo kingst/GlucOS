@@ -21,6 +21,7 @@ struct MainView: View {
     @State var navigateToSettingsFromUrl = false
     @State var navigateToGlucoseAlerts = false
     @State var settingsFromUrl: CodableSettings? = nil
+    @State var selectedHours = 4
     
     let addButtonRadius = 30.0
     
@@ -30,17 +31,32 @@ struct MainView: View {
                 MainViewSummaryView()
                 MainViewAlertView()
                 Spacer()
-                ZStack(alignment: .bottomTrailing) {
-                    GlucoseChartView()
-                    Button {
-                        navigateToBolus = true
-                    } label: {
-                        Image(systemName: "plus")
+                VStack {
+                    GlucoseChartView(selectedHours: selectedHours)
+                    
+                    HStack {
+                        ForEach([2, 4, 6, 12], id: \.self) { hour in
+                            Button(action: {
+                                selectedHours = hour
+                            }) {
+                                Text("\(hour)h")
+                                    .padding()
+                                    .background(selectedHours == hour ? Color.gray : Color.clear)
+                                    .foregroundColor(selectedHours == hour ? .white : .blue)
+                                    .cornerRadius(8)
+                            }
+                        }
+                        Spacer()
+                        Button {
+                            navigateToBolus = true
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .frame(width: 2 * addButtonRadius, height: 2 * addButtonRadius)
+                        .background(AppColors.primary)
+                        .foregroundColor(.white)
+                        .clipShape(Circle())
                     }
-                    .frame(width: 2 * addButtonRadius, height: 2 * addButtonRadius)
-                    .background(AppColors.primary)
-                    .foregroundColor(.white)
-                    .clipShape(Circle())
                 }
                 .padding()
             }
