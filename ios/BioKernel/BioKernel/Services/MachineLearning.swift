@@ -74,7 +74,7 @@ actor AIDosing: MachineLearning {
         await log("Checking if we're exercising")
         guard await !getWorkoutStatusService().isExercising(at: at) else { await log("is working out"); return nil }
         
-        return await glucosDynamicISF(settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at, pidTempBasal: pidTempBasal, predicted: predicted)
+        return glucosDynamicISF(glucoseInMgDl: glucoseInMgDl, dataFrame: dataFrame, pidTempBasal: pidTempBasal)
     }
 
     /// Simplified version of dynamicISF from Trio. Since dynamicISF isn't based on anything
@@ -82,7 +82,7 @@ actor AIDosing: MachineLearning {
     ///
     /// Conceptually what this is trying to do is get the individual back into a more manageable range
     /// (below 140) so that the more principled adaptations can take over.
-    func glucosDynamicISF(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow], at: Date, pidTempBasal: PIDTempBasalResult, predicted: Double) async -> Double? {
+    func glucosDynamicISF(glucoseInMgDl: Double, dataFrame: [AddedGlucoseDataRow], pidTempBasal: PIDTempBasalResult) -> Double? {
 
         // effectively lowers insulin sensitivity by up to 20% between 140 -> 240
         // linearly to dose more insulin while high
