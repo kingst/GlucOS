@@ -14,6 +14,16 @@ import LoopKitUI
 import G7SensorKit
 
 class MockPumpManagerDelegate: PumpManagerDelegate {
+    func pumpManager(_ pumpManager: any LoopKit.PumpManager, hasNewPumpEvents events: [LoopKit.NewPumpEvent], lastReconciliation: Date?, replacePendingEvents: Bool, completion: @escaping ((any Error)?) -> Void) {
+        completion(nil)
+    }
+    
+    func pumpManager(_ pumpManager: any LoopKit.PumpManager, didRequestBasalRateScheduleChange basalRateSchedule: LoopKit.BasalRateSchedule, completion: @escaping ((any Error)?) -> Void) {
+        completion(nil)
+    }
+    
+    var automaticDosingEnabled: Bool = true
+    
     func pumpManagerBLEHeartbeatDidFire(_ pumpManager: any LoopKit.PumpManager) { }
     func pumpManagerMustProvideBLEHeartbeat(_ pumpManager: any LoopKit.PumpManager) -> Bool { return true }
     func pumpManagerWillDeactivate(_ pumpManager: any LoopKit.PumpManager) { }
@@ -115,9 +125,6 @@ class MockMachineLearning: MachineLearning {
     }
 }
 
-class MockG7DebugLogger: G7DebugLogger {
-    func log(category: String, type: String, message: String) { }
-}
 
 class MockSafetyService: SafetyService {
     func tempBasal(at: Date, settings: CodableSettings, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval) async -> BioKernel.SafetyTempBasal {
@@ -143,7 +150,7 @@ class MockPhysiologicalModels: PhysiologicalModels {
     var mockTempBasalResult = 0.0
     
     func tempBasal(settings: BioKernel.CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [BioKernel.AddedGlucoseDataRow]?, at: Date) async -> BioKernel.PIDTempBasalResult {
-        return PIDTempBasalResult(at: at, Kp: 1, Ki: 1, Kd: 1, error: 0, tempBasal: mockTempBasalResult, accumulatedError: 0, derivative: nil, lastGlucose: nil, lastGlucoseAt: nil, deltaGlucoseError: nil)
+        return PIDTempBasalResult(at: at, Kp: 1, Ki: 1, Kd: 1, filteredGlucose: 100, error: 0, tempBasal: mockTempBasalResult, accumulatedError: 0, derivative: nil, lastGlucose: nil, lastGlucoseAt: nil, deltaGlucoseError: nil)
     }
     func predictGlucoseIn15Minutes(from: Date) async -> Double? { return mockPredictGlucose }
     func deltaGlucoseError(settings: BioKernel.CodableSettings, dataFrame: [BioKernel.AddedGlucoseDataRow]?, at: Date) async -> Double? { return nil }
@@ -239,6 +246,8 @@ class MockGlucoseStorage: GlucoseStorage {
 
 
 class MockDeviceDataManager: DeviceDataManager {
+    func update(filteredGlucoseChartData: [BioKernel.FilteredGlucose]) { }
+    
     var mockPumpManager: PumpManagerUI?
     var mockCgmManager: CGMManager?
     let mockObservableObject = DeviceDataManagerObservableObject()

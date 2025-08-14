@@ -19,7 +19,8 @@ import LoopKit
 
 final class InsulinStorageTests: XCTestCase {
     let iobAccuracy = 0.00000000001
-    let lyumjevAtOneUnitPerHourForOneHour = 0.9098867547866101
+    // takes into account the new peak action of 45 minutes
+    let lyumjevAtOneUnitPerHourForOneHour = 0.88076013318822066
     
     @MainActor override func setUpWithError() throws {
         Dependency.useMockConstructors = true

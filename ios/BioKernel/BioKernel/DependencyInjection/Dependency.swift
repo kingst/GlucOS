@@ -60,6 +60,9 @@ struct Dependency {
         // forced unwrapping is safe here, it won't crash unless useMockConstructors is true
         // in which case we're testing and want it to crash because it will tell use that
         // our code is using a object that we didn't mock
+        if constructor == nil {
+            fatalError("Nil constructor for \(key)")
+        }
         return constructor!()
     }
 }
