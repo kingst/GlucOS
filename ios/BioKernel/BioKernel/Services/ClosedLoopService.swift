@@ -43,7 +43,7 @@ actor LocalClosedLoopService: ClosedLoopService {
             }
             return FilteredGlucose(glucose: pidTempBasalResult.filteredGlucose, at: pidTempBasalResult.at)
         }
-        await getDeviceDataManager().update(filteredGlucoseChartData: filteredGlucose)
+        await getDeviceDataManager().update(filteredGlucoseChartData: filteredGlucose.sorted{ $0.at < $1.at })
     }
     
     func latestClosedLoopResult() async -> ClosedLoopResult? {
@@ -63,7 +63,7 @@ actor LocalClosedLoopService: ClosedLoopService {
     }
     
     func loop(at: Date) async -> Bool {
-        let lastRun: ClosedLoopResult = await loop(at: at)
+        let lastRun: ClosedLoopResult = await runLoop(at: at)
         await storeClosedLoopResult(lastRun)
         await replayLogger.add(events: [lastRun])
         lastClosedLoopRun = lastRun
@@ -112,7 +112,7 @@ actor LocalClosedLoopService: ClosedLoopService {
         return await getDeviceDataManager().pumpManager?.roundToSupportedBolusVolume(units: amount) ?? amount
     }
     
-    func loop(at: Date) async -> ClosedLoopResult {
+    func runLoop(at: Date) async -> ClosedLoopResult {
         let settings = await getSettingsStorage().snapshot()
         let freshnessInterval = settings.freshnessIntervalInSeconds
         let cgmPumpMetadata = await getDeviceDataManager().cgmPumpMetadata()
