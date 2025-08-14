@@ -63,6 +63,7 @@ public protocol DeviceDataManager {
     func update(insulinOnBoard: Double, pumpAlarm: PumpAlarmType?)
     func update(activeAlert: LoopKit.Alert?)
     func update(glucoseChartData: [GlucoseChartPoint])
+    func update(filteredGlucoseChartData: [FilteredGlucose])
     func update(totalAmount: Double, bolusProgressReporter: DoseProgressReporter)
     
     func cgmPumpMetadata() async -> CgmPumpMetadata
@@ -79,6 +80,7 @@ public class DeviceDataManagerObservableObject: ObservableObject {
     @Published public var lastClosedLoopRun: ClosedLoopResult? = nil
     @Published public var activeAlert: LoopKit.Alert? = nil
     @Published public var glucoseChartData: [GlucoseChartPoint] = []
+    @Published public var filteredGlucoseChartData: [FilteredGlucose] = []
     @Published public var doseProgress: DoseProgress = DoseProgress()
     
     public init() {
@@ -268,6 +270,12 @@ class LocalDeviceDataManager: DeviceDataManager {
     func update(activeAlert: LoopKit.Alert?) {
         DispatchQueue.main.async {
             self.localObservableObject.activeAlert = activeAlert
+        }
+    }
+    
+    func update(filteredGlucoseChartData: [FilteredGlucose]) {
+        DispatchQueue.main.async {
+            self.localObservableObject.filteredGlucoseChartData = filteredGlucoseChartData
         }
     }
     

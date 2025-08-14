@@ -12,6 +12,11 @@
 import Foundation
 import LoopKit
 
+public struct FilteredGlucose {
+    public let glucose: Double
+    public let at: Date
+}
+
 protocol ClosedLoopService {
     func loop(at: Date) async -> Bool
     func latestClosedLoopResult() async -> ClosedLoopResult?
@@ -20,9 +25,26 @@ protocol ClosedLoopService {
 actor LocalClosedLoopService: ClosedLoopService {
     static let shared = LocalClosedLoopService()
     
+    var closedLoopResults: [ClosedLoopResult] = []
+    var storage = getStoredObject().create(fileName: "closed_loop_results.json")
     var lastClosedLoopRun: ClosedLoopResult? = nil
     let replayLogger = getEventLogger()
     var lastMicroBolus: Date? = nil
+    
+    init() {
+        closedLoopResults = (try? storage.read()) ?? []
+        Task { await updateFilteredGlucoseChartData() }
+    }
+    
+    func updateFilteredGlucoseChartData() async {
+        let filteredGlucose: [FilteredGlucose] = closedLoopResults.compactMap { closedLoop in
+            guard let pidTempBasalResult = closedLoop.pidTempBasalResult else {
+                return nil
+            }
+            return FilteredGlucose(glucose: pidTempBasalResult.filteredGlucose, at: pidTempBasalResult.at)
+        }
+        await getDeviceDataManager().update(filteredGlucoseChartData: filteredGlucose)
+    }
     
     func latestClosedLoopResult() async -> ClosedLoopResult? {
         return lastClosedLoopRun
@@ -30,6 +52,9 @@ actor LocalClosedLoopService: ClosedLoopService {
     
     func loop(at: Date) async -> Bool {
         let lastRun: ClosedLoopResult = await loop(at: at)
+        closedLoopResults.append(lastRun)
+        closedLoopResults = closedLoopResults.filter { $0.at >= (at - 24.hoursToSeconds()) }
+        try? storage.write(closedLoopResults)
         await replayLogger.add(events: [lastRun])
         lastClosedLoopRun = lastRun
         return lastRun.action == .setTempBasal

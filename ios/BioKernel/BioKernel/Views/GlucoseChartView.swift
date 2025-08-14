@@ -47,6 +47,12 @@ struct GlucoseChartView: View {
                     .symbolSize(10)  // Adjust the size of the points
                     .foregroundStyle(.blue)
             }
+            ForEach(deviceManagerObservable.filteredGlucoseChartData, id: \.at) { reading in
+                LineMark(x: .value("Time", reading.at),
+                         y: .value("mg/dL", reading.glucose))
+                    .symbolSize(5)  // Adjust the size of the points
+                    .foregroundStyle(.purple)
+            }
         }
         .chartYScale(domain: 0...maxY)
         .chartXScale(domain: minX...maxX)
