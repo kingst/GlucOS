@@ -49,7 +49,7 @@ final class LoopFunctionTests: XCTestCase {
         Dependency.mock { MockWorkoutStatusService() as WorkoutStatusService }
         Dependency.mock { MockMachineLearning() as MachineLearning }
         Dependency.mock { MockSafetyService() as SafetyService }
-        Dependency.mock { MockG7DebugLogger() as G7DebugLogger }
+        Dependency.mock { MockStoredObject() as StoredObject }
         
         closedLoop = LocalClosedLoopService()
     }
@@ -241,7 +241,7 @@ final class LoopFunctionTests: XCTestCase {
         insulinStorage.mockLastPumpSync = now
         
         // Execute loop
-        let loopResult: ClosedLoopResult = await closedLoop.loop(at: now)
+        let loopResult: ClosedLoopResult = await closedLoop.runLoop(at: now)
         XCTAssertEqual(loopResult.action, .setTempBasal, "Loop should complete successfully with microbolus")
         
         // Verify microbolus was set
