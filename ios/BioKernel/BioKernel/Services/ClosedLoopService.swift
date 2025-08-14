@@ -50,11 +50,21 @@ actor LocalClosedLoopService: ClosedLoopService {
         return lastClosedLoopRun
     }
     
+    func storeClosedLoopResult(_ result: ClosedLoopResult) async {
+        let at = result.at
+        closedLoopResults.append(result)
+        closedLoopResults = closedLoopResults.filter { $0.at >= (at - 24.hoursToSeconds()) }
+        do {
+            try storage.write(closedLoopResults)
+        } catch {
+            print("Failed to write closed loop results: \(error)")
+        }
+        await updateFilteredGlucoseChartData()
+    }
+    
     func loop(at: Date) async -> Bool {
         let lastRun: ClosedLoopResult = await loop(at: at)
-        closedLoopResults.append(lastRun)
-        closedLoopResults = closedLoopResults.filter { $0.at >= (at - 24.hoursToSeconds()) }
-        try? storage.write(closedLoopResults)
+        await storeClosedLoopResult(lastRun)
         await replayLogger.add(events: [lastRun])
         lastClosedLoopRun = lastRun
         return lastRun.action == .setTempBasal
