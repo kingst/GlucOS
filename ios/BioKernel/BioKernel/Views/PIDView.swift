@@ -29,7 +29,7 @@ struct PIDView: View {
     private var pidChartPoints: [ChartPoint] {
         var points = [ChartPoint]()
         for data in viewModel.chartData {
-            points.append(ChartPoint(at: data.at, value: data.poportionalContribution, type: "Proportional"))
+            points.append(ChartPoint(at: data.at, value: data.proportionalContribution, type: "Proportional"))
             points.append(ChartPoint(at: data.at, value: data.derivativeContribution, type: "Derivative"))
             points.append(ChartPoint(at: data.at, value: data.integratorContribution, type: "Integral"))
             points.append(ChartPoint(at: data.at, value: data.totalPidContribution, type: "Total"))

@@ -47,7 +47,7 @@ struct MainView: View {
                             Button(action: {
                                 selectedHours = hour
                             }) {
-                                Text(selectedHours == hour ? "\(hour) hours" : "\(hour)")
+                                Text(selectedHours == hour ? "\(hour) hrs" : "\(hour)")
                                     .padding(.vertical, 5)
                                     .padding(.horizontal)
                                     .background(selectedHours == hour ? Color.gray : Color.clear)
