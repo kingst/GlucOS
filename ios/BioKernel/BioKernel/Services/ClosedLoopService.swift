@@ -20,6 +20,7 @@ public struct FilteredGlucose {
 protocol ClosedLoopService {
     func loop(at: Date) async -> Bool
     func latestClosedLoopResult() async -> ClosedLoopResult?
+    func registerClosedLoopChartDataDelegate(delegate: ClosedLoopChartDataUpdate) async -> [ClosedLoopResult]
 }
 
 actor LocalClosedLoopService: ClosedLoopService {
@@ -30,6 +31,7 @@ actor LocalClosedLoopService: ClosedLoopService {
     var lastClosedLoopRun: ClosedLoopResult? = nil
     let replayLogger = getEventLogger()
     var lastMicroBolus: Date? = nil
+    weak var delegate: (any ClosedLoopChartDataUpdate)? = nil
     
     init() {
         closedLoopResults = (try? storage.read()) ?? []
@@ -49,6 +51,11 @@ actor LocalClosedLoopService: ClosedLoopService {
     func latestClosedLoopResult() async -> ClosedLoopResult? {
         return lastClosedLoopRun
     }
+
+    func registerClosedLoopChartDataDelegate(delegate: ClosedLoopChartDataUpdate) -> [ClosedLoopResult] {
+        self.delegate = delegate
+        return closedLoopResults
+    }
     
     func storeClosedLoopResult(_ result: ClosedLoopResult) async {
         let at = result.at
@@ -60,6 +67,7 @@ actor LocalClosedLoopService: ClosedLoopService {
             print("Failed to write closed loop results: \(error)")
         }
         await updateFilteredGlucoseChartData()
+        delegate?.update(result: result)
     }
     
     func loop(at: Date) async -> Bool {

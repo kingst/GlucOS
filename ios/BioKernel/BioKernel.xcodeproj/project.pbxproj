@@ -99,6 +99,13 @@
 		3BF1BB262D0B1C2B00135F86 /* StoredJsonObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C7553CD2AFD610B00FAD880 /* StoredJsonObject.swift */; };
 		3BF1BB272D0B1CA800135F86 /* Debug.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C7553DD2AFDB2DA00FAD880 /* Debug.swift */; };
 		3BF1BB292D0B253000135F86 /* DateExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD793822AF564EA00E5FDC9 /* DateExtensions.swift */; };
+		3BF1F1E02E4F19A200AF36AD /* DiagnosticViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF1F1DF2E4F19A200AF36AD /* DiagnosticViewModel.swift */; };
+		3BF1F1E22E4F1A4100AF36AD /* ClosedLoopChartData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF1F1E12E4F1A4100AF36AD /* ClosedLoopChartData.swift */; };
+		3BF1F1E82E4F1D3D00AF36AD /* MLView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF1F1E62E4F1D3D00AF36AD /* MLView.swift */; };
+		3BF1F1E92E4F1D3D00AF36AD /* InsulinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF1F1E52E4F1D3D00AF36AD /* InsulinView.swift */; };
+		3BF1F1EA2E4F1D3D00AF36AD /* DiagnosticDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF1F1E32E4F1D3D00AF36AD /* DiagnosticDataView.swift */; };
+		3BF1F1EB2E4F1D3D00AF36AD /* PIDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF1F1E72E4F1D3D00AF36AD /* PIDView.swift */; };
+		3BF1F1EC2E4F1D3D00AF36AD /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF1F1E42E4F1D3D00AF36AD /* HistoryView.swift */; };
 		3C07C88F2AF9625A008F604C /* OmniBLE.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C07C88E2AF9625A008F604C /* OmniBLE.framework */; };
 		3C07C8902AF9625A008F604C /* OmniBLE.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3C07C88E2AF9625A008F604C /* OmniBLE.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3C07C89B2AF969F2008F604C /* AddPumpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C07C89A2AF969F1008F604C /* AddPumpView.swift */; };
@@ -285,6 +292,13 @@
 		3BF1631D2D20D69F00287BA0 /* WorkoutStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutStatusView.swift; sourceTree = "<group>"; };
 		3BF1631F2D217FE900287BA0 /* TargetGlucoseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetGlucoseService.swift; sourceTree = "<group>"; };
 		3BF163212D21A9B400287BA0 /* WorkoutStatusServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutStatusServiceTests.swift; sourceTree = "<group>"; };
+		3BF1F1DF2E4F19A200AF36AD /* DiagnosticViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticViewModel.swift; sourceTree = "<group>"; };
+		3BF1F1E12E4F1A4100AF36AD /* ClosedLoopChartData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClosedLoopChartData.swift; sourceTree = "<group>"; };
+		3BF1F1E32E4F1D3D00AF36AD /* DiagnosticDataView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticDataView.swift; sourceTree = "<group>"; };
+		3BF1F1E42E4F1D3D00AF36AD /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		3BF1F1E52E4F1D3D00AF36AD /* InsulinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsulinView.swift; sourceTree = "<group>"; };
+		3BF1F1E62E4F1D3D00AF36AD /* MLView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLView.swift; sourceTree = "<group>"; };
+		3BF1F1E72E4F1D3D00AF36AD /* PIDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PIDView.swift; sourceTree = "<group>"; };
 		3C07C88E2AF9625A008F604C /* OmniBLE.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = OmniBLE.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3C07C8972AF964E4008F604C /* MKRingProgressView.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = MKRingProgressView.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3C07C89A2AF969F1008F604C /* AddPumpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AddPumpView.swift; path = BioKernel/Views/AddPumpView.swift; sourceTree = SOURCE_ROOT; };
@@ -388,6 +402,7 @@
 		3B6063AE2B54BD8B009D9CBC /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				3BF1F1DF2E4F19A200AF36AD /* DiagnosticViewModel.swift */,
 				3B3C9B172C46EAB700BB7CCF /* GlucoseAlertsViewModel.swift */,
 				3B66FFA22C89324100DB8CF2 /* SaveDataViewModel.swift */,
 				3B6063AF2B54BDA9009D9CBC /* SettingsViewModel.swift */,
@@ -544,6 +559,7 @@
 			children = (
 				3CE9B8AF2B28CB2100B12300 /* AlertStorage.swift */,
 				3B3BEC4F2C3D87B8007F0CCE /* BackgroundService.swift */,
+				3BF1F1E12E4F1A4100AF36AD /* ClosedLoopChartData.swift */,
 				3C7553E22AFDC04A00FAD880 /* ClosedLoopService.swift */,
 				3CAAFC932B0E84E600597055 /* EventLogger.swift */,
 				3B3C9B192C46EDD700BB7CCF /* GlucoseAlertStorage.swift */,
@@ -564,20 +580,25 @@
 		3C7553E02AFDBF6D00FAD880 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				3B6EC2312BD8131A008BFD4D /* DigestionGauge.swift */,
 				3C7553D92AFD961600FAD880 /* AddCGMView.swift */,
 				3C07C89A2AF969F1008F604C /* AddPumpView.swift */,
 				3B36F67C2B311C0800008F4A /* AppColors.swift */,
 				3B7F08612B31590D002930A4 /* BolusProgressView.swift */,
 				3BBC7C7C2B15679700410123 /* BolusView.swift */,
 				3B6063B12B54BDB7009D9CBC /* DecimalPicker.swift */,
+				3BF1F1E32E4F1D3D00AF36AD /* DiagnosticDataView.swift */,
+				3B6EC2312BD8131A008BFD4D /* DigestionGauge.swift */,
 				3B3C9B112C46B12300BB7CCF /* GlucoseAlertsView.swift */,
 				3B36F6802B311E8F00008F4A /* GlucoseChartView.swift */,
+				3BF1F1E42E4F1D3D00AF36AD /* HistoryView.swift */,
+				3BF1F1E52E4F1D3D00AF36AD /* InsulinView.swift */,
 				3B36F6782B311BAF00008F4A /* MainView.swift */,
 				3B3C9B132C46DEB800BB7CCF /* MainViewAlertView.swift */,
 				3B3C9B152C46E23300BB7CCF /* MainViewGlucoseAlertView.swift */,
 				3B36F67E2B311DC100008F4A /* MainViewSummaryView.swift */,
+				3BF1F1E62E4F1D3D00AF36AD /* MLView.swift */,
 				3B36F67A2B311BCE00008F4A /* NavigationModifier.swift */,
+				3BF1F1E72E4F1D3D00AF36AD /* PIDView.swift */,
 				3B66FFA02C892EF600DB8CF2 /* SaveDataView.swift */,
 				3B6063B32B54BDFA009D9CBC /* SettingsView.swift */,
 				3BF1631D2D20D69F00287BA0 /* WorkoutStatusView.swift */,
@@ -818,10 +839,16 @@
 				3BE8ADA12B2A4DCE0002BB3E /* UserDefaults+Json.swift in Sources */,
 				3B3C9B1A2C46EDD700BB7CCF /* GlucoseAlertStorage.swift in Sources */,
 				3B36F67D2B311C0800008F4A /* AppColors.swift in Sources */,
+				3BF1F1E02E4F19A200AF36AD /* DiagnosticViewModel.swift in Sources */,
 				3BD7937D2AF55B8200E5FDC9 /* PersistedProperty.swift in Sources */,
 				3B66FFA32C89324100DB8CF2 /* SaveDataViewModel.swift in Sources */,
 				3B36F67F2B311DC100008F4A /* MainViewSummaryView.swift in Sources */,
 				3B66FFA12C892EF600DB8CF2 /* SaveDataView.swift in Sources */,
+				3BF1F1E82E4F1D3D00AF36AD /* MLView.swift in Sources */,
+				3BF1F1E92E4F1D3D00AF36AD /* InsulinView.swift in Sources */,
+				3BF1F1EA2E4F1D3D00AF36AD /* DiagnosticDataView.swift in Sources */,
+				3BF1F1EB2E4F1D3D00AF36AD /* PIDView.swift in Sources */,
+				3BF1F1EC2E4F1D3D00AF36AD /* HistoryView.swift in Sources */,
 				3BBC7C742B155C7F00410123 /* FaceId.swift in Sources */,
 				3BD7937F2AF55DCC00E5FDC9 /* DeviceDataManager.swift in Sources */,
 				3C7553D82AFD947C00FAD880 /* CGMManagerViews.swift in Sources */,
@@ -829,6 +856,7 @@
 				3C4911F32AF4D77E0070D3B4 /* Colors.swift in Sources */,
 				3C4911E92AF4C6690070D3B4 /* Dependency.swift in Sources */,
 				3BA00A552D23157C0002B051 /* SettingsDataTypes.swift in Sources */,
+				3BF1F1E22E4F1A4100AF36AD /* ClosedLoopChartData.swift in Sources */,
 				3C4F79442AFB17D500786EB5 /* InsulinStorage.swift in Sources */,
 				3C7553D42AFD8BAE00FAD880 /* DeviceDataManager+Pump.swift in Sources */,
 				3B96F2682D08C86D00ABBA16 /* WatchComms.swift in Sources */,
@@ -1004,6 +1032,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				"LD_RUNPATH_SEARCH_PATHS[sdk=*]" = "";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -1081,6 +1110,11 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"BioKernel/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+					"$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BioKernel/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "";
@@ -1095,10 +1129,9 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				"LD_RUNPATH_SEARCH_PATHS[sdk=iphoneos*]" = (
+				"LD_RUNPATH_SEARCH_PATHS[sdk=*]" = (
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
-					"$(LD_RUNPATH_SEARCH_PATHS_$(IS_MACCATALYST))",
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.getgrowthmetrics.BioKernel;
@@ -1123,6 +1156,11 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"BioKernel/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+					"$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BioKernel/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "";
@@ -1137,8 +1175,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				"LD_RUNPATH_SEARCH_PATHS[sdk=iphoneos*]" = (
-					"$(LD_RUNPATH_SEARCH_PATHS_$(IS_MACCATALYST))",
+				"LD_RUNPATH_SEARCH_PATHS[sdk=*]" = (
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
