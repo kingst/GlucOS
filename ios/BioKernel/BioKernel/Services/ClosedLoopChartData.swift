@@ -16,7 +16,7 @@ struct ClosedLoopChartData: Identifiable {
     let insulinOnBoard: Double
     let basalRate: Double
     let basalRateInsulinOnBoard: Double
-    let poportionalContribution: Double
+    let proportionalContribution: Double
     let derivativeContribution: Double
     let integratorContribution: Double
     let totalPidContribution: Double

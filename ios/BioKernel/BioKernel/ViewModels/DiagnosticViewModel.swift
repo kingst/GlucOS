@@ -23,7 +23,9 @@ class DiagnosticViewModel: ObservableObject, ClosedLoopChartDataUpdate {
     
     func update(result: ClosedLoopResult) {
         DispatchQueue.main.async {
-            self.chartData.append(self.convertToChartData(result: result))
+            if result.action == .setTempBasal {
+                self.chartData.append(self.convertToChartData(result: result))
+            }
         }
     }
     
@@ -46,7 +48,7 @@ class DiagnosticViewModel: ObservableObject, ClosedLoopChartDataUpdate {
             insulinOnBoard: result.insulinOnBoard ?? 0,
             basalRate: result.basalRate ?? 0,
             basalRateInsulinOnBoard: result.pidTempBasalResult?.basalRateInsulinOnBoard ?? 0,
-            poportionalContribution: proportionalContribution,
+            proportionalContribution: proportionalContribution,
             derivativeContribution: derivativeContribution,
             integratorContribution: integratorContribution,
             totalPidContribution: totalPidContribution,
