@@ -150,7 +150,7 @@ class MockPhysiologicalModels: PhysiologicalModels {
     var mockTempBasalResult = 0.0
     
     func tempBasal(settings: BioKernel.CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [BioKernel.AddedGlucoseDataRow]?, at: Date) async -> BioKernel.PIDTempBasalResult {
-        return PIDTempBasalResult(at: at, Kp: 1, Ki: 1, Kd: 1, filteredGlucose: 100, error: 0, tempBasal: mockTempBasalResult, accumulatedError: 0, derivative: nil, lastGlucose: nil, lastGlucoseAt: nil, deltaGlucoseError: nil)
+        return PIDTempBasalResult(at: at, Kp: 1, Ki: 1, Kd: 1, filteredGlucose: 100, error: 0, tempBasal: mockTempBasalResult, accumulatedError: 0, derivative: nil, lastGlucose: nil, lastGlucoseAt: nil, deltaGlucoseError: nil, basalRateInsulinOnBoard: nil)
     }
     func predictGlucoseIn15Minutes(from: Date) async -> Double? { return mockPredictGlucose }
     func deltaGlucoseError(settings: BioKernel.CodableSettings, dataFrame: [BioKernel.AddedGlucoseDataRow]?, at: Date) async -> Double? { return nil }
