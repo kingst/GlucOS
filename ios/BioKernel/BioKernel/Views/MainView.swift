@@ -9,6 +9,10 @@ import SwiftUI
 import LoopKit
 import LoopKitUI
 
+
+
+let addButtonRadius = 30.0
+
 struct MainView: View {
     @StateObject var deviceManagerObservable = getDeviceDataManager().observableObject()
     @StateObject var glucoseAlertsViewModel = getGlucoseAlertsService().viewModel()
@@ -22,8 +26,7 @@ struct MainView: View {
     @State var navigateToGlucoseAlerts = false
     @State var settingsFromUrl: CodableSettings? = nil
     @State var selectedHours = 4
-    
-    let addButtonRadius = 30.0
+    @State var showChartSettingsSheet = false
     
     var body: some View {
         NavigationStack {
@@ -35,15 +38,22 @@ struct MainView: View {
                     GlucoseChartView(selectedHours: selectedHours)
                     
                     HStack {
+                        Button(action: {
+                            showChartSettingsSheet = true
+                        }) {
+                            Image(systemName: "wrench.and.screwdriver")
+                        }
                         ForEach([2, 4, 6, 12], id: \.self) { hour in
                             Button(action: {
                                 selectedHours = hour
                             }) {
-                                Text("\(hour)h")
-                                    .padding()
+                                Text(selectedHours == hour ? "\(hour) hours" : "\(hour)")
+                                    .padding(.vertical, 5)
+                                    .padding(.horizontal)
                                     .background(selectedHours == hour ? Color.gray : Color.clear)
                                     .foregroundColor(selectedHours == hour ? .white : .blue)
                                     .cornerRadius(8)
+                                    .animation(nil, value: selectedHours)
                             }
                         }
                         Spacer()
@@ -145,6 +155,9 @@ struct MainView: View {
             }
             .navigationDestination(isPresented: $navigateToGlucoseAlerts) {
                 GlucoseAlertsView()
+            }
+            .sheet(isPresented: $showChartSettingsSheet) {
+                DiagnosticDataView()
             }
             .onOpenURL { url in
                 // we should check to make sure this is for settings

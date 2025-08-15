@@ -21,8 +21,9 @@ public struct PIDTempBasalResult: Codable {
     public let lastGlucose: Double?
     public let lastGlucoseAt: Date?
     public let deltaGlucoseError: Double?
+    public let basalRateInsulinOnBoard: Double?
     
-    public init(at: Date, Kp: Double, Ki: Double, Kd: Double, filteredGlucose: Double, error: Double, tempBasal: Double, accumulatedError: Double, derivative: Double?, lastGlucose: Double?, lastGlucoseAt: Date?, deltaGlucoseError: Double?) {
+    public init(at: Date, Kp: Double, Ki: Double, Kd: Double, filteredGlucose: Double, error: Double, tempBasal: Double, accumulatedError: Double, derivative: Double?, lastGlucose: Double?, lastGlucoseAt: Date?, deltaGlucoseError: Double?, basalRateInsulinOnBoard: Double?) {
         self.at = at
         self.Kp = Kp
         self.Ki = Ki
@@ -35,6 +36,7 @@ public struct PIDTempBasalResult: Codable {
         self.lastGlucose = lastGlucose
         self.lastGlucoseAt = lastGlucoseAt
         self.deltaGlucoseError = deltaGlucoseError
+        self.basalRateInsulinOnBoard = basalRateInsulinOnBoard
     }
 }
 
@@ -170,7 +172,7 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
         // add the basalRate back in so that our default when the correctionAmount is 0 is basalRate
         let tempBasal = correctionAmount * 1.hoursToSeconds() / correctionDuration + basalRate
         
-        let result = PIDTempBasalResult(at: at, Kp: Kp, Ki: Ki, Kd: Kd, filteredGlucose: filteredGlucose, error: error, tempBasal: tempBasal, accumulatedError: accumulatedError, derivative: derivative, lastGlucose: lastGlucose, lastGlucoseAt: lastGlucoseAt, deltaGlucoseError: deltaGlucoseError)
+        let result = PIDTempBasalResult(at: at, Kp: Kp, Ki: Ki, Kd: Kd, filteredGlucose: filteredGlucose, error: error, tempBasal: tempBasal, accumulatedError: accumulatedError, derivative: derivative, lastGlucose: lastGlucose, lastGlucoseAt: lastGlucoseAt, deltaGlucoseError: deltaGlucoseError, basalRateInsulinOnBoard: basalBaselineInsulinOnBoard)
         lastGlucose = glucoseInMgDl
         lastGlucoseAt = at
         lastFilteredGlucose = filteredGlucose

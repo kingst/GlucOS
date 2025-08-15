@@ -59,7 +59,7 @@ actor LocalGlucoseStorage: GlucoseStorage {
         self.glucoseReadings.append(contentsOf: glucoseReadings)
         self.glucoseReadings = self.glucoseReadings.sorted { $0.date < $1.date }
         if let mostRecent = glucoseReadings.last {
-            let cutOff = mostRecent.date - 12.hoursToSeconds()
+            let cutOff = mostRecent.date - 24.hoursToSeconds()
             self.glucoseReadings = self.glucoseReadings.filter({ $0.date > cutOff })
             let timeSinceLastReading = Date().timeIntervalSince(mostRecent.date)
             print("app refresh time: \(timeSinceLastReading)")
