@@ -20,7 +20,7 @@ import LoopKit
 final class InsulinStorageTests: XCTestCase {
     let iobAccuracy = 0.00000000001
     // generated offline manually
-    let lyumjevAtOneUnitPerHourForOneHour = 0.90988675478661
+    let lyumjevAtOneUnitPerHourForOneHour = 0.8807601331882207
     
     @MainActor override func setUpWithError() throws {
         Dependency.useMockConstructors = true

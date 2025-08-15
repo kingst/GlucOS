@@ -396,9 +396,10 @@ struct InsulinDelivered {
         
         let model: InsulinModel
         if insulinType == .lyumjev {
-            // TODO: Revisit after experimenting with 10 hour DIA
-            //model = ExponentialInsulinModel(actionDuration: 6.hoursToSeconds(), peakActivityTime: 45.minutesToSeconds())
-            model = PresetInsulinModelProvider(defaultRapidActingModel: nil).model(for: insulinType)
+            // TODO: Experiment with 10 hour DIA to see if it's better
+            // Loop's settings for Lyumjev are wrong, from the manufacturer the
+            // peak time is 45 minutes.
+            model = ExponentialInsulinModel(actionDuration: 6.hoursToSeconds(), peakActivityTime: 45.minutesToSeconds())
         } else {
             model = PresetInsulinModelProvider(defaultRapidActingModel: nil).model(for: insulinType)
         }
