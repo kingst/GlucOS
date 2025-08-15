@@ -53,6 +53,7 @@ class DiagnosticViewModel: ObservableObject, ClosedLoopChartDataUpdate {
             integratorContribution: integratorContribution,
             totalPidContribution: totalPidContribution,
             deltaGlucoseError: pidResult?.deltaGlucoseError ?? 0,
+            accumulatedError: pidResult?.accumulatedError ?? 0,
             mlInsulin: mlInsulin,
             physiologicalInsulin: physiologicalInsulin,
             actualInsulin: actualInsulin,

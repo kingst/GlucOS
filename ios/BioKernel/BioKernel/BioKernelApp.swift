@@ -48,6 +48,7 @@ class MyAppDelegate: NSObject, UIApplicationDelegate {
         
         print("BACK: registering for remote notifications")
         application.registerForRemoteNotifications()
+        
         return true
     }
     

@@ -11,7 +11,7 @@ import Charts
 
 struct InsulinView: View {
     @EnvironmentObject var viewModel: DiagnosticViewModel
-    @State private var selectedHours = 2
+    @State private var selectedHours = 4
     
     private var timeWindow: (min: Date, max: Date) {
         let max = Date()
