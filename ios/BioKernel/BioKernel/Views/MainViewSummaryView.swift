@@ -84,6 +84,8 @@ struct MainViewSummaryView: View {
         .background(AppColors.primary)
         .onAppear {
             getDeviceDataManager().pumpManager?.ensureCurrentPumpData(completion: nil)
+            // Just to make sure that the ClosedLoopResults data is loaded
+            let _ = getClosedLoopService()
         }
         .onChange(of: scenePhase) { newPhase in
             if newPhase == .inactive || newPhase == .background {
@@ -91,7 +93,7 @@ struct MainViewSummaryView: View {
             } else if newPhase == .active {
                 self.timer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
                 Task {
-                    predictedGlucose = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: Date())
+                    await pollForNewValues()
                 }
             }
         }
@@ -104,9 +106,15 @@ struct MainViewSummaryView: View {
             print("timer")
             deviceManagerObservable.objectWillChange.send()
             Task {
-                predictedGlucose = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: Date())
+                await pollForNewValues()
             }
         }
+    }
+    
+    func pollForNewValues() async {
+        predictedGlucose = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: Date())
+        let iob = await getInsulinStorage().insulinOnBoard(at: Date())
+        getDeviceDataManager().update(insulinOnBoard: iob, pumpAlarm: nil)
     }
 }
 

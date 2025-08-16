@@ -368,33 +368,33 @@ class LocalDeviceDataManager: DeviceDataManager {
     }
     
     func refreshCgmAndPumpDataFromUI() async {
-        print("checkCgmDataAndLoop call")
-        await checkCgmDataAndLoop()
+        print("checkCgmData call")
+        await checkCgmData()
         
         print("refreshCgmAndPumpDataFromUI")
         guard let pumpManager = self.pumpManager, pumpManager.isOnboarded else {
             return
         }
         
-        // I'm not sure why Loop has this extra call to ensureCurrentPumpData but
-        // since this method comes from the UI it shouldn't happen too often
-        // and should be fine
         print("ensureCurrentPumpData call")
         let _ = await pumpManager.ensureCurrentPumpData()
         print("return")
     }
     
-    // This method is invoked by either the UI or from a pump BLE heartbeat
-    // so we need to make sure that we wait at least 6 minutes between runs
-    func checkCgmDataAndLoop() async {
+    func checkCgmData() async {
         guard let cgmManager = cgmManager else {
             return
         }
-
-        let now = currentTime()
         
         let result = await cgmManager.fetchNewDataIfNeeded()
         await self.processCGMReadingResult(readingResult: result)
+    }
+    
+// This method is invoked from a pump BLE heartbeat or new CGM data
+// so we need to make sure that we wait at least 4.2 minutes between runs
+    func checkCgmDataAndLoop() async {
+        let now = currentTime()
+        await checkCgmData()
         
         // 4.2 minutes comes from Loop, for consistency (they changed it from 6 recently)
         guard now.timeIntervalSince(lastLoopCompleted) > 4.2.minutesToSeconds() else {

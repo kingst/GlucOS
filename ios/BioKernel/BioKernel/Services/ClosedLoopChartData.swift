@@ -21,6 +21,7 @@ struct ClosedLoopChartData: Identifiable {
     let integratorContribution: Double
     let totalPidContribution: Double
     let deltaGlucoseError: Double
+    let accumulatedError: Double
     let mlInsulin: Double
     let physiologicalInsulin: Double
     let actualInsulin: Double

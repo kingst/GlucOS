@@ -137,11 +137,11 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
         let filteredGlucose = lowPassFilter(glucose: glucoseInMgDl, at: at)
         let error = filteredGlucose - targetGlucoseInMgDl
         var derivative = 0.0
-        if let dt = lastGlucoseAt.map({ at.timeIntervalSince($0) }), dt < 11.minutesToSeconds(), let lastGlucose = lastGlucose {
+        if let dt = lastGlucoseAt.map({ at.timeIntervalSince($0) }), dt < 11.minutesToSeconds(), let lastFilteredGlucose = lastFilteredGlucose {
             // these are slighly non-standard for PID but we do it this
             // way to keep our derivative and integral in glucose units
             // to make it easier to set Ki and Kd
-            derivative = (filteredGlucose - lastGlucose)
+            derivative = (filteredGlucose - lastFilteredGlucose)
             
             // with this check we're trying to only accumulate errors
             // when we're outside of digestion and accumulate deltaGlucose

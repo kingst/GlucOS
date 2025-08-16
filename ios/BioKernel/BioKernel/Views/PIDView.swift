@@ -11,7 +11,7 @@ import Charts
 
 struct PIDView: View {
     @EnvironmentObject var viewModel: DiagnosticViewModel
-    @State private var selectedHours = 2
+    @State private var selectedHours = 4
     
     private var timeWindow: (min: Date, max: Date) {
         let max = Date()
@@ -41,6 +41,7 @@ struct PIDView: View {
         var points = [ChartPoint]()
         for data in viewModel.chartData {
             points.append(ChartPoint(at: data.at, value: data.deltaGlucoseError, type: "Delta Glucose Error"))
+            points.append(ChartPoint(at: data.at, value: data.accumulatedError, type: "Accumulated Error"))
         }
         return points
     }
