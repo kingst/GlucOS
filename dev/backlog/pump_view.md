@@ -55,6 +55,9 @@ struct Basal {
   let delieveredUnits: Double?
 }
 
+// the basic idea is to make it easy for the UI to tell the difference
+// between different types of commands, but if you can think of a better
+// way to represent this go for it
 enum PumpDose {
   case suspend(Suspend)
   case resume(Resume)
