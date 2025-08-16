@@ -23,7 +23,7 @@ struct DiagnosticChartScrollView<Content: View>: View {
                     HStack(spacing: 0) {
                         content
                             .padding()
-                            .frame(width: geometry.size.width * CGFloat(24 / selectedHours))
+                            .frame(width: geometry.size.width * (selectedHours > 0 ? CGFloat(24 / selectedHours) : 1.0))
                         
                         Color.clear.frame(width: 0, height: 0).id("scroll_end_anchor")
                     }
