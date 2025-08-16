@@ -55,7 +55,7 @@ struct Basal {
   let delieveredUnits: Double?
 }
 
-enum PumpDoses {
+enum PumpDose {
   case suspend(Suspend)
   case resume(Resume)
   case bolus(Bolus)
@@ -77,6 +77,14 @@ func registerForUpdates(delegate: PumpCommandUpdates) -> [DoseEntry]
 
 Within the InsulinStorage service, keep a weak pointer to the
 delegate.
+
+For now, don't worry about inferring scheduled basal, we'll figure
+that out later.
+
+You'll probably want to keep two data structures. One is a dictionary
+keyed on the syncIdentifier for quick lookups for mutating events and
+the other is a list of PumpDose that is @Published for the View to
+consume.
 
 ## Suspend and resume
 
@@ -147,3 +155,13 @@ currently running. Note: When the bolus or temp basal commands are
 running, use `programmedUnits` and `rate` respectively for the
 number. When the commands are complete, use `delieveredUnits` for
 both.
+
+### Active Command Display Rules
+- Blinking animation: 0.5s on, 0.5s off
+- A command is considered "active" when isComplete == false
+
+### Display Formatting
+- Insulin units: Show at most 2 decimal places (e.g., "1.5U" or "1.25U")
+- Rates: Show as "X.XX U/h" 
+- Times: Use relative times for < 1 hour ("5 min ago"), otherwise use localized time.
+- Maintain at most 24 hours worth of data
