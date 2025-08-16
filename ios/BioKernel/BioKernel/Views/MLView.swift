@@ -15,7 +15,7 @@ struct MLView: View {
     
     private var timeWindow: (min: Date, max: Date) {
         let max = Date()
-        let min = max - TimeInterval(selectedHours * 3600)
+        let min = max - TimeInterval(24 * 3600)
         return (min, max)
     }
     
@@ -44,6 +44,10 @@ struct MLView: View {
         }
         return points
     }
+
+    private var strideInHours: Int {
+        return selectedHours > 6 ? 2 : 1
+    }
     
     var body: some View {
         VStack {
@@ -55,27 +59,38 @@ struct MLView: View {
             }
             .pickerStyle(SegmentedPickerStyle())
             
-            VStack {
-                Chart(insulinChartPoints) {
-                    LineMark(
-                        x: .value("Time", $0.at),
-                        y: .value("Value", $0.value)
-                    )
-                    .foregroundStyle(by: .value("Series", $0.type))
+            DiagnosticChartScrollView(selectedHours: $selectedHours) {
+                VStack {
+                    Chart(insulinChartPoints) {
+                        LineMark(
+                            x: .value("Time", $0.at),
+                            y: .value("Value", $0.value)
+                        )
+                        .foregroundStyle(by: .value("Series", $0.type))
+                    }
+                    .chartXScale(domain: timeWindow.min...timeWindow.max)
+                    .chartLegend(position: .bottom, alignment: .trailing)
+                    
+                    Chart(mlInsulinLastThreeHoursChartPoints) {
+                        LineMark(
+                            x: .value("Time", $0.at),
+                            y: .value("Value", $0.value)
+                        )
+                        .foregroundStyle(by: .value("Series", $0.type))
+                        .lineStyle(StrokeStyle(dash: $0.type == "Basal Rate * 3" ? [5, 5] : []))
+                    }
+                    .chartForegroundStyleScale(["ML Insulin Last 3 Hours": .purple, "Basal Rate * 3": .green])
+                    .chartXScale(domain: timeWindow.min...timeWindow.max)
+                    .chartLegend(position: .bottom, alignment: .trailing)
                 }
-                .chartXScale(domain: timeWindow.min...timeWindow.max)
-                
-                Chart(mlInsulinLastThreeHoursChartPoints) {
-                    LineMark(
-                        x: .value("Time", $0.at),
-                        y: .value("Value", $0.value)
-                    )
-                    .foregroundStyle(by: .value("Series", $0.type))
-                    .lineStyle(StrokeStyle(dash: $0.type == "Basal Rate * 3" ? [5, 5] : []))
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: .hour, count: strideInHours)) { value in
+                        AxisValueLabel(format: .dateTime.hour())
+                        AxisGridLine()
+                        AxisTick()
+                    }
                 }
-                .chartForegroundStyleScale(["ML Insulin Last 3 Hours": .purple, "Basal Rate * 3": .green])
-                .chartXScale(domain: timeWindow.min...timeWindow.max)
-            }.padding()
+            }
         }
     }
 }

@@ -57,6 +57,7 @@
 		3B7C6D9C2B0C09320030DFA7 /* InsulinStorageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B7C6D9B2B0C09320030DFA7 /* InsulinStorageTests.swift */; };
 		3B7F08412B2DDE33002930A4 /* ClosedLoopTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B7F08402B2DDE33002930A4 /* ClosedLoopTests.swift */; };
 		3B7F08622B31590D002930A4 /* BolusProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B7F08612B31590D002930A4 /* BolusProgressView.swift */; };
+		3B8906552E50EA9500F32799 /* DiagnosticChartScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8906542E50EA9500F32799 /* DiagnosticChartScrollView.swift */; };
 		3B96F2542D08A2A800ABBA16 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B96F2532D08A2A800ABBA16 /* WidgetKit.framework */; };
 		3B96F2562D08A2A800ABBA16 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B96F2552D08A2A800ABBA16 /* SwiftUI.framework */; };
 		3B96F25F2D08A2A900ABBA16 /* LauncherWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3B96F2522D08A2A800ABBA16 /* LauncherWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -262,6 +263,7 @@
 		3B7C6D9B2B0C09320030DFA7 /* InsulinStorageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsulinStorageTests.swift; sourceTree = "<group>"; };
 		3B7F08402B2DDE33002930A4 /* ClosedLoopTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClosedLoopTests.swift; sourceTree = "<group>"; };
 		3B7F08612B31590D002930A4 /* BolusProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusProgressView.swift; sourceTree = "<group>"; };
+		3B8906542E50EA9500F32799 /* DiagnosticChartScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticChartScrollView.swift; sourceTree = "<group>"; };
 		3B96F2522D08A2A800ABBA16 /* LauncherWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LauncherWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B96F2532D08A2A800ABBA16 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		3B96F2552D08A2A800ABBA16 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -586,6 +588,7 @@
 				3B7F08612B31590D002930A4 /* BolusProgressView.swift */,
 				3BBC7C7C2B15679700410123 /* BolusView.swift */,
 				3B6063B12B54BDB7009D9CBC /* DecimalPicker.swift */,
+				3B8906542E50EA9500F32799 /* DiagnosticChartScrollView.swift */,
 				3BF1F1E32E4F1D3D00AF36AD /* DiagnosticDataView.swift */,
 				3B6EC2312BD8131A008BFD4D /* DigestionGauge.swift */,
 				3B3C9B112C46B12300BB7CCF /* GlucoseAlertsView.swift */,
@@ -862,6 +865,7 @@
 				3B96F2682D08C86D00ABBA16 /* WatchComms.swift in Sources */,
 				3B96F29A2D08CD6B00ABBA16 /* CommandStatus.swift in Sources */,
 				3B96F29B2D08CD6B00ABBA16 /* SessionDelegator.swift in Sources */,
+				3B8906552E50EA9500F32799 /* DiagnosticChartScrollView.swift in Sources */,
 				3B96F29F2D08CD6B00ABBA16 /* SessionCommands.swift in Sources */,
 				3BD7E2102C48A3AB0093D300 /* NotificationManager.swift in Sources */,
 				3BF1631C2D20A6B700287BA0 /* WorkoutStatusService.swift in Sources */,

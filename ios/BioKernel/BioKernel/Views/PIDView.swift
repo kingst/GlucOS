@@ -15,7 +15,7 @@ struct PIDView: View {
     
     private var timeWindow: (min: Date, max: Date) {
         let max = Date()
-        let min = max - TimeInterval(selectedHours * 3600)
+        let min = max - TimeInterval(24 * 3600)
         return (min, max)
     }
     
@@ -45,6 +45,10 @@ struct PIDView: View {
         }
         return points
     }
+
+    private var strideInHours: Int {
+        return selectedHours > 6 ? 2 : 1
+    }
     
     var body: some View {
         VStack {
@@ -56,25 +60,36 @@ struct PIDView: View {
             }
             .pickerStyle(SegmentedPickerStyle())
             
-            VStack {
-                Chart(pidChartPoints) {
-                    LineMark(
-                        x: .value("Time", $0.at),
-                        y: .value("Value", $0.value)
-                    )
-                    .foregroundStyle(by: .value("Series", $0.type))
+            DiagnosticChartScrollView(selectedHours: $selectedHours) {
+                VStack {
+                    Chart(pidChartPoints) {
+                        LineMark(
+                            x: .value("Time", $0.at),
+                            y: .value("Value", $0.value)
+                        )
+                        .foregroundStyle(by: .value("Series", $0.type))
+                    }
+                    .chartXScale(domain: timeWindow.min...timeWindow.max)
+                    .chartLegend(position: .bottom, alignment: .trailing)
+                    
+                    Chart(deltaGlucoseChartPoints) {
+                        LineMark(
+                            x: .value("Time", $0.at),
+                            y: .value("Value", $0.value)
+                        )
+                        .foregroundStyle(by: .value("Series", $0.type))
+                    }
+                    .chartXScale(domain: timeWindow.min...timeWindow.max)
+                    .chartLegend(position: .bottom, alignment: .trailing)
                 }
-                .chartXScale(domain: timeWindow.min...timeWindow.max)
-                
-                Chart(deltaGlucoseChartPoints) {
-                    LineMark(
-                        x: .value("Time", $0.at),
-                        y: .value("Value", $0.value)
-                    )
-                    .foregroundStyle(by: .value("Series", $0.type))
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: .hour, count: strideInHours)) { value in
+                        AxisValueLabel(format: .dateTime.hour())
+                        AxisGridLine()
+                        AxisTick()
+                    }
                 }
-                .chartXScale(domain: timeWindow.min...timeWindow.max)
-            }.padding()
+            }
         }
     }
 }
