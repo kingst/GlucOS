@@ -15,7 +15,7 @@ struct InsulinView: View {
     
     private var timeWindow: (min: Date, max: Date) {
         let max = Date()
-        let min = max - TimeInterval(selectedHours * 3600)
+        let min = max - TimeInterval(24 * 3600)
         return (min, max)
     }
     
@@ -42,6 +42,10 @@ struct InsulinView: View {
         }
         return points
     }
+
+    private var strideInHours: Int {
+        return selectedHours > 6 ? 2 : 1
+    }
     
     var body: some View {
         VStack {
@@ -53,30 +57,45 @@ struct InsulinView: View {
             }
             .pickerStyle(SegmentedPickerStyle())
             
-            VStack {
-                Chart(glucoseChartPoints) {
-                    LineMark(
-                        x: .value("Time", $0.at),
-                        y: .value("Value", $0.value)
-                    )
-                    .foregroundStyle(by: .value("Series", $0.type))
+            DiagnosticChartScrollView(selectedHours: $selectedHours) {
+                VStack {
+                    Chart(glucoseChartPoints) {
+                        LineMark(
+                            x: .value("Time", $0.at),
+                            y: .value("Value", $0.value)
+                        )
+                        .foregroundStyle(by: .value("Series", $0.type))
+                    }
+                    .chartForegroundStyleScale(["Glucose": .blue])
+                    .chartXScale(domain: timeWindow.min...timeWindow.max)
+                    .chartLegend(position: .bottom, alignment: .trailing)
+                    .chartYAxis {
+                        AxisMarks(preset: .inset, position: .trailing)
+                    }
+                    
+                    Chart(iobChartPoints) {
+                        LineMark(
+                            x: .value("Time", $0.at),
+                            y: .value("Value", $0.value)
+                        )
+                        .foregroundStyle(by: .value("Series", $0.type))
+                        .lineStyle(StrokeStyle(dash: $0.type == "Basal Rate IOB" ? [5, 5] : []))
+                    }
+                    .chartForegroundStyleScale(["IOB": .red, "Basal Rate IOB": .green])
+                    .chartXScale(domain: timeWindow.min...timeWindow.max)
+                    .chartLegend(position: .bottom, alignment: .trailing)
+                    .chartYAxis {
+                        AxisMarks(preset: .inset, position: .trailing)
+                    }
                 }
-                .chartForegroundStyleScale(["Glucose": .blue])
-                .chartXScale(domain: timeWindow.min...timeWindow.max)
-                .chartLegend(position: .bottom, alignment: .leading)
-                
-                Chart(iobChartPoints) {
-                    LineMark(
-                        x: .value("Time", $0.at),
-                        y: .value("Value", $0.value)
-                    )
-                    .foregroundStyle(by: .value("Series", $0.type))
-                    .lineStyle(StrokeStyle(dash: $0.type == "Basal Rate IOB" ? [5, 5] : []))
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: .hour, count: strideInHours)) { value in
+                        AxisValueLabel(format: .dateTime.hour())
+                        AxisGridLine()
+                        AxisTick()
+                    }
                 }
-                .chartForegroundStyleScale(["IOB": .red, "Basal Rate IOB": .green])
-                .chartXScale(domain: timeWindow.min...timeWindow.max)
-                .chartLegend(position: .bottom, alignment: .leading)
-            }.padding()
+            }
         }
     }
 }
