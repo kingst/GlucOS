@@ -69,6 +69,9 @@ struct InsulinView: View {
                     .chartForegroundStyleScale(["Glucose": .blue])
                     .chartXScale(domain: timeWindow.min...timeWindow.max)
                     .chartLegend(position: .bottom, alignment: .trailing)
+                    .chartYAxis {
+                        AxisMarks(preset: .inset, position: .trailing)
+                    }
                     
                     Chart(iobChartPoints) {
                         LineMark(
@@ -81,6 +84,9 @@ struct InsulinView: View {
                     .chartForegroundStyleScale(["IOB": .red, "Basal Rate IOB": .green])
                     .chartXScale(domain: timeWindow.min...timeWindow.max)
                     .chartLegend(position: .bottom, alignment: .trailing)
+                    .chartYAxis {
+                        AxisMarks(preset: .inset, position: .trailing)
+                    }
                 }
                 .chartXAxis {
                     AxisMarks(values: .stride(by: .hour, count: strideInHours)) { value in
