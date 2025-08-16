@@ -8,13 +8,9 @@ history for the pump.
 
 In general, we will have a reverse chronological listing of pump
 commands. We will support four different high level pump commands:
-
   - Suspend
-
   - Resume
-
   - Basal
-
   - Bolus
 
 ## Architecture
@@ -132,11 +128,11 @@ Here is an example of the Trio "Treatments" page, which is a pretty
 good example of what I'm interested in. SMB is Auto bolus in our
 system.
 
-![Trio treatments](./trio-history.png)
+<img src="trio-history.png" alt="Trio treatments" width="300"/>
 
 For our list we'll use something similar
 
-| event                                   | time   |
+| Insulin                                 | Time   |
 |-----------------------------------------|--------|
 | [Blue dot blinking] Bolus 1.5U          | 3:31pm |
 | [Purple dot blinking] Temp basal 0.4U/h | 3:30pm |
