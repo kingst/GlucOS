@@ -390,8 +390,8 @@ class LocalDeviceDataManager: DeviceDataManager {
         await self.processCGMReadingResult(readingResult: result)
     }
     
-    // This method is invoked by either the UI or from a pump BLE heartbeat
-    // so we need to make sure that we wait at least 6 minutes between runs
+// This method is invoked from a pump BLE heartbeat or new CGM data
+// so we need to make sure that we wait at least 4.2 minutes between runs
     func checkCgmDataAndLoop() async {
         let now = currentTime()
         await checkCgmData()
