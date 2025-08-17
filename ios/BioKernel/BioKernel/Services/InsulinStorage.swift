@@ -32,6 +32,11 @@ import Foundation
 import LoopKit
 import HealthKit
 
+public protocol PumpEventUpdate: AnyObject {
+    /// sends the entire event log each time there is an update
+    func update(entries: [NewPumpEvent])
+}
+
 public protocol InsulinStorage {
     func addPumpEvents(_ events: [NewPumpEvent], lastReconciliation: Date?, insulinType: InsulinType) async -> Error?
     func insulinOnBoard(at: Date) async -> Double
@@ -42,6 +47,7 @@ public protocol InsulinStorage {
     func lastPumpSync() async -> Date?
     func currentInsulinType() async -> InsulinType
     func activeBolus(at: Date) async -> DoseEntry?
+    func registerForPumpEntryUpdates(delegate: PumpEventUpdate) async -> [NewPumpEvent]
 }
 
 enum InsulinStorageError: Error {
@@ -75,8 +81,16 @@ actor LocalInsulinStorage: InsulinStorage {
     
     var pumpRecordsBasalProfileStartEvents = false
     
+    weak var updateDelegate: PumpEventUpdate? = nil
+    
     func lastPumpSync() -> Date? {
         return lastPumpReconciliation
+    }
+    
+    func registerForPumpEntryUpdates(delegate: any PumpEventUpdate) async -> [NewPumpEvent] {
+        await readFromDisk()
+        updateDelegate = delegate
+        return eventLog
     }
     
     func currentInsulinType() async -> InsulinType {
@@ -111,6 +125,7 @@ actor LocalInsulinStorage: InsulinStorage {
         self.lastPumpReconciliation = lastReconciliation
         eventLog.append(contentsOf: events)
         let ret = syncDataToDisk()
+        updateDelegate?.update(entries: eventLog)
         await getWatchComms().updateAppContext()
         return ret
     }
@@ -188,7 +203,7 @@ actor LocalInsulinStorage: InsulinStorage {
     private func syncDataToDisk() -> InsulinStorageError? {
         // trim the logs before storing it to disk
         if let mostRecentTime = eventLog.last?.date {
-            let cutOff = mostRecentTime - 9.hoursToSeconds()
+            let cutOff = mostRecentTime - 24.hoursToSeconds()
             let cleanedEvents = removeStaleMutableDoses(events: eventLog)
             let recentEvents = removeOldEvents(events: cleanedEvents, cutOff: cutOff)
             let mostRecentOldEvents = getMostRecentStatefulOldEvents(events: cleanedEvents, cutOff: cutOff)

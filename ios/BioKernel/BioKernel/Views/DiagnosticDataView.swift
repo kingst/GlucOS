@@ -17,7 +17,7 @@ struct DiagnosticDataView: View {
         NavigationView {
             VStack {
                 Picker("", selection: $selectedView) {
-                    Text("History").tag(0)
+                    Text("Pump").tag(0)
                     Text("Insulin").tag(1)
                     Text("PID").tag(2)
                     Text("ML").tag(3)
@@ -26,7 +26,7 @@ struct DiagnosticDataView: View {
                 
                 switch selectedView {
                 case 0:
-                    HistoryView()
+                    PumpHistoryView()
                 case 1:
                     InsulinView()
                 case 2:
