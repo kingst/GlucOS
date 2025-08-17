@@ -186,6 +186,7 @@ class MockReplayLogger: EventLogger {
 }
 
 class MockInsulinStorage: InsulinStorage {
+    func registerForPumpEntryUpdates(delegate: any BioKernel.PumpEventUpdate) async -> [LoopKit.NewPumpEvent] { return [] }
     // stub out these functions with default values
     func addPumpEvents(_ events: [LoopKit.NewPumpEvent], lastReconciliation: Date?, insulinType: LoopKit.InsulinType) async -> Error? { nil }
     func insulinOnBoard(at: Date) async -> Double { 0.0 }
