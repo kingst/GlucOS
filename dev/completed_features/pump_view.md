@@ -1,5 +1,9 @@
 # PumpView
 
+Note: the implementation is a little different from the spec, so use
+the source code for the ground truth for what is actually running in
+the app.
+
 With this feature, we are going to replace the "History" view in the
 diagnostic views with a "Pump" view. The current history view pulls
 deatils from our closed loop service, but instead we want to pull data

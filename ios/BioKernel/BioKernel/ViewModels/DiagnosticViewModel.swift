@@ -142,7 +142,7 @@ class DiagnosticViewModel: ObservableObject, ClosedLoopChartDataUpdate, PumpEven
         // Sort and publish
         let sortedHistory = history.sorted(by: { $0.date > $1.date })
         
-        Task { @MainActor in 
+        await MainActor.run {
             self.pumpHistory = sortedHistory
         }
     }

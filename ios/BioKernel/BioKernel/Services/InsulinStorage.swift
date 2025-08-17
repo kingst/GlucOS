@@ -79,7 +79,7 @@ actor LocalInsulinStorage: InsulinStorage {
     // we don't use this so we can ignore it for now
     var lastPumpReconciliation: Date?
     
-    let logRetnetionTimeInterval = 24.hoursToSeconds()
+    let logRetentionTimeInterval = 24.hoursToSeconds()
     
     var pumpRecordsBasalProfileStartEvents = false
     
@@ -205,7 +205,7 @@ actor LocalInsulinStorage: InsulinStorage {
     private func syncDataToDisk() -> InsulinStorageError? {
         // trim the logs before storing it to disk
         if let mostRecentTime = eventLog.last?.date {
-            let cutOff = mostRecentTime - logRetnetionTimeInterval
+            let cutOff = mostRecentTime - logRetentionTimeInterval
             let cleanedEvents = removeStaleMutableDoses(events: eventLog)
             let recentEvents = removeOldEvents(events: cleanedEvents, cutOff: cutOff)
             let mostRecentOldEvents = getMostRecentStatefulOldEvents(events: cleanedEvents, cutOff: cutOff)
