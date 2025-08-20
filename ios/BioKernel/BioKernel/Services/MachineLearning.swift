@@ -83,15 +83,15 @@ actor AIDosing: MachineLearning {
     func glucosDynamicISF(glucose: Double, targetGlucose: Double, pidTempBasal: PIDTempBasalResult) -> Double? {
 
         // increase dose by up to 30%
-        let insulinScalingPercent = 30.0/100
-        let glucoseRange = 150.0
+        let maxInsulinScalingIncrease = 0.3
+        let glucoseRangeForScaling = 150.0
         
         // conceptually lowers insulin sensitivity by up to 30% between
         // targetGlucose -> targetGlucose + 150 linearly to dose more
         // insulin while above target
         guard glucose > targetGlucose else { return nil }
-        let scalingFactor = 1 + insulinScalingPercent * (glucose - targetGlucose) / glucoseRange
-        return pidTempBasal.tempBasal * scalingFactor.clamp(low: 1, high: 1 + insulinScalingPercent)
+        let scalingFactor = 1 + maxInsulinScalingIncrease * (glucose - targetGlucose) / glucoseRangeForScaling
+        return pidTempBasal.tempBasal * scalingFactor.clamp(low: 1, high: 1 + maxInsulinScalingIncrease)
     }
 }
 
