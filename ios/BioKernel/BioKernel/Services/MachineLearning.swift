@@ -68,27 +68,30 @@ actor AIDosing: MachineLearning {
         let min = dataFrame.map({ $0.glucose }).min() ?? 75
         guard min >= 70 else { await log("low in dataFrame, bail"); return nil }
         
-        guard let predicted = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: at) else { await log("no predicted glucose"); return nil }
-        
         // don't dose while exercising, we only want to handle spikes from meals
         await log("Checking if we're exercising")
         guard await !getWorkoutStatusService().isExercising(at: at) else { await log("is working out"); return nil }
         
-        return glucosDynamicISF(glucoseInMgDl: glucoseInMgDl, dataFrame: dataFrame, pidTempBasal: pidTempBasal)
+        return glucosDynamicISF(glucose: glucoseInMgDl, targetGlucose: targetGlucoseInMgDl, pidTempBasal: pidTempBasal)
     }
 
     /// Simplified version of dynamicISF from Trio. Since dynamicISF isn't based on anything
     /// physiological -- it's just math to dose more when you're high -- let's keep the math super simple.
     ///
     /// Conceptually what this is trying to do is get the individual back into a more manageable range
-    /// (below 140) so that the more principled adaptations can take over.
-    func glucosDynamicISF(glucoseInMgDl: Double, dataFrame: [AddedGlucoseDataRow], pidTempBasal: PIDTempBasalResult) -> Double? {
+    /// so that the more principled adaptations can take over.
+    func glucosDynamicISF(glucose: Double, targetGlucose: Double, pidTempBasal: PIDTempBasalResult) -> Double? {
 
-        // effectively lowers insulin sensitivity by up to 20% between 140 -> 240
-        // linearly to dose more insulin while high
-        guard glucoseInMgDl >= 140 else { return nil }
-        let scalingFactor = 1 + 0.2 * (glucoseInMgDl - 140) / 100
-        return pidTempBasal.tempBasal * scalingFactor.clamp(low: 1, high: 1.2)
+        // increase dose by up to 30%
+        let maxInsulinScalingIncrease = 0.3
+        let glucoseRangeForScaling = 150.0
+        
+        // conceptually lowers insulin sensitivity by up to 30% between
+        // targetGlucose -> targetGlucose + 150 linearly to dose more
+        // insulin while above target
+        guard glucose > targetGlucose else { return nil }
+        let scalingFactor = 1 + maxInsulinScalingIncrease * (glucose - targetGlucose) / glucoseRangeForScaling
+        return pidTempBasal.tempBasal * scalingFactor.clamp(low: 1, high: 1 + maxInsulinScalingIncrease)
     }
 }
 
