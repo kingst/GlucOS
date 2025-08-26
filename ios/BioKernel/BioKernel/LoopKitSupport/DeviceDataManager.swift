@@ -363,6 +363,7 @@ class LocalDeviceDataManager: DeviceDataManager {
     // MARK: - core looping functions
     func newCgmDataAvailable(readingResult: CGMReadingResult) async {
         let now = currentTime()
+        print("PID: processCGMReadingResult...")
         await processCGMReadingResult(readingResult: readingResult)
         await self.checkPumpDataAndLoop(now: now)
     }
@@ -395,12 +396,6 @@ class LocalDeviceDataManager: DeviceDataManager {
     func checkCgmDataAndLoop() async {
         let now = currentTime()
         await checkCgmData()
-        
-        // 4.2 minutes comes from Loop, for consistency (they changed it from 6 recently)
-        guard now.timeIntervalSince(lastLoopCompleted) > 4.2.minutesToSeconds() else {
-            print("wait for enough time to elapse before running again")
-            return
-        }
         await self.checkPumpDataAndLoop(now: now)
     }
     
@@ -414,6 +409,12 @@ class LocalDeviceDataManager: DeviceDataManager {
             return
         }
 
+        // 4.2 minutes comes from Loop, for consistency (they changed it from 6 recently)
+        print("Lastloop \(lastLoopCompleted) -> now \(now)")
+        guard now.timeIntervalSince(lastLoopCompleted) > 4.2.minutesToSeconds() else {
+            print("wait for enough time to elapse before running again")
+            return
+        }
         let lastPumpSync = await pumpManager.ensureCurrentPumpData()
         print("Last pump sync: \(String(describing: lastPumpSync))")
         let success = await getClosedLoopService().loop(at: now)
@@ -433,6 +434,10 @@ class LocalDeviceDataManager: DeviceDataManager {
         switch readingResult {
         case .newData(let values):
             log.default("CGMManager: did update with %d values", values.count)
+            print("PID CGM:")
+            for value in values {
+                print("  - PID \(value.date) \(value.quantity.doubleValue(for: .milligramsPerDeciliter))")
+            }
             
             await getGlucoseStorage().addCgmEvents(glucoseReadings: values)
             let lastReading = await getGlucoseStorage().lastReading()
