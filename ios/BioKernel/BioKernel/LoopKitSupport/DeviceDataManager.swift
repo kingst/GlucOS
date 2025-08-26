@@ -395,12 +395,6 @@ class LocalDeviceDataManager: DeviceDataManager {
     func checkCgmDataAndLoop() async {
         let now = currentTime()
         await checkCgmData()
-        
-        // 4.2 minutes comes from Loop, for consistency (they changed it from 6 recently)
-        guard now.timeIntervalSince(lastLoopCompleted) > 4.2.minutesToSeconds() else {
-            print("wait for enough time to elapse before running again")
-            return
-        }
         await self.checkPumpDataAndLoop(now: now)
     }
     
@@ -414,6 +408,11 @@ class LocalDeviceDataManager: DeviceDataManager {
             return
         }
 
+        // 4.2 minutes comes from Loop, for consistency (they changed it from 6 recently)
+        guard now.timeIntervalSince(lastLoopCompleted) > 4.2.minutesToSeconds() else {
+            print("wait for enough time to elapse before running again")
+            return
+        }
         let lastPumpSync = await pumpManager.ensureCurrentPumpData()
         print("Last pump sync: \(String(describing: lastPumpSync))")
         let success = await getClosedLoopService().loop(at: now)

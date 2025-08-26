@@ -55,6 +55,12 @@ actor LocalGlucoseStorage: GlucoseStorage {
     }
     
     func addCgmEvents(glucoseReadings: [NewGlucoseSample]) async {
+        let syncIdentifiers = Set(self.glucoseReadings.map { $0.syncIdentifier })
+        let glucoseReadings = glucoseReadings.filter { !syncIdentifiers.contains($0.syncIdentifier) }
+        guard !glucoseReadings.isEmpty else {
+            return
+        }
+        
         await replayLogger.add(events: glucoseReadings)
         self.glucoseReadings.append(contentsOf: glucoseReadings)
         self.glucoseReadings = self.glucoseReadings.sorted { $0.date < $1.date }

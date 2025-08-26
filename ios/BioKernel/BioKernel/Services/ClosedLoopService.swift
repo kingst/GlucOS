@@ -31,6 +31,7 @@ actor LocalClosedLoopService: ClosedLoopService {
     var lastClosedLoopRun: ClosedLoopResult? = nil
     let replayLogger = getEventLogger()
     var lastMicroBolus: Date? = nil
+    var isRunningLoop = false
     weak var delegate: (any ClosedLoopChartDataUpdate)? = nil
     
     init() {
@@ -71,10 +72,17 @@ actor LocalClosedLoopService: ClosedLoopService {
     }
     
     func loop(at: Date) async -> Bool {
+        guard !isRunningLoop else {
+            return false
+        }
+        isRunningLoop = true
+        
         let lastRun: ClosedLoopResult = await runLoop(at: at)
         await storeClosedLoopResult(lastRun)
         await replayLogger.add(events: [lastRun])
         lastClosedLoopRun = lastRun
+        
+        isRunningLoop = false
         return lastRun.action == .setTempBasal
     }
     
