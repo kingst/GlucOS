@@ -94,12 +94,6 @@ actor LocalClosedLoopService: ClosedLoopService {
         let glucoseThreshold = targetGlucoseInMgDl + 20
         guard glucoseInMgDl >= glucoseThreshold else { return nil }
         
-        // make sure that our glucose is rising or close to flat. The
-        // reason that we want to allow flat glucose is that sometimes
-        // the sensor can get saturated at 400 mg/dl, and we want
-        // to micro bolus in this case
-        guard predictedGlucoseInMgDl > (glucoseInMgDl - 2) else { return nil }
-        
         // convert the temp basal to the amount of insulin the closed loop algorithm
         // decided to deliver, subtracting off the basal rate so that we're
         // only delivering the correction
@@ -114,7 +108,6 @@ actor LocalClosedLoopService: ClosedLoopService {
         // convert the temp basal to the amount of insulin the closed loop algorithm
         // decided to deliver, subtracting off the basal rate so that we're
         // only delivering the correction
-        
         let insulin = (tempBasal - basalRate) * correctionDurationHours
         guard insulin > 0 else { return nil } // Ensure insulin amount is positive
     
