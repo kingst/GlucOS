@@ -50,7 +50,6 @@ final class MicroBolusTests: XCTestCase {
             glucoseInMgDl: 150,
             targetGlucoseInMgDl: 100,
             basalRate: 1.0,
-            predictedGlucoseInMgDl: 160,
             at: at
         )
         
@@ -68,7 +67,6 @@ final class MicroBolusTests: XCTestCase {
             glucoseInMgDl: 150,
             targetGlucoseInMgDl: 100,
             basalRate: 1.0,
-            predictedGlucoseInMgDl: 160,
             at: at
         )
         
@@ -83,25 +81,10 @@ final class MicroBolusTests: XCTestCase {
             glucoseInMgDl: 115, // Only 15 mg/dL above target
             targetGlucoseInMgDl: 100,
             basalRate: 1.0,
-            predictedGlucoseInMgDl: 120,
             at: Date()
         )
         
         XCTAssertNil(amount, "Should not issue micro bolus when glucose is less than 20 mg/dL above target")
-    }
-    
-    @MainActor func testNoMicroBolusWhenGlucoseFalling() async throws {
-        let amount = await closedLoop.microBolusAmount(
-            tempBasal: 2.0,
-            settings: settings.snapshot(),
-            glucoseInMgDl: 150,
-            targetGlucoseInMgDl: 100,
-            basalRate: 1.0,
-            predictedGlucoseInMgDl: 145, // Predicted < current - 2
-            at: Date()
-        )
-        
-        XCTAssertNil(amount, "Should not issue micro bolus when glucose is predicted to fall")
     }
     
     @MainActor func testNoMicroBolusWhenInsulinAmountNegative() async throws {
@@ -111,7 +94,6 @@ final class MicroBolusTests: XCTestCase {
             glucoseInMgDl: 150,
             targetGlucoseInMgDl: 100,
             basalRate: 1.0,
-            predictedGlucoseInMgDl: 160,
             at: Date()
         )
         
@@ -127,7 +109,6 @@ final class MicroBolusTests: XCTestCase {
             glucoseInMgDl: 150,
             targetGlucoseInMgDl: 100,
             basalRate: 1.0,
-            predictedGlucoseInMgDl: 160,
             at: Date()
         )
         

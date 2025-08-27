@@ -86,19 +86,13 @@ actor LocalClosedLoopService: ClosedLoopService {
         return lastRun.action == .setTempBasal
     }
     
-    func microBolusAmount(tempBasal: Double, settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, basalRate: Double, predictedGlucoseInMgDl: Double, at: Date) async -> Double? {
+    func microBolusAmount(tempBasal: Double, settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, basalRate: Double, at: Date) async -> Double? {
         // make sure that we haven't issued a micro bolus in the last 4.2 minutes
         guard lastMicroBolus.map({ Date().timeIntervalSince($0) > 4.2.minutesToSeconds() }) ?? true else { return nil }
 
         // make sure we're at least 20 mg/dl above our target
         let glucoseThreshold = targetGlucoseInMgDl + 20
         guard glucoseInMgDl >= glucoseThreshold else { return nil }
-        
-        // make sure that our glucose is rising or close to flat. The
-        // reason that we want to allow flat glucose is that sometimes
-        // the sensor can get saturated at 400 mg/dl, and we want
-        // to micro bolus in this case
-        guard predictedGlucoseInMgDl > (glucoseInMgDl - 2) else { return nil }
         
         // convert the temp basal to the amount of insulin the closed loop algorithm
         // decided to deliver, subtracting off the basal rate so that we're
@@ -114,7 +108,6 @@ actor LocalClosedLoopService: ClosedLoopService {
         // convert the temp basal to the amount of insulin the closed loop algorithm
         // decided to deliver, subtracting off the basal rate so that we're
         // only delivering the correction
-        
         let insulin = (tempBasal - basalRate) * correctionDurationHours
         guard insulin > 0 else { return nil } // Ensure insulin amount is positive
     
@@ -250,8 +243,8 @@ actor LocalClosedLoopService: ClosedLoopService {
         // calculate the micro bolus candidates and the biological invariant
         // IMPORTANT: you must run the mlTempBasal through the safety logic and use only
         // that temp basal for micro bolus calculations, or you can use the physiological temp basal
-        let microBolusSafety = await microBolusAmount(tempBasal: safetyTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, basalRate: basalRate, predictedGlucoseInMgDl: predictedGlucoseInMgDl, at: at) ?? 0.0
-        let microBolusPhysiological = await microBolusAmount(tempBasal: physiologicalTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, basalRate: basalRate, predictedGlucoseInMgDl: predictedGlucoseInMgDl, at: at) ?? 0.0
+        let microBolusSafety = await microBolusAmount(tempBasal: safetyTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, basalRate: basalRate, at: at) ?? 0.0
+        let microBolusPhysiological = await microBolusAmount(tempBasal: physiologicalTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, basalRate: basalRate, at: at) ?? 0.0
         let biologicalInvariant = await getPhysiologicalModels().deltaGlucoseError(settings: settings, dataFrame: dataFrame, at: at)
         
         let dose = determineDose(settings: settings, physiologicalTempBasal: physiologicalTempBasal, mlTempBasal: mlTempBasal, safetyTempBasal: safetyTempBasal, microBolusPhysiological: microBolusPhysiological, microBolusSafety: microBolusSafety, biologicalInvariant: biologicalInvariant, isExercising: isExercising, machineLearningInsulinLastThreeHours: safetyTempBasalResult.machineLearningInsulinLastThreeHours)
