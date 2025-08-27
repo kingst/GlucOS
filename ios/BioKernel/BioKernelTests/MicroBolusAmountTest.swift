@@ -50,7 +50,6 @@ final class MicroBolusTests: XCTestCase {
             glucoseInMgDl: 150,
             targetGlucoseInMgDl: 100,
             basalRate: 1.0,
-            predictedGlucoseInMgDl: 160,
             at: at
         )
         
@@ -68,7 +67,6 @@ final class MicroBolusTests: XCTestCase {
             glucoseInMgDl: 150,
             targetGlucoseInMgDl: 100,
             basalRate: 1.0,
-            predictedGlucoseInMgDl: 160,
             at: at
         )
         
@@ -83,7 +81,6 @@ final class MicroBolusTests: XCTestCase {
             glucoseInMgDl: 115, // Only 15 mg/dL above target
             targetGlucoseInMgDl: 100,
             basalRate: 1.0,
-            predictedGlucoseInMgDl: 120,
             at: Date()
         )
         
@@ -97,7 +94,6 @@ final class MicroBolusTests: XCTestCase {
             glucoseInMgDl: 150,
             targetGlucoseInMgDl: 100,
             basalRate: 1.0,
-            predictedGlucoseInMgDl: 160,
             at: Date()
         )
         
@@ -113,7 +109,6 @@ final class MicroBolusTests: XCTestCase {
             glucoseInMgDl: 150,
             targetGlucoseInMgDl: 100,
             basalRate: 1.0,
-            predictedGlucoseInMgDl: 160,
             at: Date()
         )
         
