@@ -49,7 +49,6 @@ final class MicroBolusTests: XCTestCase {
             settings: settings.snapshot(),
             glucoseInMgDl: 150,
             targetGlucoseInMgDl: 100,
-            basalRate: 1.0,
             at: at
         )
         
@@ -66,7 +65,6 @@ final class MicroBolusTests: XCTestCase {
             settings: settings.snapshot(),
             glucoseInMgDl: 150,
             targetGlucoseInMgDl: 100,
-            basalRate: 1.0,
             at: at
         )
         
@@ -80,7 +78,6 @@ final class MicroBolusTests: XCTestCase {
             settings: settings.snapshot(),
             glucoseInMgDl: 115, // Only 15 mg/dL above target
             targetGlucoseInMgDl: 100,
-            basalRate: 1.0,
             at: Date()
         )
         
@@ -93,7 +90,6 @@ final class MicroBolusTests: XCTestCase {
             settings: settings.snapshot(),
             glucoseInMgDl: 150,
             targetGlucoseInMgDl: 100,
-            basalRate: 1.0,
             at: Date()
         )
         
@@ -108,12 +104,34 @@ final class MicroBolusTests: XCTestCase {
             settings: settings.snapshot(),
             glucoseInMgDl: 150,
             targetGlucoseInMgDl: 100,
-            basalRate: 1.0,
             at: Date()
         )
         
         XCTAssertNotNil(amount)
         XCTAssertLessThanOrEqual(amount ?? 0, 1.0, "Micro bolus should be clamped to max (2.0 U/hr * 0.5 hr)")
+    }
+    
+    @MainActor func testMicroBolusAmountClampedToInsulin() async throws {
+        // Set a dose factor > 1.0 to test clamping against total insulin
+        settings.update(maxBasalRateUnitsPerHour: 10)
+        settings.update(microBolusDoseFactor: 1.2)
+        let snapshot = settings.snapshot()
+        let correctionDurationHours = snapshot.correctionDurationInSeconds / 3600.0
+        let tempBasal = 5.0
+        let insulin = tempBasal * correctionDurationHours // 2.5
+
+        let amount = await closedLoop.microBolusAmount(
+            tempBasal: tempBasal,
+            settings: snapshot,
+            glucoseInMgDl: 150,
+            targetGlucoseInMgDl: 100,
+            at: Date()
+        )
+        
+        XCTAssertNotNil(amount)
+        // With doseFactor=1.2, amount would be 1.2 * 2.5 = 3.0.
+        // It should be clamped to insulin, which is 2.5.
+        XCTAssertEqual(amount ?? 0, insulin, accuracy: insulinAccuracy, "Micro bolus should be clamped to the total insulin amount")
     }
 }
 
