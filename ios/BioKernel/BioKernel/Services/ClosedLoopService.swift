@@ -115,7 +115,7 @@ actor LocalClosedLoopService: ClosedLoopService {
         let maxBolus = settings.maxBasalRateUnitsPerHour * correctionDurationHours
         
         // Deliver part for now so that if nothing changes we deliver the full amount over 15-30 minutes
-        let amount = (settings.getMicroBolusDoseFactor() * insulin).clamp(low: 0, high: insulin)
+        let amount = (settings.getMicroBolusDoseFactor() * insulin).clamp(low: 0, high: min(insulin, maxBolus))
     
         // Round to the nearest supported bolus volume
         return await getDeviceDataManager().pumpManager?.roundToSupportedBolusVolume(units: amount) ?? amount
