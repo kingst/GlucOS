@@ -89,7 +89,7 @@ final class MicroBolusTests: XCTestCase {
     
     @MainActor func testNoMicroBolusWhenInsulinAmountNegative() async throws {
         let amount = await closedLoop.microBolusAmount(
-            tempBasal: 0.5, // Less than basal rate
+            tempBasal: -0.5,
             settings: settings.snapshot(),
             glucoseInMgDl: 150,
             targetGlucoseInMgDl: 100,

@@ -106,16 +106,16 @@ actor LocalClosedLoopService: ClosedLoopService {
         }
 
         // convert the temp basal to the amount of insulin the closed loop algorithm
-        // decided to deliver, subtracting off the basal rate so that we're
-        // only delivering the correction
-        let insulin = (tempBasal - basalRate) * correctionDurationHours
+        // decided to deliver over the correctionDurationHours period
+        // Note: The micro bolus includes any insulin for basal glucose
+        let insulin = tempBasal * correctionDurationHours
         guard insulin > 0 else { return nil } // Ensure insulin amount is positive
     
         // Calculate the micro-bolus amount and clamp within valid bounds
         let maxBolus = settings.maxBasalRateUnitsPerHour * correctionDurationHours
         
         // Deliver part for now so that if nothing changes we deliver the full amount over 15-30 minutes
-        let amount = (settings.getMicroBolusDoseFactor() * insulin).clamp(low: 0, high: maxBolus)
+        let amount = (settings.getMicroBolusDoseFactor() * insulin).clamp(low: 0, high: insulin)
     
         // Round to the nearest supported bolus volume
         return await getDeviceDataManager().pumpManager?.roundToSupportedBolusVolume(units: amount) ?? amount
