@@ -86,7 +86,7 @@ actor AIDosing: MachineLearning {
         let maxInsulinScalingIncrease = 0.5
         let glucoseRangeForScaling = 150.0
         
-        // conceptually lowers insulin sensitivity by up to 50% between
+        // This conceptually lowers insulin sensitivity for glucose values between
         // targetGlucose -> targetGlucose + 150 linearly to dose more
         // insulin while above target
         guard glucose > targetGlucose else { return nil }
