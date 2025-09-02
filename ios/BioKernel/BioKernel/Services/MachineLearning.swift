@@ -82,11 +82,11 @@ actor AIDosing: MachineLearning {
     /// so that the more principled adaptations can take over.
     func glucosDynamicISF(glucose: Double, targetGlucose: Double, pidTempBasal: PIDTempBasalResult) -> Double? {
 
-        // increase dose by up to 30%
-        let maxInsulinScalingIncrease = 0.3
+        // increase dose by up to 50%
+        let maxInsulinScalingIncrease = 0.5
         let glucoseRangeForScaling = 150.0
         
-        // conceptually lowers insulin sensitivity by up to 30% between
+        // This conceptually lowers insulin sensitivity for glucose values between
         // targetGlucose -> targetGlucose + 150 linearly to dose more
         // insulin while above target
         guard glucose > targetGlucose else { return nil }
