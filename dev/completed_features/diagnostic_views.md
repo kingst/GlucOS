@@ -72,7 +72,7 @@ For mlInsulin this is calculated as:
   - actualInsulin = actualTempBasal / 12 + actualMicroBolus
 
 ## Data structures and protocols
-
+```swift
 // Data structure that the view will consume
 struct ClosedLoopChartData {
     let at: Date
@@ -98,3 +98,4 @@ protocol ClosedLoopChartDataUpdate {
 // atomically returns the current closed loop result set and registers
 // the delegate for future updates
 func registerClosedLoopChartDataDelegate(delegate: ClosedLoopChartDataUpdate) -> [ClosedLoopResult]
+```
