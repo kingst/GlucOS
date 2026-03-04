@@ -36,6 +36,8 @@ actor LocalClosedLoopService: ClosedLoopService {
     
     init() {
         closedLoopResults = (try? storage.read()) ?? []
+        // avoid creating a background task when testing
+        guard !isRunningTests else { return }
         Task { await updateFilteredGlucoseChartData() }
     }
     
