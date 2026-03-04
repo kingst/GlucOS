@@ -24,7 +24,7 @@ final class MicroBolusTests: XCTestCase {
         Dependency.mock { MockWatchComms() as WatchComms }
         Dependency.mock { MockDeviceDataManager() as DeviceDataManager }
         
-        closedLoop = LocalClosedLoopService()
+        closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         
         // Set default test values
         settings.update(

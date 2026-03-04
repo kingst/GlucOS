@@ -26,11 +26,11 @@ actor LocalGlucoseStorage: GlucoseStorage {
     var storage = getStoredObject().create(fileName: "glucose.json")
     let replayLogger = getEventLogger()
     
-    init() {
+    init(startBackgroundTask: Bool = true) {
         glucoseReadings = (try? storage.read()) ?? []
-        // avoid creating a background task when testing
-        guard !isRunningTests else { return }
-        Task { await updateGlucoseChartData() }
+        if startBackgroundTask {
+            Task { await updateGlucoseChartData() }
+        }
     }
     
     func lastReading() async -> NewGlucoseSample? {

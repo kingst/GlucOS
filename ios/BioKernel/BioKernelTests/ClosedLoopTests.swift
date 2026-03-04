@@ -51,7 +51,7 @@ final class ClosedLoopTests: XCTestCase {
     }
     
     func testDoseLogic() async {
-        let closedLoop = LocalClosedLoopService()
+        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
         await settings.update(useMicroBolus: false, useMachineLearningClosedLoop: false, useBiologicalInvariant: false)
         
@@ -65,7 +65,7 @@ final class ClosedLoopTests: XCTestCase {
     }
     
     func testDoseLogicUseMachineLearning() async {
-        let closedLoop = LocalClosedLoopService()
+        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
         await settings.update(useMicroBolus: false, useMachineLearningClosedLoop: true, useBiologicalInvariant: false)
         
@@ -79,7 +79,7 @@ final class ClosedLoopTests: XCTestCase {
     }
     
     func testDoseLogicUseMachineLearningMicroBolus() async {
-        let closedLoop = LocalClosedLoopService()
+        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
         await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: true, useBiologicalInvariant: false)
         
@@ -93,7 +93,7 @@ final class ClosedLoopTests: XCTestCase {
     }
     
     func testDoseLogicUseMicroBolus() async {
-        let closedLoop = LocalClosedLoopService()
+        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
         await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: false, useBiologicalInvariant: false)
         
@@ -112,7 +112,7 @@ final class ClosedLoopTests: XCTestCase {
     }
     
     func testDoseLogicDisableMicroBolusFromExercise() async {
-        let closedLoop = LocalClosedLoopService()
+        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
         await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: false, useBiologicalInvariant: false)
         
@@ -127,7 +127,7 @@ final class ClosedLoopTests: XCTestCase {
     
     
     func testDoseLogicUseBiologicalInvariant() async {
-        let closedLoop = LocalClosedLoopService()
+        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
         await settings.update(useMicroBolus: false, useMachineLearningClosedLoop: false, useBiologicalInvariant: true)
         
@@ -151,7 +151,7 @@ final class ClosedLoopTests: XCTestCase {
     }
     
     func testDoseLogicUseMicroBolusBiologicalInvariant() async {
-        let closedLoop = LocalClosedLoopService()
+        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
         await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: false, useBiologicalInvariant: true)
         
@@ -175,7 +175,7 @@ final class ClosedLoopTests: XCTestCase {
     }
     
     func testDoseLogicUseMachineLearningBiologicalInvariant() async {
-        let closedLoop = LocalClosedLoopService()
+        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
         await settings.update(useMicroBolus: false, useMachineLearningClosedLoop: true, useBiologicalInvariant: true)
         
@@ -199,7 +199,7 @@ final class ClosedLoopTests: XCTestCase {
     }
     
     func testDoseLogicUseAll() async {
-        let closedLoop = LocalClosedLoopService()
+        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
         await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: true, useBiologicalInvariant: true)
         

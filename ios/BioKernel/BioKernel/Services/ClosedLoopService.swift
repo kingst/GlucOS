@@ -34,11 +34,11 @@ actor LocalClosedLoopService: ClosedLoopService {
     var isRunningLoop = false
     weak var delegate: (any ClosedLoopChartDataUpdate)? = nil
     
-    init() {
+    init(startBackgroundTask: Bool = true) {
         closedLoopResults = (try? storage.read()) ?? []
-        // avoid creating a background task when testing
-        guard !isRunningTests else { return }
-        Task { await updateFilteredGlucoseChartData() }
+        if startBackgroundTask {
+            Task { await updateFilteredGlucoseChartData() }
+        }
     }
     
     func updateFilteredGlucoseChartData() async {
