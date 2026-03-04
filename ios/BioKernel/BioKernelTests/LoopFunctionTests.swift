@@ -51,7 +51,7 @@ final class LoopFunctionTests: XCTestCase {
         Dependency.mock { MockSafetyService() as SafetyService }
         Dependency.mock { MockStoredObject() as StoredObject }
         
-        closedLoop = LocalClosedLoopService()
+        closedLoop = LocalClosedLoopService(startBackgroundTask: false)
     }
     
     override func tearDownWithError() throws {

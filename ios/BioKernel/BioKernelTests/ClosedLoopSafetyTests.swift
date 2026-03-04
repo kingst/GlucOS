@@ -32,7 +32,7 @@ final class ClosedLoopSafetyTests: XCTestCase {
     // MARK: - Max Basal Safety Tests
     
     func testMaxBasalSafetyLimits() async throws {
-        let closedLoop = LocalClosedLoopService()
+        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
         let maxBasal = 2.0
         await settings.update(maxBasalRateUnitsPerHour: maxBasal)
@@ -70,7 +70,7 @@ final class ClosedLoopSafetyTests: XCTestCase {
     
     // MARK: - Stale Data Tests
     func testStaleCGMData() async throws {
-        let closedLoop = LocalClosedLoopService()
+        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
         let freshnessInterval = 10.minutesToSeconds()
         await settings.update(freshnessIntervalInSeconds: freshnessInterval)
@@ -94,7 +94,7 @@ final class ClosedLoopSafetyTests: XCTestCase {
     
     // MARK: - Recovery Tests
     func testRecoveryFromSafetyViolations() async throws {
-        let closedLoop = LocalClosedLoopService()
+        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
         await settings.update(useBiologicalInvariant: true)
         
@@ -173,7 +173,7 @@ final class ClosedLoopSafetyTests: XCTestCase {
     }
     
     @MainActor func testNegativeBasalRateClampedToZero() async throws {
-        let closedLoop = LocalClosedLoopService()
+        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = MockSettingsStorage()
         
         let result = await closedLoop.applyGuardrails(
@@ -188,7 +188,7 @@ final class ClosedLoopSafetyTests: XCTestCase {
     }
 
     @MainActor func testShutOffBasalRateWhenCurrentGlucoseBelowThreshold() async throws {
-        let closedLoop = LocalClosedLoopService()
+        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = MockSettingsStorage()
         settings.update(shutOffGlucoseInMgDl: 80.0)
         
@@ -204,7 +204,7 @@ final class ClosedLoopSafetyTests: XCTestCase {
     }
 
     @MainActor func testShutOffBasalRateWhenPredictedGlucoseBelowThreshold() async throws {
-        let closedLoop = LocalClosedLoopService()
+        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = MockSettingsStorage()
         settings.update(shutOffGlucoseInMgDl: 80.0)
         
@@ -221,7 +221,7 @@ final class ClosedLoopSafetyTests: XCTestCase {
     
     // MARK: - Tests for bugs we've found
     @MainActor func testDetermineDoseActualTempBasalMatchesSelectedTempBasal() async throws {
-            let closedLoop = LocalClosedLoopService()
+            let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
             let settings = MockSettingsStorage()
             settings.update(useMicroBolus: false, useMachineLearningClosedLoop: false, useBiologicalInvariant: false)
             
