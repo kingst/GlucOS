@@ -32,14 +32,13 @@
 		3B4CFE212C223DD200BDB1CB /* ShareClient.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3B7C6D912B083A440030DFA7 /* ShareClient.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3B4CFE222C223DD900BDB1CB /* ShareClientUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B7C6D942B083A4C0030DFA7 /* ShareClientUI.framework */; };
 		3B4CFE232C223DD900BDB1CB /* ShareClientUI.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3B7C6D942B083A4C0030DFA7 /* ShareClientUI.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		3B5076392F92F77400E5D3A6 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5076382F92F77400E5D3A6 /* PushNotificationService.swift */; };
 		3B5329502B5D8451000DED1A /* AddedGlucoseDataFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B53294F2B5D8451000DED1A /* AddedGlucoseDataFrame.swift */; };
 		3B6063B02B54BDA9009D9CBC /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6063AF2B54BDA9009D9CBC /* SettingsViewModel.swift */; };
 		3B6063B22B54BDB7009D9CBC /* DecimalPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6063B12B54BDB7009D9CBC /* DecimalPicker.swift */; };
 		3B6063B42B54BDFA009D9CBC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6063B32B54BDFA009D9CBC /* SettingsView.swift */; };
 		3B6063B62B558EFA009D9CBC /* MachineLearning.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6063B52B558EFA009D9CBC /* MachineLearning.swift */; };
 		3B6063C32B593821009D9CBC /* PhysiologicalModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6063C22B593821009D9CBC /* PhysiologicalModels.swift */; };
-		3B66FFA12C892EF600DB8CF2 /* SaveDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B66FFA02C892EF600DB8CF2 /* SaveDataView.swift */; };
-		3B66FFA32C89324100DB8CF2 /* SaveDataViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B66FFA22C89324100DB8CF2 /* SaveDataViewModel.swift */; };
 		3B6EC2322BD8131A008BFD4D /* DigestionGauge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6EC2312BD8131A008BFD4D /* DigestionGauge.swift */; };
 		3B709A7B2AF4929D004E5885 /* BioKernelApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B709A7A2AF4929D004E5885 /* BioKernelApp.swift */; };
 		3B709A7F2AF492A0004E5885 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3B709A7E2AF492A0004E5885 /* Assets.xcassets */; };
@@ -140,7 +139,6 @@
 		3CAAFC8E2B0D739200597055 /* InsulinPersistantStorageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CAAFC8D2B0D739200597055 /* InsulinPersistantStorageTests.swift */; };
 		3CAAFC902B0D73C400597055 /* MockClasses.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CAAFC8F2B0D73C400597055 /* MockClasses.swift */; };
 		3CAAFC922B0D947E00597055 /* filter_bug.json in Resources */ = {isa = PBXBuildFile; fileRef = 3CAAFC912B0D947E00597055 /* filter_bug.json */; };
-		3CAAFC942B0E84E600597055 /* EventLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CAAFC932B0E84E600597055 /* EventLogger.swift */; };
 		3CAAFC962B0ED6CE00597055 /* Http.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CAAFC952B0ED6CE00597055 /* Http.swift */; };
 		3CBFB98A2AFE02E90020FC90 /* InulinOnBoardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CBFB9892AFE02E90020FC90 /* InulinOnBoardTests.swift */; };
 		3CBFB9912AFFAEC80020FC90 /* DateTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CBFB9902AFFAEC80020FC90 /* DateTime.swift */; };
@@ -239,14 +237,13 @@
 		3B40DE682D24453F0032328F /* LoopFunctionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopFunctionTests.swift; sourceTree = "<group>"; };
 		3B4CFE132C2230D800BDB1CB /* CGMBLEKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CGMBLEKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B4CFE162C2230DF00BDB1CB /* CGMBLEKitUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CGMBLEKitUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		3B5076382F92F77400E5D3A6 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
 		3B53294F2B5D8451000DED1A /* AddedGlucoseDataFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddedGlucoseDataFrame.swift; sourceTree = "<group>"; };
 		3B6063AF2B54BDA9009D9CBC /* SettingsViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		3B6063B12B54BDB7009D9CBC /* DecimalPicker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DecimalPicker.swift; sourceTree = "<group>"; };
 		3B6063B32B54BDFA009D9CBC /* SettingsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		3B6063B52B558EFA009D9CBC /* MachineLearning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineLearning.swift; sourceTree = "<group>"; };
 		3B6063C22B593821009D9CBC /* PhysiologicalModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhysiologicalModels.swift; sourceTree = "<group>"; };
-		3B66FFA02C892EF600DB8CF2 /* SaveDataView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveDataView.swift; sourceTree = "<group>"; };
-		3B66FFA22C89324100DB8CF2 /* SaveDataViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveDataViewModel.swift; sourceTree = "<group>"; };
 		3B6EC2312BD8131A008BFD4D /* DigestionGauge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigestionGauge.swift; sourceTree = "<group>"; };
 		3B709A772AF4929D004E5885 /* BioKernel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BioKernel.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B709A7A2AF4929D004E5885 /* BioKernelApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BioKernelApp.swift; sourceTree = "<group>"; };
@@ -331,7 +328,6 @@
 		3CAAFC8D2B0D739200597055 /* InsulinPersistantStorageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsulinPersistantStorageTests.swift; sourceTree = "<group>"; };
 		3CAAFC8F2B0D73C400597055 /* MockClasses.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockClasses.swift; sourceTree = "<group>"; };
 		3CAAFC912B0D947E00597055 /* filter_bug.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = filter_bug.json; sourceTree = "<group>"; };
-		3CAAFC932B0E84E600597055 /* EventLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventLogger.swift; sourceTree = "<group>"; };
 		3CAAFC952B0ED6CE00597055 /* Http.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Http.swift; sourceTree = "<group>"; };
 		3CBFB9872AFE02E90020FC90 /* BioKernelTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BioKernelTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3CBFB9892AFE02E90020FC90 /* InulinOnBoardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InulinOnBoardTests.swift; sourceTree = "<group>"; };
@@ -406,7 +402,6 @@
 			children = (
 				3BF1F1DF2E4F19A200AF36AD /* DiagnosticViewModel.swift */,
 				3B3C9B172C46EAB700BB7CCF /* GlucoseAlertsViewModel.swift */,
-				3B66FFA22C89324100DB8CF2 /* SaveDataViewModel.swift */,
 				3B6063AF2B54BDA9009D9CBC /* SettingsViewModel.swift */,
 			);
 			path = ViewModels;
@@ -563,13 +558,13 @@
 				3B3BEC4F2C3D87B8007F0CCE /* BackgroundService.swift */,
 				3BF1F1E12E4F1A4100AF36AD /* ClosedLoopChartData.swift */,
 				3C7553E22AFDC04A00FAD880 /* ClosedLoopService.swift */,
-				3CAAFC932B0E84E600597055 /* EventLogger.swift */,
 				3B3C9B192C46EDD700BB7CCF /* GlucoseAlertStorage.swift */,
 				3C7553DB2AFDA34D00FAD880 /* GlucoseStorage.swift */,
 				3BAECD1F2B28F270002B9062 /* HealthKitStorage.swift */,
 				3C4F79432AFB17D500786EB5 /* InsulinStorage.swift */,
 				3B6063B52B558EFA009D9CBC /* MachineLearning.swift */,
 				3B6063C22B593821009D9CBC /* PhysiologicalModels.swift */,
+				3B5076382F92F77400E5D3A6 /* PushNotificationService.swift */,
 				3B348D912B5D9AEE000A40E9 /* SafetyService.swift */,
 				3BE629B42AFCC8B6001526D4 /* SettingsStorage.swift */,
 				3BF1631F2D217FE900287BA0 /* TargetGlucoseService.swift */,
@@ -602,7 +597,6 @@
 				3B36F67A2B311BCE00008F4A /* NavigationModifier.swift */,
 				3BF1F1E72E4F1D3D00AF36AD /* PIDView.swift */,
 				3BAD0C4B2E521ECA00B1F8CF /* PumpHistoryView.swift */,
-				3B66FFA02C892EF600DB8CF2 /* SaveDataView.swift */,
 				3B6063B32B54BDFA009D9CBC /* SettingsView.swift */,
 				3BF1631D2D20D69F00287BA0 /* WorkoutStatusView.swift */,
 			);
@@ -844,9 +838,7 @@
 				3B36F67D2B311C0800008F4A /* AppColors.swift in Sources */,
 				3BF1F1E02E4F19A200AF36AD /* DiagnosticViewModel.swift in Sources */,
 				3BD7937D2AF55B8200E5FDC9 /* PersistedProperty.swift in Sources */,
-				3B66FFA32C89324100DB8CF2 /* SaveDataViewModel.swift in Sources */,
 				3B36F67F2B311DC100008F4A /* MainViewSummaryView.swift in Sources */,
-				3B66FFA12C892EF600DB8CF2 /* SaveDataView.swift in Sources */,
 				3BF1F1E82E4F1D3D00AF36AD /* MLView.swift in Sources */,
 				3BF1F1E92E4F1D3D00AF36AD /* InsulinView.swift in Sources */,
 				3BF1F1EA2E4F1D3D00AF36AD /* DiagnosticDataView.swift in Sources */,
@@ -855,6 +847,7 @@
 				3BD7937F2AF55DCC00E5FDC9 /* DeviceDataManager.swift in Sources */,
 				3C7553D82AFD947C00FAD880 /* CGMManagerViews.swift in Sources */,
 				3C4911F12AF4D0630070D3B4 /* ManagerExtensions.swift in Sources */,
+				3B5076392F92F77400E5D3A6 /* PushNotificationService.swift in Sources */,
 				3C4911F32AF4D77E0070D3B4 /* Colors.swift in Sources */,
 				3C4911E92AF4C6690070D3B4 /* Dependency.swift in Sources */,
 				3BA00A552D23157C0002B051 /* SettingsDataTypes.swift in Sources */,
@@ -886,7 +879,6 @@
 				3B7F08622B31590D002930A4 /* BolusProgressView.swift in Sources */,
 				3B3C9B162C46E23300BB7CCF /* MainViewGlucoseAlertView.swift in Sources */,
 				3C07C8A22AF9C2AD008F604C /* DoseProgress.swift in Sources */,
-				3CAAFC942B0E84E600597055 /* EventLogger.swift in Sources */,
 				3B6063B42B54BDFA009D9CBC /* SettingsView.swift in Sources */,
 				3C7553DE2AFDB2DA00FAD880 /* Debug.swift in Sources */,
 				3BAD0C4C2E521ECA00B1F8CF /* PumpHistoryView.swift in Sources */,
@@ -1035,7 +1027,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				"LD_RUNPATH_SEARCH_PATHS[sdk=*]" = "";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -1094,7 +1086,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -1122,6 +1114,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BioKernel/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Bluetooth is used to communicate with insulin pump and continuous glucose monitor devices.";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Bluetooth is used to communicate with insulin pump and continuous glucose monitor devices.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "We use Face ID to authenticate insulin bolus and to save changes to therapy settings.";
@@ -1130,9 +1123,9 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				"LD_RUNPATH_SEARCH_PATHS[sdk=*]" = (
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
@@ -1168,6 +1161,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BioKernel/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Bluetooth is used to communicate with insulin pump and continuous glucose monitor devices.";
 				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Bluetooth is used to communicate with insulin pump and continuous glucose monitor devices.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "We use Face ID to authenticate insulin bolus and to save changes to therapy settings.";
@@ -1176,9 +1170,9 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				"LD_RUNPATH_SEARCH_PATHS[sdk=*]" = (
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
@@ -1327,7 +1321,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.getbouncer.BioKernelTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1349,7 +1343,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.getbouncer.BioKernelTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";

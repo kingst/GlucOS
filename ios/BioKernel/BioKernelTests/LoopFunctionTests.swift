@@ -43,7 +43,6 @@ final class LoopFunctionTests: XCTestCase {
         Dependency.mock { self.insulinStorage as InsulinStorage }
         Dependency.mock { self.deviceManager as DeviceDataManager }
         Dependency.mock { MockStoredObject.self as StoredObject.Type }
-        Dependency.mock { MockReplayLogger() as EventLogger }
         Dependency.mock { MockPhysiologicalModels() as PhysiologicalModels }
         Dependency.mock { MockTargetGlucose() as TargetGlucoseService }
         Dependency.mock { MockWorkoutStatusService() as WorkoutStatusService }

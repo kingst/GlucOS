@@ -24,7 +24,7 @@ actor LocalGlucoseStorage: GlucoseStorage {
     
     var glucoseReadings: [NewGlucoseSample]
     var storage = getStoredObject().create(fileName: "glucose.json")
-    let replayLogger = getEventLogger()
+    let healthKitStorage = getHealthKitStorage()
     
     init(startBackgroundTask: Bool = true) {
         glucoseReadings = (try? storage.read()) ?? []
@@ -63,7 +63,6 @@ actor LocalGlucoseStorage: GlucoseStorage {
             return
         }
         
-        await replayLogger.add(events: glucoseReadings)
         self.glucoseReadings.append(contentsOf: glucoseReadings)
         self.glucoseReadings = self.glucoseReadings.sorted { $0.date < $1.date }
         if let mostRecent = glucoseReadings.last {
@@ -78,7 +77,7 @@ actor LocalGlucoseStorage: GlucoseStorage {
                 await getBackgroundService().scheduleAppRefresh()
             }
         }
-        
+
         do {
             try storage.write(self.glucoseReadings)
             await getWatchComms().updateAppContext()
@@ -86,10 +85,14 @@ actor LocalGlucoseStorage: GlucoseStorage {
         } catch {
             print("Failed to save glucose readings to disk")
         }
+
+        Task { [healthKitStorage] in
+            await healthKitStorage.save(glucoseSamples: glucoseReadings)
+        }
     }
 }
 
-extension NewGlucoseSample: Codable {
+extension NewGlucoseSample: @retroactive Codable {
     // CodingKeys enum if needed
     enum CodingKeys: String, CodingKey {
         case date

@@ -50,7 +50,7 @@ struct DecimalPicker: View {
                 Text(item.string).tag(item)
             }
         }
-        .onChange(of: selection) { _ in
+        .onChange(of: selection) {
             hasModifications = true
         }
     }
@@ -69,7 +69,7 @@ struct DecimalPickerWithNotSet: View {
                 Text(item.string).tag(Optional(item))
             }
         }
-        .onChange(of: selection) { _ in
+        .onChange(of: selection) {
             hasModifications = true
         }
     }

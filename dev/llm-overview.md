@@ -41,7 +41,7 @@ Currently, I am making changes to adopt some of the ideas from Trio
 and to clean things up a bit. I'm going to start using it again soon
 (I've been using Trio for a while).
 
-**IMPORTANT** Rules for gemini:
+**IMPORTANT** Rules for Agentic Programming Tools:
 
 * You may use my credentials to read from github repos. Some of this
   work is being done in private repos.
@@ -66,8 +66,8 @@ and to clean things up a bit. I'm going to start using it again soon
   modifying them. Never assume that you're the only one making
   changes.
 
-* Don't change iOS project files, if you create a new file I will add
-  it to the project manually.
+* Don't change iOS project files, if you create a new file or delete a
+  current one I will add it to the project manually.
 
 * Ask questions! If something isn't clear please ask clarifying
   questions before diving in. I'm here to help.

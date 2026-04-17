@@ -18,7 +18,6 @@ final class ClosedLoopSafetyTests: XCTestCase {
         Dependency.useMockConstructors = true
         Dependency.mock { MockSettingsStorage() as SettingsStorage }
         Dependency.mock { MockStoredObject.self as StoredObject.Type }
-        Dependency.mock { MockReplayLogger() as EventLogger }
         Dependency.mock { MockWatchComms() as WatchComms }
         Dependency.mock { MockGlucoseStorage() as GlucoseStorage }
         Dependency.mock { MockDeviceDataManager() as DeviceDataManager }

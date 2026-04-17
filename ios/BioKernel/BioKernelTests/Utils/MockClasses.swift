@@ -174,17 +174,6 @@ class MockTargetGlucose: TargetGlucoseService {
     }
 }
 
-class MockReplayLogger: EventLogger {
-    func update(deviceToken: String) async { }
-    func upload(healthKitRecords: BioKernel.HealthKitRecords) async -> Bool { return false }
-    func add(debugMessage: String) async { }
-    func getReadOnlyAuthToken() async -> String? { nil }
-    func add(events: [BioKernel.ClosedLoopResult]) async { }
-    func add(events: [NewPumpEvent]) async { }
-    func add(events: [NewGlucoseSample]) async { }
-    func add(events: [BioKernel.GlucoseAlert]) async { }
-}
-
 class MockInsulinStorage: InsulinStorage {
     func registerForPumpEntryUpdates(delegate: any BioKernel.PumpEventUpdate) async -> [LoopKit.NewPumpEvent] { return [] }
     // stub out these functions with default values

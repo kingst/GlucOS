@@ -6,8 +6,6 @@
 	<array>
 		<string>com.getgrowthmetrics.BioKernel.background</string>
 	</array>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>We need to send you notifications for glucose alerts.</string>
 	<key>UIBackgroundModes</key>

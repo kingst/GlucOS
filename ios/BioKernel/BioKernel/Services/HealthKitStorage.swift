@@ -25,6 +25,8 @@ import LoopKit
 protocol HealthKitStorage {
     func save(_ glucoseSample: NewGlucoseSample, metadata: [String: Any]) async
     func save(_ pumpEvent: LoopKit.NewPumpEvent, metadata: [String: Any]) async
+    func save(glucoseSamples: [NewGlucoseSample]) async
+    func save(pumpEvents: [LoopKit.NewPumpEvent]) async
     func removeDuplicateEntries() async
     func fetchGlucoseSamples(startDate: Date, endDate: Date) async -> [HKQuantitySample]
     func fetchInsulinSamples(startDate: Date, endDate: Date) async -> [HKQuantitySample]
@@ -32,8 +34,6 @@ protocol HealthKitStorage {
 }
 
 struct HealthKitMetadataKeys {
-    static let eventLogIdKey = "bioKernel.eventLogId"
-    static let totpTokenKey = "bioKernel.totpToken"
     static let syncIdentifierKey = "bioKernel.syncIdentifier"
     static let insulinTypeKey = "bioKernel.insulinType"
 }
@@ -48,6 +48,24 @@ actor LocalHealthKitStorage: HealthKitStorage {
     var isGlucoseDuplicateRemovalRunning = false
     var isInsulinDuplicateRemovalRunning = false
     
+    func save(glucoseSamples: [NewGlucoseSample]) async {
+        for sample in glucoseSamples {
+            let metadata: [String: Any] = [HealthKitMetadataKeys.syncIdentifierKey: sample.syncIdentifier]
+            await save(sample, metadata: metadata)
+        }
+    }
+
+    func save(pumpEvents: [LoopKit.NewPumpEvent]) async {
+        for event in pumpEvents {
+            // syncIdentifier should always be set; fall back to a stable id derived
+            // from date + type so retries don't create duplicate HealthKit samples.
+            let fallbackId = "\(event.date.timeIntervalSince1970)-\(event.type?.rawValue ?? "unknown")"
+            let syncId = event.dose?.syncIdentifier ?? fallbackId
+            let metadata: [String: Any] = [HealthKitMetadataKeys.syncIdentifierKey: syncId]
+            await save(event, metadata: metadata)
+        }
+    }
+
     func save(_ glucoseSample: LoopKit.NewGlucoseSample, metadata: [String: Any]) async {
         guard HKHealthStore.isHealthDataAvailable(), healthStore.authorizationStatus(for: glucoseType) == .sharingAuthorized else {
             return

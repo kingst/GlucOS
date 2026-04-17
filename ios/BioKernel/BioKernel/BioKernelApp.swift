@@ -45,44 +45,37 @@ class MyAppDelegate: NSObject, UIApplicationDelegate {
         assert(WCSession.isSupported())
         WCSession.default.delegate = sessionDelegator
         WCSession.default.activate()
-        
-        print("BACK: registering for remote notifications")
-        application.registerForRemoteNotifications()
-        
+
+        getPushNotificationService().register(application: application)
+
         return true
     }
-    
+
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: any Error) {
-        print("BACK: failed to register \(error)")
+        getPushNotificationService().didFailToRegister(error: error)
     }
-    
+
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         guard !isRunningTests else { return }
-        
-        let hexToken = deviceToken.map { String(format: "%02hhx", $0) }.joined()
-        print("BACK: didRegisterForRemoteNotifications, hextoken: \(hexToken)")
-        Task {
-            await getEventLogger().update(deviceToken: hexToken)
-            await getEventLogger().add(debugMessage: "\(Date()) didRegisterForRemoteNotifications, hextoken: \(hexToken)")
-        }
+        getPushNotificationService().didRegister(deviceToken: deviceToken)
     }
-    
+
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any]) async -> UIBackgroundFetchResult {
 
         guard !isRunningTests else { return .failed }
-        
-        await getEventLogger().add(debugMessage: "\(Date()): PUSH Running in background")
+
+        print("\(Date()): PUSH Running in background")
         guard let cgmManager = getDeviceDataManager().cgmManager else {
-            await getEventLogger().add(debugMessage: "\(Date()): PUSH No CGM manager")
+            print("\(Date()): PUSH No CGM manager")
             return .failed
         }
-        await getEventLogger().add(debugMessage: "\(Date()): PUSH fetchNewDataIfNeeded")
+        print("\(Date()): PUSH fetchNewDataIfNeeded")
         if let g7CgmManager = cgmManager as? G7CGMManager {
-            await getEventLogger().add(debugMessage: "\(Date()): PUSH G7 connected -> \(g7CgmManager.isConnected) scanning -> \(g7CgmManager.isScanning)")
+            print("\(Date()): PUSH G7 connected -> \(g7CgmManager.isConnected) scanning -> \(g7CgmManager.isScanning)")
         }
         let _ = await cgmManager.fetchNewDataIfNeeded()
         if let g7CgmManager = cgmManager as? G7CGMManager {
-            await getEventLogger().add(debugMessage: "\(Date()): PUSH post call G7 connected -> \(g7CgmManager.isConnected) scanning -> \(g7CgmManager.isScanning)")
+            print("\(Date()): PUSH post call G7 connected -> \(g7CgmManager.isConnected) scanning -> \(g7CgmManager.isScanning)")
         }
 
         return .newData

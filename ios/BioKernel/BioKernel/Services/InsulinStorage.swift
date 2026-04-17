@@ -66,7 +66,7 @@ actor LocalInsulinStorage: InsulinStorage {
     
     let storage = getStoredObject().create(fileName: "pump_events.v2.json")
     var hasDoneInitialReadFromDisk = false
-    let replayLogger = getEventLogger()
+    let healthKitStorage = getHealthKitStorage()
     
     init() {
         Task {
@@ -123,12 +123,16 @@ actor LocalInsulinStorage: InsulinStorage {
     
     func addPumpEvents(_ events: [LoopKit.NewPumpEvent], lastReconciliation: Date?, insulinType: InsulinType) async -> Error? {
         await readFromDisk() // just in case the init task hasn't finished yet
-        await replayLogger.add(events: events)
         self.lastPumpReconciliation = lastReconciliation
         eventLog.append(contentsOf: events)
         let ret = syncDataToDisk()
         updateDelegate?.update(entries: eventLog)
         await getWatchComms().updateAppContext()
+
+        Task { [healthKitStorage] in
+            await healthKitStorage.save(pumpEvents: events)
+        }
+
         return ret
     }
     

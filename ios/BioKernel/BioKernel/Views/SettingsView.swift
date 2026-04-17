@@ -13,9 +13,6 @@ struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
     @State var hasModifications = false
     @State var errorString: String?
-    @State var readOnlyAuthToken: String?
-    @State var showCopyCheck = false
-    @State var navigateToSaveData = false
     
     var body: some View {
         VStack {
@@ -27,27 +24,27 @@ struct SettingsView: View {
                 Section {
                     Toggle(isOn: $settingsViewModel.closedLoopEnabled) {
                         Text("Closed loop")
-                    }.onChange(of: settingsViewModel.closedLoopEnabled) { _ in
+                    }.onChange(of: settingsViewModel.closedLoopEnabled) {
                         hasModifications = true
                     }
                     Toggle(isOn: $settingsViewModel.adjustTargetGlucoseDuringExercise) {
                         Text("Adjust target glucose during exercise")
-                    }.onChange(of: settingsViewModel.adjustTargetGlucoseDuringExercise) { _ in
+                    }.onChange(of: settingsViewModel.adjustTargetGlucoseDuringExercise) {
                         hasModifications = true
                     }
                     Toggle(isOn: $settingsViewModel.useMachineLearningClosedLoop) {
                         Text("Use ML closed loop")
-                    }.onChange(of: settingsViewModel.useMachineLearningClosedLoop) { _ in
+                    }.onChange(of: settingsViewModel.useMachineLearningClosedLoop) {
                         hasModifications = true
                     }
                     Toggle(isOn: $settingsViewModel.useMicroBolus) {
                         Text("Use µBolus")
-                    }.onChange(of: settingsViewModel.useMicroBolus) { _ in
+                    }.onChange(of: settingsViewModel.useMicroBolus) {
                         hasModifications = true
                     }
                     Toggle(isOn: $settingsViewModel.useBiologicalInvariant) {
                         Text("Use biological invariant")
-                    }.onChange(of: settingsViewModel.useBiologicalInvariant) { _ in
+                    }.onChange(of: settingsViewModel.useBiologicalInvariant) {
                         hasModifications = true
                     }
                     Button {
@@ -61,33 +58,6 @@ struct SettingsView: View {
                     } label: {
                         Text("Authorize health kit")
                     }
-                    
-                    Button {
-                        navigateToSaveData = true
-                    } label: {
-                        Text("Save data to cloud for ML")
-                    }
-                    
-                    /*
-                    Button {
-                        if let token = readOnlyAuthToken {
-                            let pasteboard = UIPasteboard.general
-                            pasteboard.string = token
-                            showCopyCheck = true
-                        }
-                    } label: {
-                        HStack {
-                            Text("Copy auth token")
-                            Spacer()
-                            if showCopyCheck {
-                                Image(systemName: "checkmark.circle.fill")
-                            } else {
-                                Image(systemName: "doc.on.doc")
-                            }
-                        }
-                    }
-                    .disabled(readOnlyAuthToken == nil)
-                     */
                 }
                 
                 Section("Therapy settings") {
@@ -150,19 +120,13 @@ struct SettingsView: View {
             }
 
         }
-        .navigationDestination(isPresented: $navigateToSaveData) {
-            SaveDataView()
-        }
         .onAppear {
             guard let settingsFromUrl = settingsFromUrl else {
                 return
             }
-            
+
             settingsViewModel.update(using: settingsFromUrl)
             hasModifications = true
-        }
-        .task {
-            readOnlyAuthToken = await getEventLogger().getReadOnlyAuthToken()
         }
     }
 }

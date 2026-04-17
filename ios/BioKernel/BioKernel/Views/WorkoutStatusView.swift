@@ -76,7 +76,7 @@ struct WorkoutStatusView: View {
                 .fill(Color(.systemBackground))
                 .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
         )
-        .onChange(of: scenePhase) { newPhase in
+        .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .inactive || newPhase == .background {
                 self.timer.upstream.connect().cancel()
             } else if newPhase == .active {

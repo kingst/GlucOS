@@ -172,7 +172,7 @@ struct MealAnnounceView: View {
                 }
             }
             .pickerStyle(.inline)
-            .onChange(of: selectedItem) { value in
+            .onChange(of: selectedItem) {
                 bolusAmount = "\(selectedItem.units())"
             }
             .onAppear {
