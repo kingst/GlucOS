@@ -17,5 +17,7 @@
 		<string>processing</string>
 		<string>remote-notification</string>
 	</array>
+	<key>UIDesignRequiresCompatibility</key>
+	<true/>
 </dict>
 </plist>
