@@ -66,11 +66,7 @@ actor AIDosing: MachineLearning {
         // all in the past two hours just bail
         let min = dataFrame.map({ $0.glucose }).min() ?? 75
         guard min >= 70 else { await log("low in dataFrame, bail"); return nil }
-        
-        // don't dose while exercising, we only want to handle spikes from meals
-        await log("Checking if we're exercising")
-        guard await !getWorkoutStatusService().isExercising(at: at) else { await log("is working out"); return nil }
-        
+
         return glucosDynamicISF(glucose: glucoseInMgDl, targetGlucose: targetGlucoseInMgDl, pidTempBasal: pidTempBasal)
     }
 

@@ -13,7 +13,6 @@ import WatchConnectivity
 enum Command: String {
     case updateAppContext = "UpdateAppContext"
     case sendMessage = "SendMessage"
-    case sendMessageData = "SendMessageData"
     case transferUserInfo = "TransferUserInfo"
     case transferFile = "TransferFile"
     case transferCurrentComplicationUserInfo = "TransferComplicationUserInfo"
@@ -40,9 +39,8 @@ struct CommandStatus {
     var command: Command
     var phrase: Phrase
     var bioKernelState: BioKernelState?
-    var workoutMessage: WorkoutMessage?
     var errorMessage: String?
-    
+
     init(command: Command, phrase: Phrase) {
         self.command = command
         self.phrase = phrase

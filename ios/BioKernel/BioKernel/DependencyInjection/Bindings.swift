@@ -27,5 +27,4 @@ let getSafetyService: () -> SafetyService = Dependency.bind { LocalSafetyService
 @MainActor let getPushNotificationService: () -> PushNotificationService = Dependency.bind { LocalPushNotificationService.shared }
 @MainActor let getGlucoseAlertsService: () -> GlucoseAlertStorage = Dependency.bind { PredictiveGlucoseAlertStorage.shared }
 let getWatchComms: () -> WatchComms = Dependency.bind { LocalWatchComms.shared }
-@MainActor let getWorkoutStatusService: () -> WorkoutStatusService = Dependency.bind { LocalWorkoutStatusService.shared }
 let getTargetGlucoseService: () -> TargetGlucoseService = Dependency.bind { LocalTargetGlucoseService.shared }

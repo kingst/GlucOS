@@ -17,7 +17,6 @@ struct BioKernelApp: App {
         //G7CGMManager.debugLogger = getDebugLogger()
         guard !isRunningTests else { return }
         getBackgroundService().registerBackgroundTask()
-        appDelegate.sessionDelegator.delegate = getWorkoutStatusService()
     }
     var body: some Scene {
         WindowGroup {
