@@ -22,7 +22,7 @@
 import HealthKit
 import LoopKit
 
-protocol HealthKitStorage {
+public protocol HealthKitStorage {
     func save(_ glucoseSample: NewGlucoseSample, metadata: [String: Any]) async
     func save(_ pumpEvent: LoopKit.NewPumpEvent, metadata: [String: Any]) async
     func save(glucoseSamples: [NewGlucoseSample]) async

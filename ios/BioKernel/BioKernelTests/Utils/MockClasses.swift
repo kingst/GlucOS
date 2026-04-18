@@ -164,6 +164,17 @@ class MockStoredObject: StoredObject {
     }
 }
 
+class MockHealthKitStore: HealthKitStorage {
+    func save(_ glucoseSample: LoopKit.NewGlucoseSample, metadata: [String : Any]) async { }
+    func save(_ pumpEvent: LoopKit.NewPumpEvent, metadata: [String : Any]) async { }
+    func save(glucoseSamples: [LoopKit.NewGlucoseSample]) async { }
+    func save(pumpEvents: [LoopKit.NewPumpEvent]) async { }
+    func removeDuplicateEntries() async { }
+    func fetchGlucoseSamples(startDate: Date, endDate: Date) async -> [HKQuantitySample] { return [] }
+    func fetchInsulinSamples(startDate: Date, endDate: Date) async -> [HKQuantitySample] { return [] }
+    func authorize() async throws { }
+}
+
 class MockWatchComms: WatchComms {
     func updateAppContext() async { }
 }
