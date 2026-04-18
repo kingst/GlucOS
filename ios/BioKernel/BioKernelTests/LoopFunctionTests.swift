@@ -43,7 +43,7 @@ final class LoopFunctionTests: XCTestCase {
         Dependency.mock { self.insulinStorage as InsulinStorage }
         Dependency.mock { self.deviceManager as DeviceDataManager }
         Dependency.mock { MockStoredObject.self as StoredObject.Type }
-        Dependency.mock { MockPhysiologicalModels() as PhysiologicalModels }
+        Dependency.mock { LocalPhysiologicalModels() as PhysiologicalModels }
         Dependency.mock { MockTargetGlucose() as TargetGlucoseService }
         Dependency.mock { MockMachineLearning() as MachineLearning }
         Dependency.mock { MockSafetyService() as SafetyService }
@@ -69,7 +69,7 @@ final class LoopFunctionTests: XCTestCase {
         // Verify
         XCTAssertFalse(result, "Loop should return false when closed loop is disabled")
         let lastResult = await closedLoop.latestClosedLoopResult()
-        XCTAssertEqual(lastResult?.action, .openLoop, "Action should be openLoop when closed loop is disabled")
+        XCTAssertEqual(lastResult?.outcome.skipReason, .openLoop, "Should skip with openLoop when closed loop is disabled")
     }
     
     @MainActor func testLoopWithStaleGlucoseData() async throws {
@@ -90,7 +90,7 @@ final class LoopFunctionTests: XCTestCase {
         // Verify
         XCTAssertFalse(result, "Loop should return false with stale glucose data")
         let lastResult = await closedLoop.latestClosedLoopResult()
-        XCTAssertEqual(lastResult?.action, .glucoseReadingStale, "Action should be glucoseReadingStale")
+        XCTAssertEqual(lastResult?.outcome.skipReason, .glucoseReadingStale, "Should skip with glucoseReadingStale")
     }
     
     @MainActor func testLoopWithStalePumpData() async throws {
@@ -113,7 +113,7 @@ final class LoopFunctionTests: XCTestCase {
         // Verify
         XCTAssertFalse(result, "Loop should return false with stale pump data")
         let lastResult = await closedLoop.latestClosedLoopResult()
-        XCTAssertEqual(lastResult?.action, .pumpReadingStale, "Action should be pumpReadingStale")
+        XCTAssertEqual(lastResult?.outcome.skipReason, .pumpReadingStale, "Should skip with pumpReadingStale")
     }
     
     @MainActor func testLoopWithNoPumpManager() async throws {
@@ -136,7 +136,7 @@ final class LoopFunctionTests: XCTestCase {
         // Verify
         XCTAssertFalse(result, "Loop should return false with no pump manager")
         let lastResult = await closedLoop.latestClosedLoopResult()
-        XCTAssertEqual(lastResult?.action, .noPumpManager, "Action should be noPumpManager")
+        XCTAssertEqual(lastResult?.outcome.skipReason, .noPumpManager, "Should skip with noPumpManager")
     }
     
     // MARK: - Successful Loop Tests
@@ -161,8 +161,12 @@ final class LoopFunctionTests: XCTestCase {
         // Verify
         XCTAssertTrue(result, "Loop should return true for successful temp basal")
         let lastResult = await closedLoop.latestClosedLoopResult()
-        XCTAssertEqual(lastResult?.action, .setTempBasal, "Action should be setTempBasal")
-        XCTAssertNotNil(lastResult?.tempBasal, "Temp basal should be set")
+        guard case .dosed(let snapshot) = lastResult?.outcome else {
+            return XCTFail("Outcome should be .dosed for successful temp basal")
+        }
+        guard case .tempBasal = snapshot.decision else {
+            return XCTFail("Decision should be .tempBasal")
+        }
     }
     
     @MainActor func testSuccessfulLoopWithMicroBolus() async throws {
@@ -187,8 +191,12 @@ final class LoopFunctionTests: XCTestCase {
         // Verify
         XCTAssertTrue(result, "Loop should return true for successful micro bolus")
         let lastResult = await closedLoop.latestClosedLoopResult()
-        XCTAssertEqual(lastResult?.action, .setTempBasal, "Action should be setTempBasal")
-        XCTAssertNotNil(lastResult?.microBolusAmount, "Micro bolus amount should be set")
+        guard case .dosed(let snapshot) = lastResult?.outcome else {
+            return XCTFail("Outcome should be .dosed for successful micro bolus")
+        }
+        guard case .microBolus = snapshot.decision else {
+            return XCTFail("Decision should be .microBolus")
+        }
     }
     
     @MainActor func testLoopWithPumpError() async throws {
@@ -213,7 +221,9 @@ final class LoopFunctionTests: XCTestCase {
         // Verify
         XCTAssertFalse(result, "Loop should return false when pump returns error")
         let lastResult = await closedLoop.latestClosedLoopResult()
-        XCTAssertEqual(lastResult?.action, .pumpError, "Action should be pumpError")
+        guard case .pumpError = lastResult?.outcome else {
+            return XCTFail("Outcome should be .pumpError")
+        }
     }
     
     // MARK: - Microbolus tests
@@ -240,14 +250,15 @@ final class LoopFunctionTests: XCTestCase {
         
         // Execute loop
         let loopResult: ClosedLoopResult = await closedLoop.runLoop(at: now)
-        XCTAssertEqual(loopResult.action, .setTempBasal, "Loop should complete successfully with microbolus")
-        
+        guard case .dosed(let snapshot) = loopResult.outcome else {
+            return XCTFail("Loop should complete successfully with microbolus")
+        }
+        guard case .microBolus(let units) = snapshot.decision else {
+            return XCTFail("Decision should be .microBolus")
+        }
+
         // Verify microbolus was set
-        XCTAssertNotNil(loopResult.microBolusAmount)
-        XCTAssertGreaterThan(loopResult.microBolusAmount ?? 0, 0)
-        
-        // Verify temp basal was zero (since we delivered microbolus)
-        XCTAssertEqual(loopResult.tempBasal ?? 0, 0.0, accuracy: tempBasalAccuracy)
+        XCTAssertGreaterThan(units, 0)
     }
     
     @MainActor func testLoopWithMicrobolusError() async throws {
@@ -280,9 +291,12 @@ final class LoopFunctionTests: XCTestCase {
         // Verify
         XCTAssertFalse(result, "Loop should return false when pump returns error during micro bolus")
         let lastResult = await closedLoop.latestClosedLoopResult()
-        XCTAssertEqual(lastResult?.action, .pumpError, "Action should be pumpError")
-        XCTAssertNotNil(lastResult?.microBolusAmount, "Micro bolus amount should be set even though delivery failed")
-        XCTAssertGreaterThan(lastResult?.microBolusAmount ?? 0, 0, "Micro bolus amount should be greater than 0")
-        XCTAssertEqual(lastResult?.tempBasal ?? 0, 0.0, accuracy: tempBasalAccuracy, "Temp basal should be 0 since micro bolus was attempted")
+        guard case .pumpError(let snapshot) = lastResult?.outcome else {
+            return XCTFail("Outcome should be .pumpError")
+        }
+        guard case .microBolus(let units) = snapshot.decision else {
+            return XCTFail("Decision should be .microBolus even though delivery failed")
+        }
+        XCTAssertGreaterThan(units, 0, "Micro bolus amount should be greater than 0")
     }
 }

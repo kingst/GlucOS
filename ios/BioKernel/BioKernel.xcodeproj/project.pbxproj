@@ -33,6 +33,7 @@
 		3B4CFE222C223DD900BDB1CB /* ShareClientUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B7C6D942B083A4C0030DFA7 /* ShareClientUI.framework */; };
 		3B4CFE232C223DD900BDB1CB /* ShareClientUI.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3B7C6D942B083A4C0030DFA7 /* ShareClientUI.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3B5076392F92F77400E5D3A6 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5076382F92F77400E5D3A6 /* PushNotificationService.swift */; };
+		3B50774C2F93DAB800E5D3A6 /* DosingDecisionTestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B50774B2F93DAB800E5D3A6 /* DosingDecisionTestHelpers.swift */; };
 		3B5329502B5D8451000DED1A /* AddedGlucoseDataFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B53294F2B5D8451000DED1A /* AddedGlucoseDataFrame.swift */; };
 		3B6063B02B54BDA9009D9CBC /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6063AF2B54BDA9009D9CBC /* SettingsViewModel.swift */; };
 		3B6063B22B54BDB7009D9CBC /* DecimalPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6063B12B54BDB7009D9CBC /* DecimalPicker.swift */; };
@@ -235,6 +236,7 @@
 		3B4CFE132C2230D800BDB1CB /* CGMBLEKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CGMBLEKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B4CFE162C2230DF00BDB1CB /* CGMBLEKitUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CGMBLEKitUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B5076382F92F77400E5D3A6 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
+		3B50774B2F93DAB800E5D3A6 /* DosingDecisionTestHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DosingDecisionTestHelpers.swift; sourceTree = "<group>"; };
 		3B53294F2B5D8451000DED1A /* AddedGlucoseDataFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddedGlucoseDataFrame.swift; sourceTree = "<group>"; };
 		3B6063AF2B54BDA9009D9CBC /* SettingsViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		3B6063B12B54BDB7009D9CBC /* DecimalPicker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DecimalPicker.swift; sourceTree = "<group>"; };
@@ -616,6 +618,7 @@
 			isa = PBXGroup;
 			children = (
 				3BEE4E1F2B5FF4A000A09203 /* DateTime.swift */,
+				3B50774B2F93DAB800E5D3A6 /* DosingDecisionTestHelpers.swift */,
 				3CAAFC8F2B0D73C400597055 /* MockClasses.swift */,
 				3CAAFC8B2B0D71AE00597055 /* ReplayLogs.swift */,
 			);
@@ -930,6 +933,7 @@
 				3CAAFC8C2B0D71AE00597055 /* ReplayLogs.swift in Sources */,
 				3B40DE692D24453F0032328F /* LoopFunctionTests.swift in Sources */,
 				3B7F08412B2DDE33002930A4 /* ClosedLoopTests.swift in Sources */,
+				3B50774C2F93DAB800E5D3A6 /* DosingDecisionTestHelpers.swift in Sources */,
 				3CAAFC902B0D73C400597055 /* MockClasses.swift in Sources */,
 				3BA00A572D231CA00002B051 /* ClosedLoopSafetyTests.swift in Sources */,
 				3B348DAE2B5DAFB0000A40E9 /* SafetyServiceTests.swift in Sources */,

@@ -66,7 +66,7 @@ class DiagnosticViewModel: ObservableObject, ClosedLoopChartDataUpdate, PumpEven
     init() {
         Task { @MainActor in
             let results = await self.closedLoopService.registerClosedLoopChartDataDelegate(delegate: self)
-            self.chartData = results.filter({ $0.action == .setTempBasal }).map { self.convertToChartData(result: $0) }
+            self.chartData = results.compactMap { self.convertToChartData(result: $0) }
         }
         
         Task {
@@ -150,43 +150,55 @@ class DiagnosticViewModel: ObservableObject, ClosedLoopChartDataUpdate, PumpEven
     // MARK: - ClosedLoopChartDataUpdate
     func update(result: ClosedLoopResult) {
         DispatchQueue.main.async {
-            if result.action == .setTempBasal {
-                self.chartData.append(self.convertToChartData(result: result))
+            if let chart = self.convertToChartData(result: result) {
+                self.chartData.append(chart)
             }
         }
     }
-    
-    private func convertToChartData(result: ClosedLoopResult) -> ClosedLoopChartData {
-        let pidResult = result.pidTempBasalResult
-        let safetyResult = result.safetyResult
-        
-        let proportionalContribution = (pidResult?.Kp ?? 0) * (pidResult?.error ?? 0)
-        let derivativeContribution = (pidResult?.Kd ?? 0) * (pidResult?.derivative ?? 0)
-        let integratorContribution = (pidResult?.Ki ?? 0) * (pidResult?.accumulatedError ?? 0)
+
+    private func convertToChartData(result: ClosedLoopResult) -> ClosedLoopChartData? {
+        guard case .dosed(let snapshot) = result.outcome else { return nil }
+
+        let pid = snapshot.pidTempBasalResult
+        let safetyResult = snapshot.safetyResult
+
+        let derivative = pid.derivative ?? 0
+        let proportionalContribution = pid.Kp * pid.error
+        let derivativeContribution = pid.Kd * derivative
+        let integratorContribution = pid.Ki * pid.accumulatedError
         let totalPidContribution = proportionalContribution + derivativeContribution + integratorContribution
-        
-        let mlInsulin = (safetyResult?.machineLearningTempBasal ?? 0) / 12 + (safetyResult?.machineLearningMicroBolus ?? 0)
-        let physiologicalInsulin = (safetyResult?.physiologicalTempBasal ?? 0) / 12 + (safetyResult?.physiologicalMicroBolus ?? 0)
-        let actualInsulin = (safetyResult?.actualTempBasal ?? 0) / 12 + (safetyResult?.actualMicroBolus ?? 0)
-        
+
+        let mlInsulin = safetyResult.machineLearningTempBasal / 12 + safetyResult.machineLearningMicroBolus
+        let physiologicalInsulin = safetyResult.physiologicalTempBasal / 12 + safetyResult.physiologicalMicroBolus
+        let actualInsulin = safetyResult.actualTempBasal / 12 + safetyResult.actualMicroBolus
+
+        let tempBasal: Double = {
+            if case .tempBasal(let units) = snapshot.decision { return units }
+            return 0
+        }()
+        let microBolus: Double = {
+            if case .microBolus(let units) = snapshot.decision { return units }
+            return 0
+        }()
+
         return ClosedLoopChartData(
             at: result.at,
-            glucose: result.glucoseInMgDl ?? 0,
-            insulinOnBoard: result.insulinOnBoard ?? 0,
-            basalRate: result.basalRate ?? 0,
-            basalRateInsulinOnBoard: result.pidTempBasalResult?.basalRateInsulinOnBoard ?? 0,
+            glucose: snapshot.glucoseInMgDl,
+            insulinOnBoard: snapshot.insulinOnBoard,
+            basalRate: snapshot.basalRate,
+            basalRateInsulinOnBoard: pid.basalRateInsulinOnBoard ?? 0,
             proportionalContribution: proportionalContribution,
             derivativeContribution: derivativeContribution,
             integratorContribution: integratorContribution,
             totalPidContribution: totalPidContribution,
-            deltaGlucoseError: pidResult?.deltaGlucoseError ?? 0,
-            accumulatedError: pidResult?.accumulatedError ?? 0,
+            deltaGlucoseError: pid.deltaGlucoseError ?? 0,
+            accumulatedError: pid.accumulatedError,
             mlInsulin: mlInsulin,
             physiologicalInsulin: physiologicalInsulin,
             actualInsulin: actualInsulin,
-            machineLearningInsulinLastThreeHours: safetyResult?.machineLearningInsulinLastThreeHours ?? 0,
-            tempBasal: result.tempBasal ?? 0,
-            microBolusAmount: result.microBolusAmount ?? 0
+            machineLearningInsulinLastThreeHours: safetyResult.machineLearningInsulinLastThreeHours,
+            tempBasal: tempBasal,
+            microBolusAmount: microBolus
         )
     }
 }
