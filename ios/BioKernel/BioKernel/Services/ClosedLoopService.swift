@@ -99,7 +99,7 @@ actor LocalClosedLoopService: ClosedLoopService {
     }
     
     func microBolusAmount(tempBasal: Double, settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, at: Date) async -> Double? {
-        guard lastMicroBolus.map({ Date().timeIntervalSince($0) > microBolusThrottleInSeconds }) ?? true else { return nil }
+        guard lastMicroBolus.map({ at.timeIntervalSince($0) > microBolusThrottleInSeconds }) ?? true else { return nil }
 
         let glucoseThreshold = targetGlucoseInMgDl + microBolusGlucoseMarginMgDl
         guard glucoseInMgDl >= glucoseThreshold else { return nil }
