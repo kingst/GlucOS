@@ -13,10 +13,7 @@ class StateViewModel: ObservableObject, SessionUpdateDelegate {
     let alertManager: GlucoseAlertManager
     
     let storage = StoredJsonObject.create(fileName: "appState.json")
-    
-    func didRecieveMessage(at: Date, workoutMessage: WorkoutMessage) {
-        print("not implemented")
-    }
+
     func contextDidUpdate(_ context: BioKernelState) {
         print("WC: StateViewModel: contextDidUpdate")
         do {

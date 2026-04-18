@@ -81,7 +81,6 @@ class MockSettingsStorage: SettingsStorage {
     var pidIntegratorGain = 0.055
     var pidDerivativeGain = 0.35
     var useBiologicalInvariant = false
-    var adjustTargetGlucoseDuringExercise = false
     var machineLearningGain = 2.0
     
     func update(useMicroBolus: Bool, useMachineLearningClosedLoop: Bool, useBiologicalInvariant: Bool) {
@@ -111,7 +110,7 @@ class MockSettingsStorage: SettingsStorage {
     }
     
     func snapshot() -> BioKernel.CodableSettings {
-        return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: pumpBasalRateUnitsPerHour, insulinSensitivityInMgDlPerUnit: insulinSensitivityInMgDlPerUnit, maxBasalRateUnitsPerHour: maxBasalRateUnitsPerHour, maxBolusUnits: maxBolusUnits, shutOffGlucoseInMgDl: shutOffGlucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, closedLoopEnabled: closedLoopEnabled, useMachineLearningClosedLoop: useMachineLearningClosedLoop, useMicroBolus: useMicroBolus, microBolusDoseFactor: microBolusDoseFactor, learnedBasalRateUnitsPerHour: learnedBasalRateUnitsPerHour, learnedInsulinSensitivityInMgDlPerUnit: learnedInsulinSensitivityInMgDlPerUnit, bolusAmountForLess: bolusAmountForLess, bolusAmountForUsual: bolusAmountForUsual, bolusAmountForMore: bolusAmountForMore, pidIntegratorGain: pidIntegratorGain, pidDerivativeGain: pidDerivativeGain, useBiologicalInvariant: useBiologicalInvariant, adjustTargetGlucoseDuringExercise: adjustTargetGlucoseDuringExercise, machineLearningGain: machineLearningGain)
+        return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: pumpBasalRateUnitsPerHour, insulinSensitivityInMgDlPerUnit: insulinSensitivityInMgDlPerUnit, maxBasalRateUnitsPerHour: maxBasalRateUnitsPerHour, maxBolusUnits: maxBolusUnits, shutOffGlucoseInMgDl: shutOffGlucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, closedLoopEnabled: closedLoopEnabled, useMachineLearningClosedLoop: useMachineLearningClosedLoop, useMicroBolus: useMicroBolus, microBolusDoseFactor: microBolusDoseFactor, learnedBasalRateUnitsPerHour: learnedBasalRateUnitsPerHour, learnedInsulinSensitivityInMgDlPerUnit: learnedInsulinSensitivityInMgDlPerUnit, bolusAmountForLess: bolusAmountForLess, bolusAmountForUsual: bolusAmountForUsual, bolusAmountForMore: bolusAmountForMore, pidIntegratorGain: pidIntegratorGain, pidDerivativeGain: pidDerivativeGain, useBiologicalInvariant: useBiologicalInvariant, machineLearningGain: machineLearningGain)
     }
     
     func writeToDisk(settings: BioKernel.CodableSettings) throws {
@@ -134,15 +133,6 @@ class MockSafetyService: SafetyService {
     func updateAfterProgrammingPump(at: Date, programmedTempBasalUnitsPerHour: Double, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval, programmedMicroBolus: Double, safetyMicroBolus: Double, machineLearningMicroBolus: Double, biologicalInvariantViolation: Bool) async {
         
     }
-}
-
-class MockWorkoutStatusService: WorkoutStatusService {
-    var mockIsExercising: Bool = false
-    
-    func observableObject() -> BioKernel.WorkoutStatus { return WorkoutStatus() }
-    func isExercising(at: Date) -> Bool { return mockIsExercising }
-    func contextDidUpdate(_ context: BioKernel.BioKernelState) { }
-    func didRecieveMessage(at: Date, workoutMessage: BioKernel.WorkoutMessage) { }
 }
 
 class MockPhysiologicalModels: PhysiologicalModels {

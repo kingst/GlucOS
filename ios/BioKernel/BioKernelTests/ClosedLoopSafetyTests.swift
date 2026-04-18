@@ -107,7 +107,6 @@ final class ClosedLoopSafetyTests: XCTestCase {
             microBolusPhysiological: 0.2,
             microBolusSafety: 0.25,
             biologicalInvariant: -45, // This should trigger a violation
-            isExercising: false,
             machineLearningInsulinLastThreeHours: safetyTempBasalResult.machineLearningInsulinLastThreeHours
         )
         
@@ -124,7 +123,6 @@ final class ClosedLoopSafetyTests: XCTestCase {
             microBolusPhysiological: 0.2,
             microBolusSafety: 0.25,
             biologicalInvariant: -20, // Back to safe range
-            isExercising: false,
             machineLearningInsulinLastThreeHours: safetyTempBasalResult.machineLearningInsulinLastThreeHours
         )
         
@@ -233,7 +231,6 @@ final class ClosedLoopSafetyTests: XCTestCase {
                 microBolusPhysiological: 0.0,
                 microBolusSafety: 0.0,
                 biologicalInvariant: -20,
-                isExercising: false,
                 machineLearningInsulinLastThreeHours: safetyTempBasalResult.machineLearningInsulinLastThreeHours
             )
             
