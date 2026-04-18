@@ -51,4 +51,4 @@ To build, use the workspace `MetabolicOS.xcworkspace`.
 
 ## Exercise mode
 
-TBD we'll handle this later.
+See the `remove_exercise_mode.md` spec for more details.
