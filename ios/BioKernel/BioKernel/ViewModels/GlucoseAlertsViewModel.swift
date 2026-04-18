@@ -57,7 +57,7 @@ public class GlucoseAlertsViewModel: ObservableObject {
         getGlucoseAlertsService().update(enabled: enabled)
         if enabled {
             alertString = alertStringFromSettings
-            checkNotificationPermission()
+            Task { await checkNotificationPermission() }
         } else {
             alertString = nil
         }
@@ -77,39 +77,35 @@ public class GlucoseAlertsViewModel: ObservableObject {
         getGlucoseAlertsService().update(lowRepeatsSeconds: Double(minutes.value).minutesToSeconds())
     }
     
-    private func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+    private func requestNotificationPermission() async {
+        do {
+            let granted = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
             if granted {
                 getGlucoseAlertsService().update(notificationsPermissions: .authorized)
-                DispatchQueue.main.async {
-                    UIApplication.shared.registerForRemoteNotifications()
-                }
+                UIApplication.shared.registerForRemoteNotifications()
             } else {
                 getGlucoseAlertsService().update(notificationsPermissions: .denied)
             }
-            
-            if let error = error {
-                print("Error requesting notification permission: \(error.localizedDescription)")
-            }
+        } catch {
+            print("Error requesting notification permission: \(error.localizedDescription)")
         }
     }
-    
-    private func checkNotificationPermission() {
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            switch settings.authorizationStatus {
-            case .authorized:
-                getGlucoseAlertsService().update(notificationsPermissions: .authorized)
-            case .denied:
-                getGlucoseAlertsService().update(notificationsPermissions: .denied)
-            case .notDetermined:
-                self.requestNotificationPermission()
-            case .provisional:
-                print("Provisional notification permission granted")
-            case .ephemeral:
-                print("Ephemeral notification permission granted")
-            @unknown default:
-                print("Unknown notification permission status")
-            }
+
+    private func checkNotificationPermission() async {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        switch settings.authorizationStatus {
+        case .authorized:
+            getGlucoseAlertsService().update(notificationsPermissions: .authorized)
+        case .denied:
+            getGlucoseAlertsService().update(notificationsPermissions: .denied)
+        case .notDetermined:
+            await requestNotificationPermission()
+        case .provisional:
+            print("Provisional notification permission granted")
+        case .ephemeral:
+            print("Ephemeral notification permission granted")
+        @unknown default:
+            print("Unknown notification permission status")
         }
     }
 }

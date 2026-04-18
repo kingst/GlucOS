@@ -34,7 +34,7 @@ struct DiagnosticChartScrollView<Content: View>: View {
                 .onAppear {
                     proxy.scrollTo(scrollAndAnchorId, anchor: .trailing)
                 }
-                .onChange(of: selectedHours) { _ in
+                .onChange(of: selectedHours) {
                     withAnimation {
                         proxy.scrollTo(scrollAndAnchorId, anchor: .trailing)
                     }

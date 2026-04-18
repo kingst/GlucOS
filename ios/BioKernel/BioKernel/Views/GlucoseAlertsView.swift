@@ -20,7 +20,7 @@ struct GlucoseAlertsView: View {
                 Toggle(isOn: $viewModel.enabled, label: {
                     Text("Enable glucose alerts")
                 })
-                .onChange(of: viewModel.enabled) { newValue in
+                .onChange(of: viewModel.enabled) { _, newValue in
                     viewModel.updateEnabled(newValue)
                 }
                 
@@ -30,7 +30,7 @@ struct GlucoseAlertsView: View {
                             Text(item.id).tag(item)
                         }
                     }
-                    .onChange(of: viewModel.highLevel) { newValue in
+                    .onChange(of: viewModel.highLevel) { _, newValue in
                         viewModel.updateHighLevel(newValue)
                     }
                     Picker("Repeats", selection: $viewModel.highRepeats) {
@@ -38,7 +38,7 @@ struct GlucoseAlertsView: View {
                             Text(item.id).tag(item)
                         }
                     }
-                    .onChange(of: viewModel.highRepeats) { newValue in
+                    .onChange(of: viewModel.highRepeats) { _, newValue in
                         viewModel.updateHighRepeats(newValue)
                     }
                 }
@@ -49,7 +49,7 @@ struct GlucoseAlertsView: View {
                             Text(item.id).tag(item)
                         }
                     }
-                    .onChange(of: viewModel.lowLevel) { newValue in
+                    .onChange(of: viewModel.lowLevel) { _, newValue in
                         viewModel.updateLowLevel(newValue)
                     }
                     Picker("Repeats", selection: $viewModel.lowRepeats) {
@@ -57,7 +57,7 @@ struct GlucoseAlertsView: View {
                             Text(item.id).tag(item)
                         }
                     }
-                    .onChange(of: viewModel.lowRepeats) { newValue in
+                    .onChange(of: viewModel.lowRepeats) { _, newValue in
                         viewModel.updateLowRepeats(newValue)
                     }
                 }

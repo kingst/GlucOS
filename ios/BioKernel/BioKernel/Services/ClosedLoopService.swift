@@ -29,7 +29,6 @@ actor LocalClosedLoopService: ClosedLoopService {
     var closedLoopResults: [ClosedLoopResult] = []
     var storage = getStoredObject().create(fileName: "closed_loop_results.json")
     var lastClosedLoopRun: ClosedLoopResult? = nil
-    let replayLogger = getEventLogger()
     var lastMicroBolus: Date? = nil
     var isRunningLoop = false
     weak var delegate: (any ClosedLoopChartDataUpdate)? = nil
@@ -81,7 +80,6 @@ actor LocalClosedLoopService: ClosedLoopService {
         
         let lastRun: ClosedLoopResult = await runLoop(at: at)
         await storeClosedLoopResult(lastRun)
-        await replayLogger.add(events: [lastRun])
         lastClosedLoopRun = lastRun
         
         isRunningLoop = false

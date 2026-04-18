@@ -20,7 +20,6 @@ final class MicroBolusTests: XCTestCase {
         
         Dependency.mock { self.settings as SettingsStorage }
         Dependency.mock { MockStoredObject.self as StoredObject.Type }
-        Dependency.mock { MockReplayLogger() as EventLogger }
         Dependency.mock { MockWatchComms() as WatchComms }
         Dependency.mock { MockDeviceDataManager() as DeviceDataManager }
         

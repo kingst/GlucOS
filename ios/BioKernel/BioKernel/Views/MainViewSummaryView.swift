@@ -87,7 +87,7 @@ struct MainViewSummaryView: View {
             // Just to make sure that the ClosedLoopResults data is loaded
             let _ = getClosedLoopService()
         }
-        .onChange(of: scenePhase) { newPhase in
+        .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .inactive || newPhase == .background {
                 self.timer.upstream.connect().cancel()
             } else if newPhase == .active {

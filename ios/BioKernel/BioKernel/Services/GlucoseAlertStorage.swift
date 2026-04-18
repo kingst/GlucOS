@@ -71,16 +71,6 @@ public struct GlucoseAlertSettings: Codable {
     }
 }
 
-public struct GlucoseAlert: Codable {
-    let at: Date
-    let predictedGlucose: Double
-    let glucose: Double
-    let sentNotification: Bool
-    let alertState: GlucoseAlertState
-    let alertString: String?
-    let settings: GlucoseAlertSettings
-}
-
 @MainActor
 public protocol GlucoseAlertStorage {
     func viewModel() -> GlucoseAlertsViewModel
@@ -101,7 +91,6 @@ class PredictiveGlucoseAlertStorage: GlucoseAlertStorage {
     let alertViewModel = GlucoseAlertsViewModel()
     var glucoseAlertSettings: GlucoseAlertSettings
     var storage = getStoredObject().create(fileName: "glucose_alerts.json")
-    let replayLogger = getEventLogger()
     let notificationIdKey = "notificationId"
     let notificationSentAtKey = "notificationSentAt"
     
@@ -203,11 +192,8 @@ class PredictiveGlucoseAlertStorage: GlucoseAlertStorage {
         let nextState = glucoseAlertSettings.nextState(predictedGlucose: predictedGlucose)
         
         let alertString = nextState == .inRange ? nil : createAlertString(predictedGlucose: predictedGlucose)
-        let sentNotification = updateNotification(at: now, currentState: currentState, nextState: nextState, alertString: alertString)
-        
-        // log the result with the settings _before_ we update them based on these results
-        await getEventLogger().add(glucoseAlert: GlucoseAlert(at: now, predictedGlucose: predictedGlucose, glucose: mostRecentGlucose, sentNotification: sentNotification, alertState: nextState, alertString: alertString, settings: glucoseAlertSettings))
-        
+        let _ = updateNotification(at: now, currentState: currentState, nextState: nextState, alertString: alertString)
+
         let newSettings = glucoseAlertSettings.updated(alertState: nextState, alertString: alertString)
         update(alertSettings: newSettings)
         

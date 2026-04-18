@@ -54,7 +54,6 @@ actor AIDosing: MachineLearning {
         
         let logString = "\(at): AI temp basal: \(str)"
         print(logString)
-        await getEventLogger().add(debugMessage: logString)
     }
 
     // This version of the algorithm is specifically to dose more insulin

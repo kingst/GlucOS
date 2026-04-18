@@ -164,6 +164,17 @@ class MockStoredObject: StoredObject {
     }
 }
 
+class MockHealthKitStore: HealthKitStorage {
+    func save(_ glucoseSample: LoopKit.NewGlucoseSample, metadata: [String : Any]) async { }
+    func save(_ pumpEvent: LoopKit.NewPumpEvent, metadata: [String : Any]) async { }
+    func save(glucoseSamples: [LoopKit.NewGlucoseSample]) async { }
+    func save(pumpEvents: [LoopKit.NewPumpEvent]) async { }
+    func removeDuplicateEntries() async { }
+    func fetchGlucoseSamples(startDate: Date, endDate: Date) async -> [HKQuantitySample] { return [] }
+    func fetchInsulinSamples(startDate: Date, endDate: Date) async -> [HKQuantitySample] { return [] }
+    func authorize() async throws { }
+}
+
 class MockWatchComms: WatchComms {
     func updateAppContext() async { }
 }
@@ -172,17 +183,6 @@ class MockTargetGlucose: TargetGlucoseService {
     func targetGlucoseInMgDl(at: Date, settings: BioKernel.CodableSettings) async -> Double {
         return settings.targetGlucoseInMgDl
     }
-}
-
-class MockReplayLogger: EventLogger {
-    func update(deviceToken: String) async { }
-    func upload(healthKitRecords: BioKernel.HealthKitRecords) async -> Bool { return false }
-    func add(debugMessage: String) async { }
-    func getReadOnlyAuthToken() async -> String? { nil }
-    func add(events: [BioKernel.ClosedLoopResult]) async { }
-    func add(events: [NewPumpEvent]) async { }
-    func add(events: [NewGlucoseSample]) async { }
-    func add(events: [BioKernel.GlucoseAlert]) async { }
 }
 
 class MockInsulinStorage: InsulinStorage {

@@ -19,7 +19,6 @@ final class SafetyServiceTests: XCTestCase {
     @MainActor override func setUpWithError() throws {
         Dependency.useMockConstructors = true
         Dependency.mock { MockStoredObject.self as StoredObject.Type }
-        Dependency.mock { MockReplayLogger() as EventLogger }
     }
 
     override func tearDownWithError() throws {
