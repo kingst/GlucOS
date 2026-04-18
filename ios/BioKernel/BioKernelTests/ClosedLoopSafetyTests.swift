@@ -85,10 +85,10 @@ final class ClosedLoopSafetyTests: XCTestCase {
         // Attempt to loop with stale data
         let loopResult: Bool = await closedLoop.loop(at: glucoseDate)
         XCTAssertFalse(loopResult, "Loop should not complete with stale CGM data")
-        
+
         // Verify result indicates stale data
         let result = await closedLoop.latestClosedLoopResult()
-        XCTAssertEqual(result?.action, .glucoseReadingStale)
+        XCTAssertEqual(result?.outcome.skipReason, .glucoseReadingStale)
     }
     
     // MARK: - Recovery Tests
@@ -98,7 +98,6 @@ final class ClosedLoopSafetyTests: XCTestCase {
         await settings.update(useBiologicalInvariant: true)
         
         // First create a biological invariant violation
-        let safetyTempBasalResult = SafetyTempBasal(tempBasal: 1.0, machineLearningInsulinLastThreeHours: 0.0)
         var dose = await closedLoop.determineDose(
             settings: settings.snapshot(),
             physiologicalTempBasal: 1.0,
@@ -106,14 +105,13 @@ final class ClosedLoopSafetyTests: XCTestCase {
             safetyTempBasal: 1.5,
             microBolusPhysiological: 0.2,
             microBolusSafety: 0.25,
-            biologicalInvariant: -45, // This should trigger a violation
-            machineLearningInsulinLastThreeHours: safetyTempBasalResult.machineLearningInsulinLastThreeHours
+            biologicalInvariant: -45 // This should trigger a violation
         )
-        
+
         // Verify system stops insulin delivery during violation
         XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
         XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
-        
+
         // Now test recovery when biological invariant returns to normal
         dose = await closedLoop.determineDose(
             settings: settings.snapshot(),
@@ -122,10 +120,9 @@ final class ClosedLoopSafetyTests: XCTestCase {
             safetyTempBasal: 1.5,
             microBolusPhysiological: 0.2,
             microBolusSafety: 0.25,
-            biologicalInvariant: -20, // Back to safe range
-            machineLearningInsulinLastThreeHours: safetyTempBasalResult.machineLearningInsulinLastThreeHours
+            biologicalInvariant: -20 // Back to safe range
         )
-        
+
         // Verify insulin delivery resumes
         XCTAssertGreaterThan(dose.tempBasal, 0.0)
     }
@@ -222,7 +219,6 @@ final class ClosedLoopSafetyTests: XCTestCase {
             let settings = MockSettingsStorage()
             settings.update(useMicroBolus: false, useMachineLearningClosedLoop: false, useBiologicalInvariant: false)
             
-            let safetyTempBasalResult = SafetyTempBasal(tempBasal: 1.0, machineLearningInsulinLastThreeHours: 0.0)
             let dose = await closedLoop.determineDose(
                 settings: settings.snapshot(),
                 physiologicalTempBasal: 1.5, // This should be selected since ML is off
@@ -230,14 +226,15 @@ final class ClosedLoopSafetyTests: XCTestCase {
                 safetyTempBasal: 2.0,
                 microBolusPhysiological: 0.0,
                 microBolusSafety: 0.0,
-                biologicalInvariant: -20,
-                machineLearningInsulinLastThreeHours: safetyTempBasalResult.machineLearningInsulinLastThreeHours
+                biologicalInvariant: -20
             )
-            
+
             // Verify that the actual temp basal matches what was selected
             XCTAssertEqual(dose.tempBasal, 1.5, accuracy: iobAccuracy, "Selected temp basal should be physiological when ML is off")
-            XCTAssertEqual(dose.safetyResult.actualTempBasal, 1.5, accuracy: iobAccuracy, "Actual temp basal in safety result should match selected temp basal")
-            
+            guard case .tempBasal(let selectedUnits) = dose else {
+                return XCTFail("Expected dose to be a temp basal decision")
+            }
+            XCTAssertEqual(selectedUnits, 1.5, accuracy: iobAccuracy, "DosingDecision temp basal should match selected value")
         }
     
 }

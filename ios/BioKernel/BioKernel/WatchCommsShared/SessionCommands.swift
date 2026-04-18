@@ -44,7 +44,7 @@ extension SessionCommands {
     //
     private func postNotificationOnMainQueueAsync(name: NSNotification.Name, object: CommandStatus) {
         DispatchQueue.main.async {
-            print("WC: postNotification name: \(name) object: \(String(describing: object))")
+            print("WC: postNotification name: \(name)")
             if let errorMessage = object.errorMessage {
                 print("WC:    errorMessage: \(errorMessage)")
             }
