@@ -21,12 +21,17 @@ import G7SensorKit
 class LocalBackgroundService: BackgroundService {
     let backgroundTaskId = "com.getgrowthmetrics.BioKernel.background"
     let maxBackgroundWaitTime = 30.minutesToSeconds()
-    static let shared = LocalBackgroundService()
     var printFirstMessage = true
-    
+
+    private let deviceDataManager: DeviceDataManager
+
+    init(deviceDataManager: DeviceDataManager) {
+        self.deviceDataManager = deviceDataManager
+    }
+
     func checkForCgmConnectivity() async {
         print("\(Date()): Running in background")
-        guard let cgmManager = getDeviceDataManager().cgmManager else {
+        guard let cgmManager = deviceDataManager.cgmManager else {
             print("\(Date()): No CGM manager")
             return
         }

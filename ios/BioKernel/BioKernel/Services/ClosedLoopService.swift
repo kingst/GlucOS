@@ -18,14 +18,12 @@ public struct FilteredGlucose {
 }
 
 protocol ClosedLoopService {
-    func loop(at: Date) async -> Bool
+    func loop(at: Date, pumpManager: PumpManager?, cgmPumpMetadata: CgmPumpMetadata) async -> Bool
     func latestClosedLoopResult() async -> ClosedLoopResult?
     func registerClosedLoopChartDataDelegate(delegate: ClosedLoopChartDataUpdate) async -> [ClosedLoopResult]
 }
 
 actor LocalClosedLoopService: ClosedLoopService {
-    static let shared = LocalClosedLoopService()
-
     // Suspend insulin delivery when biological-invariant error drops below this.
     let biologicalInvariantThresholdMgDlPerHour: Double = -35
 
@@ -39,13 +37,42 @@ actor LocalClosedLoopService: ClosedLoopService {
     let microBolusGlucoseMarginMgDl: Double = 20
 
     var closedLoopResults: [ClosedLoopResult] = []
-    var storage = getStoredObject().create(fileName: "closed_loop_results.json")
+    var storage: StoredObject
     var lastClosedLoopRun: ClosedLoopResult? = nil
     var lastMicroBolus: Date? = nil
     var isRunningLoop = false
     weak var delegate: (any ClosedLoopChartDataUpdate)? = nil
-    
-    init(startBackgroundTask: Bool = true) {
+
+    private let glucoseStorage: GlucoseStorage
+    private let insulinStorage: InsulinStorage
+    private let physiologicalModels: PhysiologicalModels
+    private let targetGlucoseService: TargetGlucoseService
+    private let machineLearning: MachineLearning
+    private let safetyService: SafetyService
+    private let settingsStorage: () -> SettingsStorage
+    private let observableState: AppObservableState
+
+    init(
+        storedObjectFactory: StoredObject.Type,
+        glucoseStorage: GlucoseStorage,
+        insulinStorage: InsulinStorage,
+        physiologicalModels: PhysiologicalModels,
+        targetGlucoseService: TargetGlucoseService,
+        machineLearning: MachineLearning,
+        safetyService: SafetyService,
+        settingsStorage: @escaping () -> SettingsStorage,
+        observableState: AppObservableState,
+        startBackgroundTask: Bool = true
+    ) {
+        self.storage = storedObjectFactory.create(fileName: "closed_loop_results.json")
+        self.glucoseStorage = glucoseStorage
+        self.insulinStorage = insulinStorage
+        self.physiologicalModels = physiologicalModels
+        self.targetGlucoseService = targetGlucoseService
+        self.machineLearning = machineLearning
+        self.safetyService = safetyService
+        self.settingsStorage = settingsStorage
+        self.observableState = observableState
         closedLoopResults = (try? storage.read()) ?? []
         if startBackgroundTask {
             Task { await updateFilteredGlucoseChartData() }
@@ -58,7 +85,8 @@ actor LocalClosedLoopService: ClosedLoopService {
             let pid = snapshot.pidTempBasalResult
             return FilteredGlucose(glucose: pid.filteredGlucose, at: pid.at)
         }
-        await getDeviceDataManager().update(filteredGlucoseChartData: filteredGlucose.sorted{ $0.at < $1.at })
+        let sorted = filteredGlucose.sorted { $0.at < $1.at }
+        await MainActor.run { [observableState] in observableState.filteredGlucoseChartData = sorted }
     }
     
     func latestClosedLoopResult() async -> ClosedLoopResult? {
@@ -83,33 +111,33 @@ actor LocalClosedLoopService: ClosedLoopService {
         delegate?.update(result: result)
     }
     
-    func loop(at: Date) async -> Bool {
+    func loop(at: Date, pumpManager: PumpManager?, cgmPumpMetadata: CgmPumpMetadata) async -> Bool {
         guard !isRunningLoop else {
             return false
         }
         isRunningLoop = true
-        
-        let lastRun: ClosedLoopResult = await runLoop(at: at)
+
+        let lastRun: ClosedLoopResult = await runLoop(at: at, pumpManager: pumpManager, cgmPumpMetadata: cgmPumpMetadata)
         await storeClosedLoopResult(lastRun)
         lastClosedLoopRun = lastRun
-        
+
         isRunningLoop = false
         if case .dosed = lastRun.outcome { return true }
         return false
     }
-    
-    func microBolusAmount(tempBasal: Double, settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, at: Date) async -> Double? {
+
+    func microBolusAmount(pumpManager: PumpManager, tempBasal: Double, settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, at: Date) async -> Double? {
         guard lastMicroBolus.map({ at.timeIntervalSince($0) > microBolusThrottleInSeconds }) ?? true else { return nil }
 
         let glucoseThreshold = targetGlucoseInMgDl + microBolusGlucoseMarginMgDl
         guard glucoseInMgDl >= glucoseThreshold else { return nil }
-        
+
         // convert the temp basal to the amount of insulin the closed loop algorithm
         // decided to deliver, subtracting off the basal rate so that we're
         // only delivering the correction
         // Calculate the insulin amount based on temp basal and basal rate
         let correctionDurationHours = settings.correctionDurationInSeconds / 60.minutesToSeconds()
-        
+
         // Note: We hard code the duration in settings so this can't trigger
         guard correctionDurationHours > 0 else {
             return nil
@@ -120,21 +148,20 @@ actor LocalClosedLoopService: ClosedLoopService {
         // Note: The micro bolus includes any insulin for basal glucose
         let insulin = tempBasal * correctionDurationHours
         guard insulin > 0 else { return nil } // Ensure insulin amount is positive
-    
+
         // Calculate the micro-bolus amount and clamp within valid bounds
         let maxBolus = settings.maxBasalRateUnitsPerHour * correctionDurationHours
-        
+
         // Deliver part for now so that if nothing changes we deliver the full amount over 15-30 minutes
         let amount = (settings.getMicroBolusDoseFactor() * insulin).clamp(low: 0, high: min(insulin, maxBolus))
-    
+
         // Round to the nearest supported bolus volume
-        return await getDeviceDataManager().pumpManager?.roundToSupportedBolusVolume(units: amount) ?? amount
+        return pumpManager.roundToSupportedBolusVolume(units: amount)
     }
-    
-    func runLoop(at: Date) async -> ClosedLoopResult {
-        let settings = await getSettingsStorage().snapshot()
+
+    func runLoop(at: Date, pumpManager: PumpManager?, cgmPumpMetadata: CgmPumpMetadata) async -> ClosedLoopResult {
+        let settings = await settingsStorage().snapshot()
         let freshnessInterval = settings.freshnessIntervalInSeconds
-        let cgmPumpMetadata = await getDeviceDataManager().cgmPumpMetadata()
 
         print("Looping!")
         guard settings.closedLoopEnabled else {
@@ -142,31 +169,27 @@ actor LocalClosedLoopService: ClosedLoopService {
             return .skipped(at: at, reason: .openLoop, settings: settings, cgmPumpMetadata: cgmPumpMetadata)
         }
 
-        guard let glucoseReading = await getGlucoseStorage().lastReading(), at.timeIntervalSince(glucoseReading.date) < freshnessInterval else {
+        guard let glucoseReading = await glucoseStorage.lastReading(), at.timeIntervalSince(glucoseReading.date) < freshnessInterval else {
             print("Unable to get fresh glucose reading")
             return .skipped(at: at, reason: .glucoseReadingStale, settings: settings, cgmPumpMetadata: cgmPumpMetadata)
         }
 
-        guard let lastPumpSync = await getInsulinStorage().lastPumpSync(), at.timeIntervalSince(lastPumpSync) < freshnessInterval else {
+        guard let lastPumpSync = await insulinStorage.lastPumpSync(), at.timeIntervalSince(lastPumpSync) < freshnessInterval else {
             print("Unable to get fresh insulin data from the pump")
             return .skipped(at: at, reason: .pumpReadingStale, settings: settings, cgmPumpMetadata: cgmPumpMetadata)
         }
 
         // FIXME: should we care if data is from the future???
 
-        guard let pumpManager = await getDeviceDataManager().pumpManager else {
+        guard let pumpManager = pumpManager else {
             print("no pump manager")
             return .skipped(at: at, reason: .noPumpManager, settings: settings, cgmPumpMetadata: cgmPumpMetadata)
         }
 
         let glucoseInMgDl = glucoseReading.quantity.doubleValue(for: .milligramsPerDeciliter)
-        let insulinOnBoard = await getInsulinStorage().insulinOnBoard(at: at)
+        let insulinOnBoard = await insulinStorage.insulinOnBoard(at: at)
 
-        let round = { (tempBasal: Double) -> Double in
-            pumpManager.roundToSupportedBasalRate(unitsPerHour: tempBasal)
-        }
-
-        let snapshot = await closedLoopAlgorithm(settings: settings, glucoseInMgDl: glucoseInMgDl, insulinOnBoard: insulinOnBoard, at: at, roundToSupportedBasalRate: round)
+        let snapshot = await closedLoopAlgorithm(settings: settings, glucoseInMgDl: glucoseInMgDl, insulinOnBoard: insulinOnBoard, at: at, pumpManager: pumpManager)
         print("Looping, glucose: \(glucoseInMgDl) mg/dl, iob: \(insulinOnBoard), decision: \(snapshot.decision)")
 
         let tempBasalToProgram = snapshot.decision.tempBasalUnitsPerHour ?? 0
@@ -179,7 +202,7 @@ actor LocalClosedLoopService: ClosedLoopService {
 
         if case .microBolus(let rawUnits) = snapshot.decision {
             let units = pumpManager.roundToSupportedBolusVolume(units: rawUnits)
-            if let pumpError = await pumpManager.enactBolus(units: units, activationType: .automatic) {
+            if let pumpError = await pumpManager.enactBolus(units: units, activationType: .automatic, observableState: observableState) {
                 print("Pump error: \(String(describing: pumpError))")
                 return .pumpError(at: at, settings: settings, cgmPumpMetadata: cgmPumpMetadata, snapshot: snapshot)
             }
@@ -188,7 +211,7 @@ actor LocalClosedLoopService: ClosedLoopService {
 
         // if we got here the pump commands were sent successfully
         let safetyResult = snapshot.safetyResult
-        await getSafetyService().updateAfterProgrammingPump(
+        await safetyService.updateAfterProgrammingPump(
             at: at,
             programmedTempBasalUnitsPerHour: safetyResult.actualTempBasal,
             safetyTempBasalUnitsPerHour: safetyResult.physiologicalTempBasal,
@@ -221,39 +244,43 @@ actor LocalClosedLoopService: ClosedLoopService {
     ///  - return is between 0 and maxBasalRate
     ///  Invariants:
     ///  - no numerical underflow or overflow
-    func closedLoopAlgorithm(settings: CodableSettings, glucoseInMgDl: Double, insulinOnBoard: Double, at: Date, roundToSupportedBasalRate: (Double) -> Double) async -> LoopSnapshot {
+    func closedLoopAlgorithm(settings: CodableSettings, glucoseInMgDl: Double, insulinOnBoard: Double, at: Date, pumpManager: PumpManager) async -> LoopSnapshot {
+
+        let roundToSupportedBasalRate = { (tempBasal: Double) -> Double in
+            pumpManager.roundToSupportedBasalRate(unitsPerHour: tempBasal)
+        }
 
         // create a dataframe to pass to all of the callers
-        let dataFrame = await AddedGlucoseDataFrame.createDataFrame(at: at, numberOfRows: 24, minNumberOfGlucoseSamples: 20)
+        let dataFrame = await AddedGlucoseDataFrame.createDataFrame(at: at, numberOfRows: 24, minNumberOfGlucoseSamples: 20, glucoseStorage: glucoseStorage, insulinStorage: insulinStorage)
         let basalRate = settings.learnedBasalRate(at: at)
         let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
-        let predictedGlucoseInMgDl = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: at) ?? glucoseInMgDl
-        let targetGlucoseInMgDl = await getTargetGlucoseService().targetGlucoseInMgDl(at: at, settings: settings)
+        let predictedGlucoseInMgDl = await physiologicalModels.predictGlucoseIn15Minutes(from: at) ?? glucoseInMgDl
+        let targetGlucoseInMgDl = await targetGlucoseService.targetGlucoseInMgDl(at: at, settings: settings)
 
         let proportionalControllerStart = Date()
-        let pidTempBasal = await getPhysiologicalModels().tempBasal(settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at)
+        let pidTempBasal = await physiologicalModels.tempBasal(settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at)
 
         let physiologicalTempBasal = applyGuardrails(glucoseInMgDl: glucoseInMgDl, predictedGlucoseInMgDl: predictedGlucoseInMgDl, newBasalRateRaw: pidTempBasal.tempBasal, settings: settings, roundToSupportedBasalRate: roundToSupportedBasalRate)
         let proportionalControllerDuration = Date().timeIntervalSince(proportionalControllerStart)
 
         // calculate the ML-based tempBasal
         let mlStart = Date()
-        let mlTempBasalRaw = await getMachineLearning().tempBasal(settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at, pidTempBasal: pidTempBasal) ?? physiologicalTempBasal
+        let mlTempBasalRaw = await machineLearning.tempBasal(settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at, pidTempBasal: pidTempBasal) ?? physiologicalTempBasal
         let mlTempBasal = applyGuardrails(glucoseInMgDl: glucoseInMgDl, predictedGlucoseInMgDl: predictedGlucoseInMgDl, newBasalRateRaw: mlTempBasalRaw, settings: settings, roundToSupportedBasalRate: roundToSupportedBasalRate)
         let mlDuration = Date().timeIntervalSince(mlStart)
 
         // run it through the safety service
         let safetyStart = Date()
-        let safetyTempBasalResult = await getSafetyService().tempBasal(at: at, settings: settings, safetyTempBasalUnitsPerHour: physiologicalTempBasal, machineLearningTempBasalUnitsPerHour: mlTempBasal, duration: settings.correctionDurationInSeconds)
+        let safetyTempBasalResult = await safetyService.tempBasal(at: at, settings: settings, safetyTempBasalUnitsPerHour: physiologicalTempBasal, machineLearningTempBasalUnitsPerHour: mlTempBasal, duration: settings.correctionDurationInSeconds)
         let safetyTempBasal = applyGuardrails(glucoseInMgDl: glucoseInMgDl, predictedGlucoseInMgDl: predictedGlucoseInMgDl, newBasalRateRaw: safetyTempBasalResult.tempBasal, settings: settings, roundToSupportedBasalRate: roundToSupportedBasalRate)
         let safetyDuration = Date().timeIntervalSince(safetyStart)
 
         // calculate the micro bolus candidates and the biological invariant
         // IMPORTANT: you must run the mlTempBasal through the safety logic and use only
         // that temp basal for micro bolus calculations, or you can use the physiological temp basal
-        let microBolusSafety = await microBolusAmount(tempBasal: safetyTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, at: at) ?? 0.0
-        let microBolusPhysiological = await microBolusAmount(tempBasal: physiologicalTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, at: at) ?? 0.0
-        let biologicalInvariant = await getPhysiologicalModels().deltaGlucoseError(settings: settings, dataFrame: dataFrame, at: at)
+        let microBolusSafety = await microBolusAmount(pumpManager: pumpManager, tempBasal: safetyTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, at: at) ?? 0.0
+        let microBolusPhysiological = await microBolusAmount(pumpManager: pumpManager, tempBasal: physiologicalTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, at: at) ?? 0.0
+        let biologicalInvariant = await physiologicalModels.deltaGlucoseError(settings: settings, dataFrame: dataFrame, at: at)
 
         let decision = determineDose(settings: settings, physiologicalTempBasal: physiologicalTempBasal, mlTempBasal: mlTempBasal, safetyTempBasal: safetyTempBasal, microBolusPhysiological: microBolusPhysiological, microBolusSafety: microBolusSafety, biologicalInvariant: biologicalInvariant)
 

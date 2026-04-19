@@ -10,137 +10,160 @@ import LoopKitUI
 
 // MARK: - PumpManagerDelegate
 class MosPumpManagerDelegate: PumpManagerDelegate {
+    let insulinStorage: InsulinStorage
+    let alertStorage: AlertStorage
+    let observableState: AppObservableState
+    weak var deviceDataManager: DeviceDataManager?
+
+    init(insulinStorage: InsulinStorage, alertStorage: AlertStorage, observableState: AppObservableState) {
+        self.insulinStorage = insulinStorage
+        self.alertStorage = alertStorage
+        self.observableState = observableState
+    }
+
     func pumpManager(_ pumpManager: any LoopKit.PumpManager, hasNewPumpEvents events: [LoopKit.NewPumpEvent], lastReconciliation: Date?, replacePendingEvents: Bool, completion: @escaping ((any Error)?) -> Void) {
-        
+
         log.default("PumpManager:%{public}@ hasNewPumpEvents (lastReconciliation = %{public}@)", String(describing: type(of: pumpManager)), String(describing: lastReconciliation))
-        
+
         let insulinType = pumpManager.status.insulinType ?? .humalog
+        let insulinStorage = self.insulinStorage
+        let observableState = self.observableState
         dispatchQueue.async {
-            let error = await getInsulinStorage().addPumpEvents(events, lastReconciliation: lastReconciliation, insulinType: insulinType)
+            let error = await insulinStorage.addPumpEvents(events, lastReconciliation: lastReconciliation, insulinType: insulinType)
             if let error = error {
                 self.log.error("Failed to addPumpEvents to InsulinStorage: %{public}@", String(describing: error))
             }
-            
-            let insulinOnBoard = await getInsulinStorage().insulinOnBoard(at: Date())
-            let pumpAlarm = await getInsulinStorage().pumpAlarm()
-            await getDeviceDataManager().update(insulinOnBoard: insulinOnBoard, pumpAlarm: pumpAlarm)
-            
+
+            let insulinOnBoard = await insulinStorage.insulinOnBoard(at: Date())
+            let pumpAlarm = await insulinStorage.pumpAlarm()
+            await MainActor.run {
+                observableState.insulinOnBoard = insulinOnBoard
+                observableState.pumpAlarm = pumpAlarm
+            }
+
             completion(error)
         }
     }
-    
+
     func pumpManager(_ pumpManager: any LoopKit.PumpManager, didRequestBasalRateScheduleChange basalRateSchedule: LoopKit.BasalRateSchedule, completion: @escaping ((any Error)?) -> Void) {
         // figure this out later
     }
-    
+
     var automaticDosingEnabled: Bool = false
-    
+
     let dispatchQueue = InOrderTaskQueue.dispatchQueue
     let log = DiagnosticLog(category: "MosPumpManagerDelegate")
     var pumpManagerMustProvideBLEHeartbeat = true
-    let alertStorage = getAlertStorage()
-    
+
     // protocol stubs that I'm leaving blank for now
     var detectedSystemTimeOffset: TimeInterval {
         return 0.0
     }
-    
+
     func deviceManager(_ manager: LoopKit.DeviceManager, logEventForDeviceIdentifier deviceIdentifier: String?, type: LoopKit.DeviceLogEntryType, message: String, completion: ((Error?) -> Void)?) {
         print("!!!! logEventForDeviceIdentifier: \(type): \(message)")
         completion?(nil)
     }
-    
+
     func issueAlert(_ alert: LoopKit.Alert) {
+        let observableState = self.observableState
         dispatchQueue.async {
             await self.alertStorage.issueAlert(alert)
             let activeAlert = await self.alertStorage.activeAlert()
-            await getDeviceDataManager().update(activeAlert: activeAlert)
+            await MainActor.run { observableState.activeAlert = activeAlert }
         }
     }
-    
+
     func retractAlert(identifier: LoopKit.Alert.Identifier) {
+        let observableState = self.observableState
         dispatchQueue.async {
             await self.alertStorage.retractAlert(identifier: identifier)
             let activeAlert = await self.alertStorage.activeAlert()
-            await getDeviceDataManager().update(activeAlert: activeAlert)
+            await MainActor.run { observableState.activeAlert = activeAlert }
         }
     }
-    
+
     func doesIssuedAlertExist(identifier: LoopKit.Alert.Identifier, completion: @escaping (Result<Bool, Error>) -> Void) {
         dispatchQueue.async {
             let alertExists = await self.alertStorage.doesIssuedAlertExist(identifier: identifier)
             completion(alertExists)
         }
     }
-    
+
     func lookupAllUnretracted(managerIdentifier: String, completion: @escaping (Result<[LoopKit.PersistedAlert], Error>) -> Void) {
         dispatchQueue.async {
             let unretractedAlerts = await self.alertStorage.lookupAllUnretracted(managerIdentifier: managerIdentifier)
             completion(unretractedAlerts)
         }
     }
-    
+
     func lookupAllUnacknowledgedUnretracted(managerIdentifier: String, completion: @escaping (Result<[LoopKit.PersistedAlert], Error>) -> Void) {
         dispatchQueue.async {
             let unacknowledgedUnretractedAlerts = await self.alertStorage.lookupAllUnacknowledgedUnretracted(managerIdentifier: managerIdentifier)
             completion(unacknowledgedUnretractedAlerts)
         }
     }
-    
+
     func recordRetractedAlert(_ alert: LoopKit.Alert, at date: Date) {
         dispatchQueue.async {
             await self.alertStorage.recordRetractedAlert(alert, at: date)
         }
     }
     ///
-    
+
     func pumpManager(_ pumpManager: PumpManager, didAdjustPumpClockBy adjustment: TimeInterval) {
         log.default("PumpManager:%{public}@ did adjust pump clock by %fs", String(describing: type(of: pumpManager)), adjustment)
     }
-    
+
     func pumpManagerDidUpdateState(_ pumpManager: PumpManager) {
         log.default("PumpManager:%{public}@ did update state", String(describing: type(of: pumpManager)))
-        dispatchQueue.async { await getDeviceDataManager().updateRawPumpManager(to: pumpManager.rawValue) }
+        let deviceDataManager = self.deviceDataManager
+        dispatchQueue.async { await deviceDataManager?.updateRawPumpManager(to: pumpManager.rawValue) }
     }
-    
+
     func pumpManagerBLEHeartbeatDidFire(_ pumpManager: PumpManager) {
         log.default("PumpManager:%{public}@ did fire heartbeat", String(describing: type(of: pumpManager)))
+        let deviceDataManager = self.deviceDataManager
         Task {
             await dispatchQueue.waitForEventsToRun()
-            await getDeviceDataManager().checkCgmDataAndLoop()
+            await deviceDataManager?.checkCgmDataAndLoop()
         }
     }
-    
+
     func pumpManagerMustProvideBLEHeartbeat(_ pumpManager: PumpManager) -> Bool {
         return pumpManagerMustProvideBLEHeartbeat
     }
-    
+
     func pumpManager(_ pumpManager: PumpManager, didUpdate status: PumpManagerStatus, oldStatus: PumpManagerStatus) {
         log.default("PumpManager:%{public}@ did update status: %{public}@", String(describing: type(of: pumpManager)), String(describing: status))
-        dispatchQueue.async { await getDeviceDataManager().updatePumpIsAllowingAutomation(status: status) }
+        let deviceDataManager = self.deviceDataManager
+        dispatchQueue.async { await deviceDataManager?.updatePumpIsAllowingAutomation(status: status) }
     }
-    
+
     func pumpManagerPumpWasReplaced(_ pumpManager: PumpManager) {
         // PumpManagers should report a continuous dosing history, across pump changes
     }
-    
+
     func pumpManagerWillDeactivate(_ pumpManager: PumpManager) {
         log.default("Pump manager with identifier '%{public}@' will deactivate", pumpManager.pluginIdentifier)
-        dispatchQueue.async { await getDeviceDataManager().updatePumpManager(to: nil) }
+        let deviceDataManager = self.deviceDataManager
+        dispatchQueue.async { await deviceDataManager?.updatePumpManager(to: nil) }
     }
-    
+
     func pumpManager(_ pumpManager: PumpManager, didUpdatePumpRecordsBasalProfileStartEvents pumpRecordsBasalProfileStartEvents: Bool) {
         log.default("PumpManager:%{public}@ did update pumpRecordsBasalProfileStartEvents to %{public}@", String(describing: type(of: pumpManager)), String(describing: pumpRecordsBasalProfileStartEvents))
-        
+
+        let insulinStorage = self.insulinStorage
         dispatchQueue.async {
-            await getInsulinStorage().setPumpRecordsBasalProfileStartEvents(pumpRecordsBasalProfileStartEvents)
+            await insulinStorage.setPumpRecordsBasalProfileStartEvents(pumpRecordsBasalProfileStartEvents)
         }
     }
-    
+
     func pumpManager(_ pumpManager: PumpManager, didError error: PumpManagerError) {
         log.error("PumpManager:%{public}@ did error: %{public}@", String(describing: type(of: pumpManager)), String(describing: error))
-        
-        dispatchQueue.async { await getDeviceDataManager().setLastError(error: error) }
+
+        let deviceDataManager = self.deviceDataManager
+        dispatchQueue.async { await deviceDataManager?.setLastError(error: error) }
     }
     
     func pumpManager(_ pumpManager: PumpManager, didReadReservoirValue units: Double, at date: Date, completion: @escaping (_ result: Swift.Result<(newValue: ReservoirValue, lastValue: ReservoirValue?, areStoredValuesContinuous: Bool), Error>) -> Void) {
@@ -168,8 +191,9 @@ class MosPumpManagerDelegate: PumpManagerDelegate {
 extension MosPumpManagerDelegate: PumpManagerOnboardingDelegate {
     func pumpManagerOnboarding(didCreatePumpManager pumpManager: PumpManagerUI) {
         log.default("Pump manager with identifier '%{public}@' created", pumpManager.pluginIdentifier)
+        let deviceDataManager = self.deviceDataManager
         dispatchQueue.async {
-            await getDeviceDataManager().updatePumpManager(to: pumpManager)
+            await deviceDataManager?.updatePumpManager(to: pumpManager)
         }
     }
 
@@ -184,9 +208,10 @@ extension MosPumpManagerDelegate: PumpManagerOnboardingDelegate {
         //
         // Because we're using a task we might get more events that process before we
         // run but we're guarenteed to finish any currently pending tasks before running
+        let deviceDataManager = self.deviceDataManager
         Task {
             await dispatchQueue.waitForEventsToRun()
-            await getDeviceDataManager().refreshCgmAndPumpDataFromUI()
+            await deviceDataManager?.refreshCgmAndPumpDataFromUI()
         }
     }
 

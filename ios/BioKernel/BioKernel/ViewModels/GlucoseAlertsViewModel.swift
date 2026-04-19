@@ -25,7 +25,13 @@ public class GlucoseAlertsViewModel: ObservableObject {
     @Published var alertString: String? = nil
     @Published var mostRecentPredictedGlucose: Double? = nil
     var alertStringFromSettings: String? = nil
-    
+
+    private let glucoseAlertsService: GlucoseAlertStorage
+
+    init(glucoseAlertsService: GlucoseAlertStorage) {
+        self.glucoseAlertsService = glucoseAlertsService
+    }
+
     func glucoseAlertValue(from: Double) -> GlucoseAlertValue {
         let value = Int(from.rounded())
         return GlucoseAlertValue(id: "\(value) mg/dl", value: value)
@@ -54,7 +60,7 @@ public class GlucoseAlertsViewModel: ObservableObject {
     }
     
     func updateEnabled(_ enabled: Bool) {
-        getGlucoseAlertsService().update(enabled: enabled)
+        glucoseAlertsService.update(enabled: enabled)
         if enabled {
             alertString = alertStringFromSettings
             Task { await checkNotificationPermission() }
@@ -63,28 +69,28 @@ public class GlucoseAlertsViewModel: ObservableObject {
         }
     }
     func updateHighLevel(_ level: GlucoseAlertValue) {
-        getGlucoseAlertsService().update(highLevelMgDl: Double(level.value))
-        Task { await getGlucoseAlertsService().onNewGlucoseValue() }
+        glucoseAlertsService.update(highLevelMgDl: Double(level.value))
+        Task { await glucoseAlertsService.onNewGlucoseValue() }
     }
     func updateHighRepeats(_ minutes: GlucoseAlertValue) {
-        getGlucoseAlertsService().update(highRepeatsSeconds: Double(minutes.value).minutesToSeconds())
+        glucoseAlertsService.update(highRepeatsSeconds: Double(minutes.value).minutesToSeconds())
     }
     func updateLowLevel(_ level: GlucoseAlertValue) {
-        getGlucoseAlertsService().update(lowLevelMgDl: Double(level.value))
-        Task { await getGlucoseAlertsService().onNewGlucoseValue() }
+        glucoseAlertsService.update(lowLevelMgDl: Double(level.value))
+        Task { await glucoseAlertsService.onNewGlucoseValue() }
     }
     func updateLowRepeats(_ minutes: GlucoseAlertValue) {
-        getGlucoseAlertsService().update(lowRepeatsSeconds: Double(minutes.value).minutesToSeconds())
+        glucoseAlertsService.update(lowRepeatsSeconds: Double(minutes.value).minutesToSeconds())
     }
     
     private func requestNotificationPermission() async {
         do {
             let granted = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
             if granted {
-                getGlucoseAlertsService().update(notificationsPermissions: .authorized)
+                glucoseAlertsService.update(notificationsPermissions: .authorized)
                 UIApplication.shared.registerForRemoteNotifications()
             } else {
-                getGlucoseAlertsService().update(notificationsPermissions: .denied)
+                glucoseAlertsService.update(notificationsPermissions: .denied)
             }
         } catch {
             print("Error requesting notification permission: \(error.localizedDescription)")
@@ -95,9 +101,9 @@ public class GlucoseAlertsViewModel: ObservableObject {
         let settings = await UNUserNotificationCenter.current().notificationSettings()
         switch settings.authorizationStatus {
         case .authorized:
-            getGlucoseAlertsService().update(notificationsPermissions: .authorized)
+            glucoseAlertsService.update(notificationsPermissions: .authorized)
         case .denied:
-            getGlucoseAlertsService().update(notificationsPermissions: .denied)
+            glucoseAlertsService.update(notificationsPermissions: .denied)
         case .notDetermined:
             await requestNotificationPermission()
         case .provisional:

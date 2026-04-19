@@ -39,12 +39,14 @@ public struct LocalPersistedAlert: Codable {
 }
 
 actor LocalAlertStorage: AlertStorage {
-    static let shared = LocalAlertStorage()
-    
     var alerts: [LocalPersistedAlert] = []
     var hasDoneInitialReadFromDisk = false
-    
-    let storage = getStoredObject().create(fileName: "alerts.json")
+
+    let storage: StoredObject
+
+    init(storedObjectFactory: StoredObject.Type) {
+        self.storage = storedObjectFactory.create(fileName: "alerts.json")
+    }
     
     private func readFromDisk() async {
         guard !hasDoneInitialReadFromDisk else { return }

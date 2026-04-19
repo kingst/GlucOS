@@ -94,32 +94,36 @@ public class SettingsViewModel: ObservableObject {
     
     var mlBasalSchedule: DecimalSettingSchedule
     var mlInsulinSensitivitySchedule: DecimalSettingSchedule
-    
+
+    private let settingsStorage: SettingsStorage
+    private let healthKitStorage: HealthKitStorage
+    private let deviceDataManager: DeviceDataManager
+
     func save() async throws {
         let error = await FaceId.authenticate()
-        
+
         guard error == nil else {
             throw "Not authenticated"
         }
-        
+
         try await persistUpdatedSettings()
     }
-    
+
     func authorizeHealthKit() async throws {
-        try await getHealthKitStorage().authorize()
+        try await healthKitStorage.authorize()
     }
-    
+
     private func persistUpdatedSettings() async throws {
-        guard let pumpManager = await getDeviceDataManager().pumpManager else {
-            try await getSettingsStorage().writeToDisk(settings: snapshot())
+        guard let pumpManager = await deviceDataManager.pumpManager else {
+            try await settingsStorage.writeToDisk(settings: snapshot())
             throw "Pump manager is nil, saved settings to disk but can't sync to the pump"
         }
-        
+
         let maxBasal = HKQuantity(unit: .internationalUnitsPerHour, doubleValue: maxBasalRate.value)
         let maxBolus = HKQuantity(unit: .internationalUnit(), doubleValue: maxBolus.value)
         let schedule = RepeatingScheduleValue(startTime: 0.0, value: pumpBasalRate.value)
-        
-        try await getSettingsStorage().writeToDisk(settings: snapshot())
+
+        try await settingsStorage.writeToDisk(settings: snapshot())
         
         // FIXME: if we error at this point the settings will be out of sync with what's running on the pump
         if !closedLoopEnabled {
@@ -159,7 +163,15 @@ public class SettingsViewModel: ObservableObject {
         machineLearningGain = DecimalSetting(value: settings.getMachineLearningGain(), units: SettingsViewModel.gainUnits)
     }
 
-    public init(settings: CodableSettings) {
+    init(
+        settings: CodableSettings,
+        settingsStorage: SettingsStorage,
+        healthKitStorage: HealthKitStorage,
+        deviceDataManager: DeviceDataManager
+    ) {
+        self.settingsStorage = settingsStorage
+        self.healthKitStorage = healthKitStorage
+        self.deviceDataManager = deviceDataManager
         closedLoopEnabled = settings.closedLoopEnabled
         useMachineLearningClosedLoop = settings.useMachineLearningClosedLoop
         useMicroBolus = settings.isMicroBolusEnabled()

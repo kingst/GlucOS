@@ -21,28 +21,25 @@ final class InsulinStorageTests: XCTestCase {
     let iobAccuracy = 0.00000000001
     // generated offline manually
     let lyumjevAtOneUnitPerHourForOneHour = 0.90988675478661
-    
-    @MainActor override func setUpWithError() throws {
-        Dependency.useMockConstructors = true
+
+    @MainActor private func makeStorage() -> LocalInsulinStorage {
         let settings = MockSettingsStorage()
-        Dependency.mock { settings as SettingsStorage }
-        Dependency.mock { MockStoredObject.self as StoredObject.Type }
-        Dependency.mock { MockWatchComms() as WatchComms }
-        Dependency.mock { MockHealthKitStore() as HealthKitStorage }
+        return LocalInsulinStorage(
+            storedObjectFactory: MockStoredObject.self,
+            healthKitStorage: MockHealthKitStore(),
+            watchComms: { MockWatchComms() },
+            settingsStorage: { settings }
+        )
     }
 
-    override func tearDownWithError() throws {
-        Dependency.resetMocks()
-        Dependency.useMockConstructors = false
-    }
-    
+
     func testBasalAtEnd() async throws {
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
         
         let dose = DoseEntry(type: .tempBasal, startDate: startDate, endDate: startDate + 30.minutesToSeconds(), value: 1.0, unit: .unitsPerHour, deliveredUnits: 0.5, insulinType: .lyumjev, isMutable: false)
         
         let at = startDate + 60.minutesToSeconds()
-        let storage = LocalInsulinStorage()
+        let storage = await makeStorage()
         let iobBasal = await storage.inferBasalDoses(doses: [dose], at: at).map({ $0.insulinOnBoard(at: at) }).reduce(0, +)
         let iobTempBasal = dose.insulinOnBoard(at: at)
         let iob = iobBasal + iobTempBasal
@@ -57,7 +54,7 @@ final class InsulinStorageTests: XCTestCase {
         let dose2 = DoseEntry(type: .tempBasal, startDate: startDate + 45.minutesToSeconds(), endDate: startDate + 60.minutesToSeconds(), value: 1.0, unit: .unitsPerHour, deliveredUnits: 0.25, insulinType: .lyumjev, isMutable: false)
         
         let at = startDate + 60.minutesToSeconds()
-        let storage = LocalInsulinStorage()
+        let storage = await makeStorage()
         //let iobBasal = await storage.inferredBasalInsulinOnBoard(insulinType: .lyumjev, doses: [dose, dose2], at: at)
         let iobBasal = await storage.inferBasalDoses(doses: [dose, dose2], at: at).map({ $0.insulinOnBoard(at: at) }).reduce(0, +)
         let iobTempBasal = dose.insulinOnBoard(at: at) + dose2.insulinOnBoard(at: at)
@@ -79,7 +76,7 @@ final class InsulinStorageTests: XCTestCase {
         let implicitBasal = DoseEntry(type: .basal, startDate: startDate, endDate: Date.f("2023-11-19 23:23:31 +0000"), value: 1.0, unit: .unitsPerHour, insulinType: .lyumjev, isMutable: false)
         iob += implicitBasal.insulinOnBoard(at: at)
         
-        let storage = LocalInsulinStorage()
+        let storage = await makeStorage()
         let totalIob = await storage.insulinOnBoard(events: pumpEvents, at: at)
         
         XCTAssertEqual(iob, totalIob, accuracy: iobAccuracy)
@@ -89,7 +86,7 @@ final class InsulinStorageTests: XCTestCase {
         let events: [NewPumpEvent] = ReplayLogs.replayLogs(for: type(of: self), forResource: "filter_bug", ofType: "json")
         let at = events.last!.dose!.endDate
         
-        let storage = LocalInsulinStorage()
+        let storage = await makeStorage()
         await storage.setPumpRecordsBasalProfileStartEvents(false)
         let iob = await storage.insulinOnBoard(events: events, at: at)
         
@@ -107,7 +104,7 @@ final class InsulinStorageTests: XCTestCase {
         let implicitBasalUnits = implicitBasal.deliveredUnits ?? implicitBasal.programmedUnits
         let insulinDelivered = 0.45 + 0.35 + 1.25 + 0.45 + implicitBasalUnits
         
-        let storage = LocalInsulinStorage()
+        let storage = await makeStorage()
         let calculatedInsulinDelivered = await storage.insulinDelivered(events: pumpEvents, startDate: startDate, endDate: endDate)
         
         XCTAssertEqual(insulinDelivered, calculatedInsulinDelivered, accuracy: iobAccuracy)
@@ -130,7 +127,7 @@ final class InsulinStorageTests: XCTestCase {
         let lastBasal = 0.45
         let insulinDelivered = 0.45 + 0.35 + 1.25 + lastBasal + implicitBasalUnits
         
-        let storage = LocalInsulinStorage()
+        let storage = await makeStorage()
         let calculatedInsulinDelivered = await storage.insulinDelivered(events: pumpEvents, startDate: startDate, endDate: endDate)
         
         XCTAssertEqual(insulinDelivered, calculatedInsulinDelivered, accuracy: iobAccuracy)
@@ -148,7 +145,7 @@ final class InsulinStorageTests: XCTestCase {
         let doses = ReplayLogs.iobBugLogs(for: type(of: self))
         let atSuspend = Date(timeIntervalSince1970: 1714517892.726407)
         let atResume = Date(timeIntervalSince1970: 1714531049.1750169)
-        let storage = LocalInsulinStorage()
+        let storage = await makeStorage()
         await storage.setPumpRecordsBasalProfileStartEvents(false)
 
         let iobSuspend = await omnipodIoBCalculation(storage: storage, doses: doses, at: atSuspend)

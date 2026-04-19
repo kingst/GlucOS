@@ -60,17 +60,22 @@ class DiagnosticViewModel: ObservableObject, ClosedLoopChartDataUpdate, PumpEven
     @Published var chartData: [ClosedLoopChartData] = []
     @Published var pumpHistory: [PumpDose] = []
     
-    private let closedLoopService = getClosedLoopService()
-    private let insulinStorage = getInsulinStorage()
-    
-    init() {
+    private let closedLoopService: ClosedLoopService
+    private let insulinStorage: InsulinStorage
+
+    init(
+        closedLoopService: ClosedLoopService,
+        insulinStorage: InsulinStorage
+    ) {
+        self.closedLoopService = closedLoopService
+        self.insulinStorage = insulinStorage
         Task { @MainActor in
             let results = await self.closedLoopService.registerClosedLoopChartDataDelegate(delegate: self)
             self.chartData = results.compactMap { self.convertToChartData(result: $0) }
         }
-        
+
         Task {
-            let entries = await insulinStorage.registerForPumpEntryUpdates(delegate: self)
+            let entries = await self.insulinStorage.registerForPumpEntryUpdates(delegate: self)
             await process(entries: entries)
         }
     }

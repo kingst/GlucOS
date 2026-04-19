@@ -8,8 +8,9 @@
 import SwiftUI
 
 struct MainViewSummaryView: View {
-    @StateObject var deviceManagerObservable = getDeviceDataManager().observableObject()
-    @ObservedObject var glucoseAlertsViewModel = getGlucoseAlertsService().viewModel()
+    @EnvironmentObject var appState: AppObservableState
+    @EnvironmentObject var glucoseAlertsViewModel: GlucoseAlertsViewModel
+    @Environment(\.composition) var composition: AppComposition?
     @Environment(\.scenePhase) var scenePhase
     @State var timer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
     @State var predictedGlucose: Double?
@@ -17,7 +18,7 @@ struct MainViewSummaryView: View {
     var body: some View {
         VStack {
             VStack {
-                if let glucose = deviceManagerObservable.lastGlucoseReading {
+                if let glucose = appState.lastGlucoseReading {
                     let value = glucose.quantity.doubleValue(for: .milligramsPerDeciliter, withRounding: true)
                     let time = Int(Date().timeIntervalSince(glucose.date) / 60.0)
                     let trend = glucose.trend?.symbol ?? ""
@@ -39,8 +40,8 @@ struct MainViewSummaryView: View {
                 }
                 .frame(maxWidth: .infinity)
                 GridRow {
-                    let iob = deviceManagerObservable.insulinOnBoard
-                    if let digestion = deviceManagerObservable.digestionCalibrated() {
+                    let iob = appState.insulinOnBoard
+                    if let digestion = appState.digestionCalibrated() {
                         DigestionGauge(current: digestion)
                     } else {
                         Text("-")
@@ -69,9 +70,9 @@ struct MainViewSummaryView: View {
         .frame(maxWidth: .infinity)
         .background(AppColors.primary)
         .onAppear {
-            getDeviceDataManager().pumpManager?.ensureCurrentPumpData(completion: nil)
+            composition?.deviceDataManager.pumpManager?.ensureCurrentPumpData(completion: nil)
             // Just to make sure that the ClosedLoopResults data is loaded
-            let _ = getClosedLoopService()
+            let _ = composition?.closedLoopService
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .inactive || newPhase == .background {
@@ -84,13 +85,14 @@ struct MainViewSummaryView: View {
             }
         }
         .task {
-            predictedGlucose = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: Date())
-            await getDeviceDataManager().refreshCgmAndPumpDataFromUI()
-            await getHealthKitStorage().removeDuplicateEntries()
+            guard let composition else { return }
+            predictedGlucose = await composition.physiologicalModels.predictGlucoseIn15Minutes(from: Date())
+            await composition.deviceDataManager.refreshCgmAndPumpDataFromUI()
+            await composition.healthKitStorage.removeDuplicateEntries()
         }
         .onReceive(timer) { _ in
             print("timer")
-            deviceManagerObservable.objectWillChange.send()
+            appState.objectWillChange.send()
             Task {
                 await pollForNewValues()
             }
@@ -98,9 +100,13 @@ struct MainViewSummaryView: View {
     }
     
     func pollForNewValues() async {
-        predictedGlucose = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: Date())
-        let iob = await getInsulinStorage().insulinOnBoard(at: Date())
-        getDeviceDataManager().update(insulinOnBoard: iob, pumpAlarm: nil)
+        guard let composition else { return }
+        predictedGlucose = await composition.physiologicalModels.predictGlucoseIn15Minutes(from: Date())
+        let iob = await composition.insulinStorage.insulinOnBoard(at: Date())
+        await MainActor.run {
+            appState.insulinOnBoard = iob
+            appState.pumpAlarm = nil
+        }
     }
 }
 

@@ -9,10 +9,15 @@ import SwiftUI
 
 struct SettingsView: View {
     var settingsFromUrl: CodableSettings?
-    @StateObject var settingsViewModel = getSettingsStorage().viewModel()
+    @StateObject var settingsViewModel: SettingsViewModel
     @Environment(\.dismiss) var dismiss
     @State var hasModifications = false
     @State var errorString: String?
+
+    init(settingsFromUrl: CodableSettings?, settingsViewModel: @autoclosure @escaping () -> SettingsViewModel) {
+        self.settingsFromUrl = settingsFromUrl
+        self._settingsViewModel = StateObject(wrappedValue: settingsViewModel())
+    }
     
     var body: some View {
         VStack {
@@ -126,8 +131,3 @@ struct SettingsView: View {
     }
 }
 
-#Preview {
-    NavigationStack {
-        SettingsView(settingsFromUrl: nil)
-    }
-}

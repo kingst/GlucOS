@@ -13,18 +13,13 @@ import OmniBLE
 
 final class ClosedLoopTests: XCTestCase {
     let iobAccuracy = 0.00000000001
-    
-    @MainActor override func setUpWithError() throws {
-        Dependency.useMockConstructors = true
-        Dependency.mock { MockInsulinStorage() as InsulinStorage }
-        Dependency.mock { MockWatchComms() as WatchComms }
-        Dependency.mock { MockStoredObject.self as StoredObject.Type }
-        Dependency.mock { MockDeviceDataManager() as DeviceDataManager}
-    }
 
-    override func tearDownWithError() throws {
-        Dependency.resetMocks()
-        Dependency.useMockConstructors = false
+    @MainActor private func makeService(settings: MockSettingsStorage) -> LocalClosedLoopService {
+        return makeClosedLoopService(
+            settings: settings,
+            glucoseStorage: MockGlucoseStorage(),
+            insulinStorage: MockInsulinStorage()
+        )
     }
 
     func testBaselineIoB() throws {
@@ -50,8 +45,8 @@ final class ClosedLoopTests: XCTestCase {
     }
     
     func testDoseLogic() async {
-        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
+        let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: false, useMachineLearningClosedLoop: false, useBiologicalInvariant: false)
         
 let dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
@@ -61,8 +56,8 @@ let dose = await closedLoop.determineDose(settings: settings.snapshot(), physiol
     }
     
     func testDoseLogicUseMachineLearning() async {
-        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
+        let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: false, useMachineLearningClosedLoop: true, useBiologicalInvariant: false)
         
 let dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
@@ -72,8 +67,8 @@ let dose = await closedLoop.determineDose(settings: settings.snapshot(), physiol
     }
     
     func testDoseLogicUseMachineLearningMicroBolus() async {
-        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
+        let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: true, useBiologicalInvariant: false)
         
 let dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
@@ -83,8 +78,8 @@ let dose = await closedLoop.determineDose(settings: settings.snapshot(), physiol
     }
     
     func testDoseLogicUseMicroBolus() async {
-        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
+        let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: false, useBiologicalInvariant: false)
         
 var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
@@ -99,8 +94,8 @@ var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiol
     }
     
     func testDoseLogicUseBiologicalInvariant() async {
-        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
+        let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: false, useMachineLearningClosedLoop: false, useBiologicalInvariant: true)
         
 var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
@@ -120,8 +115,8 @@ var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiol
     }
     
     func testDoseLogicUseMicroBolusBiologicalInvariant() async {
-        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
+        let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: false, useBiologicalInvariant: true)
         
 var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
@@ -141,8 +136,8 @@ var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiol
     }
     
     func testDoseLogicUseMachineLearningBiologicalInvariant() async {
-        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
+        let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: false, useMachineLearningClosedLoop: true, useBiologicalInvariant: true)
         
 var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
@@ -162,8 +157,8 @@ var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiol
     }
     
     func testDoseLogicUseAll() async {
-        let closedLoop = LocalClosedLoopService(startBackgroundTask: false)
         let settings = await MockSettingsStorage()
+        let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: true, useBiologicalInvariant: true)
         
 var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)

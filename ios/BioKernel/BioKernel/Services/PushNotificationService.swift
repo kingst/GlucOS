@@ -13,8 +13,6 @@ import UIKit
 
 @MainActor
 class LocalPushNotificationService: PushNotificationService {
-    static let shared = LocalPushNotificationService()
-
     func register(application: UIApplication) {
         print("PUSH: registering for remote notifications")
         application.registerForRemoteNotifications()

@@ -11,8 +11,6 @@ import LoopKit
 import LoopKitUI
 
 public class BluetoothStateManager: NSObject, BluetoothProvider {
-    public static let shared = BluetoothStateManager()
-    
     private var completion: ((BluetoothAuthorization) -> Void)?
     private var centralManager: CBCentralManager?
     private var bluetoothObservers = WeakSynchronizedSet<BluetoothObserver>()

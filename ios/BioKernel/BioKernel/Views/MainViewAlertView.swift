@@ -8,11 +8,12 @@
 import SwiftUI
 
 struct MainViewAlertView: View {
-    @ObservedObject var doseProgress: DoseProgress = getDeviceDataManager().observableObject().doseProgress
-    @ObservedObject var glucoseAlertsViewModel = getGlucoseAlertsService().viewModel()
+    @EnvironmentObject var appState: AppObservableState
+    @EnvironmentObject var glucoseAlertsViewModel: GlucoseAlertsViewModel
+    @Environment(\.composition) var composition: AppComposition?
     var body: some View {
         VStack {
-            if !doseProgress.isComplete {
+            if !appState.doseProgress.isComplete {
                 BolusProgressView()
             } else if let alertString = glucoseAlertsViewModel.alertString {
                 MainViewGlucoseAlertView(alertString: alertString)
@@ -22,9 +23,10 @@ struct MainViewAlertView: View {
         }
         .task {
             // FIXME: can we put this in the BolusProgressView? I don't think so, but it would be better there
-            if let pumpManager = getDeviceDataManager().pumpManager, let bolusProgressReporter = pumpManager.createBolusProgressReporter(reportingOn: DispatchQueue.main) {
-                let totalUnits =  await getInsulinStorage().activeBolus(at: Date())?.programmedUnits ?? bolusProgressReporter.progress.deliveredUnits / bolusProgressReporter.progress.percentComplete
-                doseProgress.update(totalUnits: totalUnits, doseProgressReporter: bolusProgressReporter)
+            guard let composition else { return }
+            if let pumpManager = composition.deviceDataManager.pumpManager, let bolusProgressReporter = pumpManager.createBolusProgressReporter(reportingOn: DispatchQueue.main) {
+                let totalUnits =  await composition.insulinStorage.activeBolus(at: Date())?.programmedUnits ?? bolusProgressReporter.progress.deliveredUnits / bolusProgressReporter.progress.percentComplete
+                appState.doseProgress.update(totalUnits: totalUnits, doseProgressReporter: bolusProgressReporter)
             }
         }
     }

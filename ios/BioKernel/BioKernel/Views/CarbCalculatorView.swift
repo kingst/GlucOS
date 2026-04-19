@@ -9,6 +9,7 @@ import SwiftUI
 
 struct CarbCalculatorView: View {
     @Environment(\.dismiss) var dismiss
+    @Environment(\.composition) var composition: AppComposition?
     @Binding var bolusAmount: String
     @State var carbAmount: String = ""
     @State var carbError: String? = nil
@@ -35,7 +36,8 @@ struct CarbCalculatorView: View {
                 }
                 
                 Task {
-                    let bolus = await getPhysiologicalModels().calculateBolus(carbsInG: grams)
+                    guard let composition else { return }
+                    let bolus = await composition.physiologicalModels.calculateBolus(carbsInG: grams)
                     bolusAmount = "\(String(format: "%0.02f", bolus))"
                     dismiss()
                 }

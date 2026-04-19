@@ -13,7 +13,7 @@ struct GlucoseAlertValue: Hashable, Identifiable {
 }
 
 struct GlucoseAlertsView: View {
-    @ObservedObject var viewModel = getGlucoseAlertsService().viewModel()
+    @EnvironmentObject var viewModel: GlucoseAlertsViewModel
     var body: some View {
         VStack {
             Form {

@@ -98,13 +98,13 @@ extension PumpManager {
         }
     }
     
-    func enactBolus(units: Double, activationType: BolusActivationType) async -> PumpManagerError? {
+    func enactBolus(units: Double, activationType: BolusActivationType, observableState: AppObservableState) async -> PumpManagerError? {
         return await withCheckedContinuation { continuation in
             self.enactBolus(units: units, activationType: activationType) { error in
                 if error == nil {
                     DispatchQueue.main.async {
                         if let progress = self.createBolusProgressReporter(reportingOn: .main) {
-                            getDeviceDataManager().update(totalAmount:units, bolusProgressReporter: progress)
+                            observableState.doseProgress.update(totalUnits: units, doseProgressReporter: progress)
                         }
                     }
                 }

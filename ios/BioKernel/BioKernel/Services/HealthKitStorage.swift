@@ -39,8 +39,6 @@ struct HealthKitMetadataKeys {
 }
 
 actor LocalHealthKitStorage: HealthKitStorage {
-    static let shared = LocalHealthKitStorage()
-    
     let healthStore = HKHealthStore()
     let glucoseType = HKObjectType.quantityType(forIdentifier: .bloodGlucose)!
     let insulinType = HKObjectType.quantityType(forIdentifier: .insulinDelivery)!
