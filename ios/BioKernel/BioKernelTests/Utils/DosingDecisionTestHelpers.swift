@@ -9,11 +9,11 @@ import Foundation
 @testable import BioKernel
 
 extension DosingDecision {
-    var tempBasalUnitsPerHour: Double {
-        if case .tempBasal(let unitsPerHour) = self { return unitsPerHour }
+    var tempBasal: Double {
+        if case .tempBasal(let units) = self { return units }
         return 0
     }
-    var microBolusUnits: Double {
+    var microBolus: Double {
         if case .microBolus(let units) = self { return units }
         return 0
     }
