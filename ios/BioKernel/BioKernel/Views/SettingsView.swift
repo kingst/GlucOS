@@ -14,9 +14,9 @@ struct SettingsView: View {
     @State var hasModifications = false
     @State var errorString: String?
 
-    init(settingsFromUrl: CodableSettings?, settingsViewModel: SettingsViewModel) {
+    init(settingsFromUrl: CodableSettings?, settingsViewModel: @autoclosure @escaping () -> SettingsViewModel) {
         self.settingsFromUrl = settingsFromUrl
-        self._settingsViewModel = StateObject(wrappedValue: settingsViewModel)
+        self._settingsViewModel = StateObject(wrappedValue: settingsViewModel())
     }
     
     var body: some View {

@@ -25,7 +25,7 @@ actor LocalGlucoseStorage: GlucoseStorage {
     let healthKitStorage: HealthKitStorage
     private let glucoseAlertsService: @MainActor () -> GlucoseAlertStorage
     private let backgroundService: @MainActor () -> BackgroundService
-    private let watchComms: () -> WatchComms
+    private let watchComms: @MainActor () -> WatchComms
     private let observableState: AppObservableState
 
     init(
@@ -33,7 +33,7 @@ actor LocalGlucoseStorage: GlucoseStorage {
         healthKitStorage: HealthKitStorage,
         glucoseAlertsService: @MainActor @escaping () -> GlucoseAlertStorage,
         backgroundService: @MainActor @escaping () -> BackgroundService,
-        watchComms: @escaping () -> WatchComms,
+        watchComms: @MainActor @escaping () -> WatchComms,
         observableState: AppObservableState,
         startBackgroundTask: Bool = true
     ) {
@@ -98,7 +98,8 @@ actor LocalGlucoseStorage: GlucoseStorage {
 
         do {
             try storage.write(self.glucoseReadings)
-            await watchComms().updateAppContext()
+            let comms = await MainActor.run { watchComms() }
+            await comms.updateAppContext()
             await updateGlucoseChartData()
         } catch {
             print("Failed to save glucose readings to disk")

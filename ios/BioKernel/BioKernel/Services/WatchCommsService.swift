@@ -15,13 +15,13 @@ class LocalWatchComms: WatchComms, SessionCommands {
     private let glucoseStorage: GlucoseStorage
     private let insulinStorage: InsulinStorage
     private let physiologicalModels: PhysiologicalModels
-    private let glucoseAlertsService: () -> GlucoseAlertStorage
+    private let glucoseAlertsService: @MainActor () -> GlucoseAlertStorage
 
     init(
         glucoseStorage: GlucoseStorage,
         insulinStorage: InsulinStorage,
         physiologicalModels: PhysiologicalModels,
-        glucoseAlertsService: @escaping () -> GlucoseAlertStorage
+        glucoseAlertsService: @MainActor @escaping () -> GlucoseAlertStorage
     ) {
         self.glucoseStorage = glucoseStorage
         self.insulinStorage = insulinStorage
@@ -42,7 +42,7 @@ class LocalWatchComms: WatchComms, SessionCommands {
             return
         }
 
-        let isPredictedGlucoseInRange = await glucoseAlertsService().isInRange(glucose: prediction)
+        let isPredictedGlucoseInRange = await MainActor.run { glucoseAlertsService().isInRange(glucose: prediction) }
         
         updateAppContext([PayloadKeys.glucoseReadingsData: glucoseReadingData,
                           PayloadKeys.predictedGlucose: prediction,

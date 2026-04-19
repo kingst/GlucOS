@@ -66,13 +66,13 @@ actor LocalInsulinStorage: InsulinStorage {
     var hasDoneInitialReadFromDisk = false
     let healthKitStorage: HealthKitStorage
     private let storedObjectFactory: StoredObject.Type
-    private let watchComms: () -> WatchComms
+    private let watchComms: @MainActor () -> WatchComms
     private let settingsStorage: @MainActor () -> SettingsStorage
 
     init(
         storedObjectFactory: StoredObject.Type,
         healthKitStorage: HealthKitStorage,
-        watchComms: @escaping () -> WatchComms,
+        watchComms: @MainActor @escaping () -> WatchComms,
         settingsStorage: @MainActor @escaping () -> SettingsStorage
     ) {
         self.storedObjectFactory = storedObjectFactory
@@ -138,7 +138,8 @@ actor LocalInsulinStorage: InsulinStorage {
         eventLog.append(contentsOf: events)
         let ret = syncDataToDisk()
         updateDelegate?.update(entries: eventLog)
-        await watchComms().updateAppContext()
+        let comms = await MainActor.run { watchComms() }
+        await comms.updateAppContext()
 
         Task { [healthKitStorage] in
             await healthKitStorage.save(pumpEvents: events)
