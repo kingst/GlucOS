@@ -2,9 +2,9 @@
 
 <div align="center">
   
-| Home view | During exercise | Watch app |
-|-----------|-----------------|-----------|
-| <img src="images/biokernel.jpeg" width="200"> | <img src="images/biokernel-exercise.jpeg" width="200"> |   <img src="images/watch.png" width="150"><br><img src="images/watch-exercise.png" width="150"> |
+| Home view | Watch app |
+|-----------|-----------|
+| <img src="images/biokernel.jpeg" width="200"> |   <img src="images/watch.png" width="150"><br><img src="images/watch-exercise.png" width="150"> |
 
 </div>
 
@@ -39,9 +39,6 @@ This source code is not meant for people to use yet. Also, the ML
 model is highly personalized for one individual and not appropriate
 for anyone other than "Bob" from our paper.
 
-Also, we haven't moved the `event-log` server or our formal methods
-proofs to this public repo yet.
-
 ## Getting started
 
 If you'd like to play around with the code and run it in the
@@ -54,5 +51,7 @@ $ git submodule update --init --recursive
 $ open ios/MetabolicOS.xcworkspace
 ```
 
-We also have a version running on TestFlight, contact Professor Sam
-King (<a href="https://bob.cs.ucdavis.edu">website</a>, <a href="mailto:kingst@ucdavis.edu">email</a>) from UC Davis about it if you're interested in getting added.
+Contact Professor Sam King (<a
+href="https://bob.cs.ucdavis.edu">website</a>, <a
+href="mailto:kingst@ucdavis.edu">email</a>) from UC Davis if you're
+interested in learning more.
