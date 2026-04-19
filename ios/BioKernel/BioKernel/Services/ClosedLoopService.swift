@@ -169,10 +169,7 @@ actor LocalClosedLoopService: ClosedLoopService {
         let snapshot = await closedLoopAlgorithm(settings: settings, glucoseInMgDl: glucoseInMgDl, insulinOnBoard: insulinOnBoard, at: at, roundToSupportedBasalRate: round)
         print("Looping, glucose: \(glucoseInMgDl) mg/dl, iob: \(insulinOnBoard), decision: \(snapshot.decision)")
 
-        let tempBasalToProgram: Double = {
-            if case .tempBasal(let units) = snapshot.decision { return units }
-            return 0.0
-        }()
+        let tempBasalToProgram = snapshot.decision.tempBasalUnitsPerHour ?? 0
 
         let correctionDuration = settings.correctionDurationInSeconds
         if let pumpError = await pumpManager.enactTempBasal(unitsPerHour: tempBasalToProgram, for: correctionDuration) {
