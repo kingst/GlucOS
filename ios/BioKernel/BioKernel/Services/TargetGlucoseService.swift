@@ -18,8 +18,6 @@ actor LocalTargetGlucoseService: TargetGlucoseService {
     let maxTargetGlucose = 140.0
     let minTargetGlucose = 70.0
 
-    static let shared = LocalTargetGlucoseService()
-
     func targetGlucoseInMgDl(at: Date, settings: CodableSettings) async -> Double {
         return settings.targetGlucoseInMgDl.clamp(low: minTargetGlucose, high: maxTargetGlucose)
     }

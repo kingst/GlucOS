@@ -13,14 +13,17 @@ import MockKit
 struct PumpManagerView: UIViewControllerRepresentable {
     typealias UIViewControllerType = UIViewController
     let pumpManagerUI: PumpManagerUI
-    
+
     @Environment(\.dismiss) var dismiss
-    
+    @Environment(\.composition) var composition: AppComposition?
+
     func makeUIViewController(context: Context) -> UIViewController {
-        let deviceManager = getDeviceDataManager()
+        guard let deviceManager = composition?.deviceDataManager else {
+            return UIViewController()
+        }
         var vc = deviceManager.pumpSettingsUI(for: pumpManagerUI)
         vc.completionDelegate = context.coordinator
-        
+
         // For MockPumpManager, the setup UI is the settings UI. When setting up, a new
         // instance of the pump manager is created. When viewing settings for an existing
         // pump, the existing instance is used. We can use this to tell the difference
@@ -33,7 +36,7 @@ struct PumpManagerView: UIViewControllerRepresentable {
                 }
             }
         }
-        
+
         return vc
     }
     

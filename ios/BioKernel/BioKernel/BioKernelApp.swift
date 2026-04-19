@@ -12,11 +12,18 @@ import WatchConnectivity
 @main
 struct BioKernelApp: App {
     @UIApplicationDelegateAdaptor(MyAppDelegate.self) var appDelegate
-    
+    let composition: AppComposition?
+
     init() {
         //G7CGMManager.debugLogger = getDebugLogger()
-        guard !isRunningTests else { return }
-        getBackgroundService().registerBackgroundTask()
+        if isRunningTests {
+            self.composition = nil
+        } else {
+            let composition = AppComposition()
+            self.composition = composition
+            composition.backgroundService.registerBackgroundTask()
+        }
+        appDelegate.composition = self.composition
     }
     var body: some Scene {
         WindowGroup {
@@ -25,9 +32,12 @@ struct BioKernelApp: App {
             // this but for now it's ok.
             if isRunningTests {
                 Text("Running tests")
-            } else {
+            } else if let composition {
                 MainView()
                     .toolbarColorScheme(.dark, for: .navigationBar)
+                    .environment(\.composition, composition)
+                    .environmentObject(composition.observableState)
+                    .environmentObject(composition.glucoseAlertsService.viewModel())
             }
         }
     }
@@ -35,28 +45,29 @@ struct BioKernelApp: App {
 
 @MainActor
 class MyAppDelegate: NSObject, UIApplicationDelegate {
+    var composition: AppComposition?
     var sessionDelegator: SessionDelegator = SessionDelegator()
-    
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
 
         guard !isRunningTests else { return true }
-        
+
         assert(WCSession.isSupported())
         WCSession.default.delegate = sessionDelegator
         WCSession.default.activate()
 
-        getPushNotificationService().register(application: application)
+        composition?.pushNotificationService.register(application: application)
 
         return true
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: any Error) {
-        getPushNotificationService().didFailToRegister(error: error)
+        composition?.pushNotificationService.didFailToRegister(error: error)
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         guard !isRunningTests else { return }
-        getPushNotificationService().didRegister(deviceToken: deviceToken)
+        composition?.pushNotificationService.didRegister(deviceToken: deviceToken)
     }
 
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any]) async -> UIBackgroundFetchResult {
@@ -64,7 +75,7 @@ class MyAppDelegate: NSObject, UIApplicationDelegate {
         guard !isRunningTests else { return .failed }
 
         print("\(Date()): PUSH Running in background")
-        guard let cgmManager = getDeviceDataManager().cgmManager else {
+        guard let cgmManager = composition?.deviceDataManager.cgmManager else {
             print("\(Date()): PUSH No CGM manager")
             return .failed
         }

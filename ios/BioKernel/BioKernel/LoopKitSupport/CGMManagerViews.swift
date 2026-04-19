@@ -12,11 +12,14 @@ import MockKit
 struct CGMManagerView: UIViewControllerRepresentable {
     typealias UIViewControllerType = UIViewController
     let cgmManagerUI: CGMManagerUI
-    
+
     @Environment(\.dismiss) var dismiss
-    
+    @Environment(\.composition) var composition: AppComposition?
+
     func makeUIViewController(context: Context) -> UIViewController {
-        let deviceManager = getDeviceDataManager()
+        guard let deviceManager = composition?.deviceDataManager else {
+            return UIViewController()
+        }
         var vc = deviceManager.cgmSettingsUI(for: cgmManagerUI)
         vc.completionDelegate = context.coordinator
         

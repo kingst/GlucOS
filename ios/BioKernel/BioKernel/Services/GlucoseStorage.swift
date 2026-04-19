@@ -20,13 +20,29 @@ public struct GlucoseChartPoint {
 }
 
 actor LocalGlucoseStorage: GlucoseStorage {
-    static let shared = LocalGlucoseStorage()
-    
     var glucoseReadings: [NewGlucoseSample]
-    var storage = getStoredObject().create(fileName: "glucose.json")
-    let healthKitStorage = getHealthKitStorage()
-    
-    init(startBackgroundTask: Bool = true) {
+    var storage: StoredObject
+    let healthKitStorage: HealthKitStorage
+    private let glucoseAlertsService: @MainActor () -> GlucoseAlertStorage
+    private let backgroundService: @MainActor () -> BackgroundService
+    private let watchComms: () -> WatchComms
+    private let observableState: AppObservableState
+
+    init(
+        storedObjectFactory: StoredObject.Type,
+        healthKitStorage: HealthKitStorage,
+        glucoseAlertsService: @MainActor @escaping () -> GlucoseAlertStorage,
+        backgroundService: @MainActor @escaping () -> BackgroundService,
+        watchComms: @escaping () -> WatchComms,
+        observableState: AppObservableState,
+        startBackgroundTask: Bool = true
+    ) {
+        self.storage = storedObjectFactory.create(fileName: "glucose.json")
+        self.healthKitStorage = healthKitStorage
+        self.glucoseAlertsService = glucoseAlertsService
+        self.backgroundService = backgroundService
+        self.watchComms = watchComms
+        self.observableState = observableState
         glucoseReadings = (try? storage.read()) ?? []
         if startBackgroundTask {
             Task { await updateGlucoseChartData() }
@@ -53,7 +69,8 @@ actor LocalGlucoseStorage: GlucoseStorage {
             let glucoseInMgDl = reading.quantity.doubleValue(for: .milligramsPerDeciliter, withRounding: true)
             return GlucoseChartPoint(created: reading.date, readingInMgDl: glucoseInMgDl)
         }
-        await getDeviceDataManager().update(glucoseChartData: glucoseChartData.sorted(by: { $0.created < $1.created }))
+        let sorted = glucoseChartData.sorted(by: { $0.created < $1.created })
+        await MainActor.run { [observableState] in observableState.glucoseChartData = sorted }
     }
     
     func addCgmEvents(glucoseReadings: [NewGlucoseSample]) async {
@@ -71,16 +88,17 @@ actor LocalGlucoseStorage: GlucoseStorage {
             let timeSinceLastReading = Date().timeIntervalSince(mostRecent.date)
             print("app refresh time: \(timeSinceLastReading)")
             if timeSinceLastReading < 5.minutesToSeconds() {
-                await getGlucoseAlertsService().onNewGlucoseValue()
+                let alerts = await MainActor.run { glucoseAlertsService() }
+                await alerts.onNewGlucoseValue()
                 print("resetting app refresh from CGM reading")
                 // we have recent data so we can reset our background task
-                await getBackgroundService().scheduleAppRefresh()
+                await MainActor.run { backgroundService().scheduleAppRefresh() }
             }
         }
 
         do {
             try storage.write(self.glucoseReadings)
-            await getWatchComms().updateAppContext()
+            await watchComms().updateAppContext()
             await updateGlucoseChartData()
         } catch {
             print("Failed to save glucose readings to disk")

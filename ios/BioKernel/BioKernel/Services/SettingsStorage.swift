@@ -9,20 +9,18 @@ import Foundation
 
 @MainActor
 public protocol SettingsStorage {
-    func viewModel() -> SettingsViewModel
     func snapshot() -> CodableSettings
     func writeToDisk(settings: CodableSettings) throws
 }
 
 @MainActor
 class LocalSettingsStorage: SettingsStorage {
-    static let shared = LocalSettingsStorage()
-    private let storage = getStoredObject().create(fileName: "settings.json")
-    
-    func viewModel() -> SettingsViewModel {
-        return SettingsViewModel(settings: snapshot())
+    private let storage: StoredObject
+
+    init(storedObjectFactory: StoredObject.Type) {
+        self.storage = storedObjectFactory.create(fileName: "settings.json")
     }
-    
+
     func snapshot() -> CodableSettings {
         let settings: [CodableSettings]? = try? storage.read()
         return settings?.first ?? CodableSettings.defaults()

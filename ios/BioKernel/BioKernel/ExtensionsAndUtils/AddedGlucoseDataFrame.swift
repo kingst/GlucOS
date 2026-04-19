@@ -67,8 +67,8 @@ public struct AddedGlucoseDataFrame {
         return nil
     }
     
-    static func createDataFrame(at: Date, numberOfRows: Int, minNumberOfGlucoseSamples: Int) async -> [AddedGlucoseDataRow]? {
-        let glucoseSamples = await getGlucoseStorage().readingsBetween(startDate: at - (Double(numberOfRows) * timeStep + timeStep), endDate: at)
+    static func createDataFrame(at: Date, numberOfRows: Int, minNumberOfGlucoseSamples: Int, glucoseStorage: GlucoseStorage, insulinStorage: InsulinStorage) async -> [AddedGlucoseDataRow]? {
+        let glucoseSamples = await glucoseStorage.readingsBetween(startDate: at - (Double(numberOfRows) * timeStep + timeStep), endDate: at)
         let eventTimes = (0..<numberOfRows).map({ at - Double($0) * timeStep }).reversed()
 
         // glucose sample sanity checks
@@ -78,15 +78,15 @@ public struct AddedGlucoseDataFrame {
         guard at.timeIntervalSince(last.date) < timeStep, at.timeIntervalSince(first.date) > timeStep * Double(numberOfRows-1) else {
             return nil
         }
-        
+
         guard glucoseSamples.count >= minNumberOfGlucoseSamples else {
             return nil
         }
-        
+
         var addedGlucoseDataFrame: [AddedGlucoseDataRow] = []
         for eventTime in eventTimes {
-            let iob = await getInsulinStorage().insulinOnBoard(at: eventTime)
-            let insulinDelivered = await getInsulinStorage().insulinDelivered(startDate: eventTime - timeStep, endDate: eventTime)
+            let iob = await insulinStorage.insulinOnBoard(at: eventTime)
+            let insulinDelivered = await insulinStorage.insulinDelivered(startDate: eventTime - timeStep, endDate: eventTime)
             guard let glucose = glucoseIterpolation(samples: glucoseSamples, eventTime: eventTime) else {
                 return nil
             }

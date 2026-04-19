@@ -56,8 +56,16 @@ struct PhysiologicalUtilities {
 }
 
 actor LocalPhysiologicalModels: PhysiologicalModels {
+    private let glucoseStorage: GlucoseStorage
+    private let insulinStorage: InsulinStorage
+
+    init(glucoseStorage: GlucoseStorage, insulinStorage: InsulinStorage) {
+        self.glucoseStorage = glucoseStorage
+        self.insulinStorage = insulinStorage
+    }
+
     func predictGlucoseIn15Minutes(from now: Date) async -> Double? {
-        let glucoseFull = await getGlucoseStorage().readingsBetween(startDate: now - 30.minutesToSeconds(), endDate: now).sorted { $0.date < $1.date }
+        let glucoseFull = await glucoseStorage.readingsBetween(startDate: now - 30.minutesToSeconds(), endDate: now).sorted { $0.date < $1.date }
         
         // we need at least 2 data points to make a prediction
         guard glucoseFull.count >= 2 else { return nil }
@@ -78,8 +86,6 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
         let prediction = 15.minutesToSeconds() * slope + intercept
         return prediction
     }
-    
-    static let shared = LocalPhysiologicalModels()
     
     var lastGlucose: Double?
     var lastGlucoseAt: Date?
@@ -129,7 +135,7 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
         let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
         let correctionDuration = settings.correctionDurationInSeconds
         let basalRate = settings.learnedBasalRate(at: at)
-        let insulinType = await getInsulinStorage().currentInsulinType()
+        let insulinType = await insulinStorage.currentInsulinType()
         let basalBaselineInsulinOnBoard = PhysiologicalUtilities .calculateBasalBaselineInsulinOnBoard(basalRate: basalRate, insulinType: insulinType)
         let deltaGlucoseError = deltaGlucoseError(settings: settings, dataFrame: dataFrame, at: at)
         

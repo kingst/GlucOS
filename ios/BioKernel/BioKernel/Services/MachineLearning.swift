@@ -45,8 +45,6 @@ struct MLUtilities {
 }
 
 actor AIDosing: MachineLearning {
-    static let shared = AIDosing()
-    
     private func log(_ str: String) async {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ssZZZZZ"
@@ -91,8 +89,6 @@ actor AIDosing: MachineLearning {
 }
 
 actor DNNDosing: MachineLearning {
-    static let shared = DNNDosing()
-    
     // our current prediction uses an ML model to predict addedGlucose
     // then runs it through the same calculations that we use for
     // our physiological models

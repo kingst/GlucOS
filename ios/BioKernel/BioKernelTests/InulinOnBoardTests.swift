@@ -39,16 +39,7 @@ final class InulinOnBoardTests: XCTestCase {
     ]
     
     let iobAccuracy = 0.00000000001
-    
-    override func setUpWithError() throws {
-        Dependency.useMockConstructors = true
-    }
 
-    override func tearDownWithError() throws {
-        Dependency.resetMocks()
-        Dependency.useMockConstructors = false
-    }
-    
     func testBolusDoseEntry() throws {
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
         let dose = DoseEntry(type: .bolus, startDate: startDate, endDate: startDate + 2.minutesToSeconds(), value: 1.0, unit: .units, deliveredUnits: 1.0, insulinType: .humalog, isMutable: false)

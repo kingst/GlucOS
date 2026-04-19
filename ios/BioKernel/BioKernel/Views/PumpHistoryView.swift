@@ -115,19 +115,3 @@ extension Date {
     }
 }
 
-#Preview {
-    // For previewing, we can create a mock view model
-    let viewModel = DiagnosticViewModel()
-    // Populate with some sample data
-    viewModel.pumpHistory = [
-        .bolus(Bolus(startDate: Date().addingTimeInterval(-60), isComplete: false, programmedUnits: 1.5, isMicroBolus: false, deliveredUnits: nil)),
-        .basal(Basal(startDate: Date().addingTimeInterval(-120), isComplete: false, isTempBasal: true, duration: 1800, rate: 0.4, deliveredUnits: nil)),
-        .resume(Resume(at: Date().addingTimeInterval(-120))),
-        .suspend(Suspend(at: Date().addingTimeInterval(-300))),
-        .basal(Basal(startDate: Date().addingTimeInterval(-600), isComplete: true, isTempBasal: true, duration: 1800, rate: 0.2, deliveredUnits: 0.1)),
-        .bolus(Bolus(startDate: Date().addingTimeInterval(-900), isComplete: true, programmedUnits: 0.45, isMicroBolus: true, deliveredUnits: 0.45))
-    ]
-    
-    return PumpHistoryView()
-        .environmentObject(viewModel)
-}

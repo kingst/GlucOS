@@ -7,24 +7,25 @@
 
 import XCTest
 import LoopKit
+import MockKit
 @testable import BioKernel
 
 final class MicroBolusTests: XCTestCase {
     let insulinAccuracy = 0.00000000001
     var closedLoop: LocalClosedLoopService!
     var settings: MockSettingsStorage!
+    var pumpManager: MockPumpManager!
     
     @MainActor override func setUpWithError() throws {
-        Dependency.useMockConstructors = true
         settings = MockSettingsStorage()
-        
-        Dependency.mock { self.settings as SettingsStorage }
-        Dependency.mock { MockStoredObject.self as StoredObject.Type }
-        Dependency.mock { MockWatchComms() as WatchComms }
-        Dependency.mock { MockDeviceDataManager() as DeviceDataManager }
-        
-        closedLoop = LocalClosedLoopService(startBackgroundTask: false)
-        
+        pumpManager = MockPumpManager()
+
+        closedLoop = makeClosedLoopService(
+            settings: settings,
+            glucoseStorage: MockGlucoseStorage(),
+            insulinStorage: MockInsulinStorage()
+        )
+
         // Set default test values
         settings.update(
             targetGlucoseInMgDl: 100,
@@ -32,19 +33,14 @@ final class MicroBolusTests: XCTestCase {
             microBolusDoseFactor: 0.3
         )
     }
-
-    override func tearDownWithError() throws {
-        Dependency.resetMocks()
-        Dependency.useMockConstructors = false
-    }
     
     @MainActor func testNoMicroBolusWithinTimeWindow() async throws {
         // Setup: Set last micro bolus to 2 minutes ago
         let at = Date()
         await closedLoop.setLastMicroBolusForTesting(date: at.addingTimeInterval(-2 * 60))
-        
+    
         let amount = await closedLoop.microBolusAmount(
-            tempBasal: 2.0,
+            pumpManager: pumpManager, tempBasal: 2.0,
             settings: settings.snapshot(),
             glucoseInMgDl: 150,
             targetGlucoseInMgDl: 100,
@@ -60,6 +56,7 @@ final class MicroBolusTests: XCTestCase {
         await closedLoop.setLastMicroBolusForTesting(date: at.addingTimeInterval(-5 * 60))
         
         let amount = await closedLoop.microBolusAmount(
+            pumpManager: pumpManager,
             tempBasal: 2.0,
             settings: settings.snapshot(),
             glucoseInMgDl: 150,
@@ -73,6 +70,7 @@ final class MicroBolusTests: XCTestCase {
     
     @MainActor func testNoMicroBolusWhenGlucoseCloseToTarget() async throws {
         let amount = await closedLoop.microBolusAmount(
+            pumpManager: pumpManager,
             tempBasal: 2.0,
             settings: settings.snapshot(),
             glucoseInMgDl: 115, // Only 15 mg/dL above target
@@ -85,6 +83,7 @@ final class MicroBolusTests: XCTestCase {
     
     @MainActor func testNoMicroBolusWhenInsulinAmountNegative() async throws {
         let amount = await closedLoop.microBolusAmount(
+            pumpManager: pumpManager,
             tempBasal: -0.5,
             settings: settings.snapshot(),
             glucoseInMgDl: 150,
@@ -99,6 +98,7 @@ final class MicroBolusTests: XCTestCase {
         settings.update(maxBasalRateUnitsPerHour: 2.0)
         
         let amount = await closedLoop.microBolusAmount(
+            pumpManager: pumpManager,
             tempBasal: 5.0, // Much higher than max
             settings: settings.snapshot(),
             glucoseInMgDl: 150,
@@ -120,6 +120,7 @@ final class MicroBolusTests: XCTestCase {
         let insulin = tempBasal * correctionDurationHours // 2.5
 
         let amount = await closedLoop.microBolusAmount(
+            pumpManager: pumpManager,
             tempBasal: tempBasal,
             settings: snapshot,
             glucoseInMgDl: 150,

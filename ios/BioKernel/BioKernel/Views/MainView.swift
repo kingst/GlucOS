@@ -14,8 +14,9 @@ import LoopKitUI
 let addButtonRadius = 30.0
 
 struct MainView: View {
-    @StateObject var deviceManagerObservable = getDeviceDataManager().observableObject()
-    @StateObject var glucoseAlertsViewModel = getGlucoseAlertsService().viewModel()
+    @EnvironmentObject var appState: AppObservableState
+    @EnvironmentObject var glucoseAlertsViewModel: GlucoseAlertsViewModel
+    @Environment(\.composition) var composition: AppComposition?
     @State var navigateToSettings = false
     @State var navigateToAddCgm = false
     @State var navigateToCgmSettings = false
@@ -76,7 +77,7 @@ struct MainView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     HStack {
                         Button {
-                            if deviceManagerObservable.cgmManager == nil {
+                            if appState.cgmManager == nil {
                                 navigateToAddCgm = true
                             } else {
                                 navigateToCgmSettings = true
@@ -88,7 +89,7 @@ struct MainView: View {
                                 .frame(width: 40, height: 40)
                         }
                         Button {
-                            if deviceManagerObservable.pumpManager == nil {
+                            if appState.pumpManager == nil {
                                 navigateToAddPump = true
                             } else {
                                 navigateToPumpSettings = true
@@ -123,18 +124,22 @@ struct MainView: View {
                 }
             }
             .navigationDestination(isPresented: $navigateToSettings) {
-                SettingsView(settingsFromUrl: nil)
-                    .modifier(NavigationModifier())
+                if let composition {
+                    SettingsView(settingsFromUrl: nil, settingsViewModel: makeSettingsViewModel(composition: composition))
+                        .modifier(NavigationModifier())
+                }
             }
             .navigationDestination(isPresented: $navigateToSettingsFromUrl) {
-                SettingsView(settingsFromUrl: settingsFromUrl)
-                    .modifier(NavigationModifier())
+                if let composition {
+                    SettingsView(settingsFromUrl: settingsFromUrl, settingsViewModel: makeSettingsViewModel(composition: composition))
+                        .modifier(NavigationModifier())
+                }
             }
             .navigationDestination(isPresented: $navigateToAddCgm) {
                 AddCGMView()
             }
             .sheet(isPresented: $navigateToCgmSettings) {
-                if let cgmManager = deviceManagerObservable.cgmManager, let cgmManagerUI = cgmManager as? CGMManagerUI {
+                if let cgmManager = appState.cgmManager, let cgmManagerUI = cgmManager as? CGMManagerUI {
                     CGMManagerView(cgmManagerUI: cgmManagerUI)
                 } else {
                     EmptyView()
@@ -144,7 +149,7 @@ struct MainView: View {
                 AddPumpView()
             }
             .sheet(isPresented: $navigateToPumpSettings) {
-                if let pumpManager = deviceManagerObservable.pumpManager {
+                if let pumpManager = appState.pumpManager {
                     PumpManagerView(pumpManagerUI: pumpManager)
                 } else {
                     EmptyView()
@@ -157,7 +162,12 @@ struct MainView: View {
                 GlucoseAlertsView()
             }
             .sheet(isPresented: $showChartSettingsSheet) {
-                DiagnosticDataView()
+                if let composition {
+                    DiagnosticDataView(viewModel: DiagnosticViewModel(
+                        closedLoopService: composition.closedLoopService,
+                        insulinStorage: composition.insulinStorage
+                    ))
+                }
             }
             .onOpenURL { url in
                 // we should check to make sure this is for settings
@@ -176,6 +186,15 @@ struct MainView: View {
                 }
             }
         }
+    }
+
+    private func makeSettingsViewModel(composition: AppComposition) -> SettingsViewModel {
+        SettingsViewModel(
+            settings: composition.settingsStorage.snapshot(),
+            settingsStorage: composition.settingsStorage,
+            healthKitStorage: composition.healthKitStorage,
+            deviceDataManager: composition.deviceDataManager
+        )
     }
 }
 

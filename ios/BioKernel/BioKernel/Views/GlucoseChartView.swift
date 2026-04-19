@@ -9,11 +9,11 @@ import Charts
 import SwiftUI
 
 struct GlucoseChartView: View {
-    @StateObject var deviceManagerObservable = getDeviceDataManager().observableObject()
+    @EnvironmentObject var appState: AppObservableState
     var selectedHours: Int
 
     private var maxY: Int {
-        let readings = deviceManagerObservable.glucoseChartData.map({ $0.readingInMgDl }) + deviceManagerObservable.filteredGlucoseChartData.map({ $0.glucose })
+        let readings = appState.glucoseChartData.map({ $0.readingInMgDl }) + appState.filteredGlucoseChartData.map({ $0.glucose })
         let maxReading = readings.max() ?? 300
         if maxReading > 300 {
             return 400
@@ -47,13 +47,13 @@ struct GlucoseChartView: View {
             .foregroundStyle(.green)
             .opacity(0.25)
 
-            ForEach(deviceManagerObservable.glucoseChartData, id: \.created) { reading in
+            ForEach(appState.glucoseChartData, id: \.created) { reading in
                 PointMark(x: .value("Time", reading.created),
                          y: .value("mg/dL", reading.readingInMgDl))
                     .symbolSize(20)
                     .foregroundStyle(.blue)
             }
-            ForEach(deviceManagerObservable.filteredGlucoseChartData, id: \.at) { reading in
+            ForEach(appState.filteredGlucoseChartData, id: \.at) { reading in
                 LineMark(x: .value("Time", reading.at),
                          y: .value("mg/dL", reading.glucose))
                     .symbolSize(5)

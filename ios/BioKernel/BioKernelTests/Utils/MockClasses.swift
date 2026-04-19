@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import BioKernel
+@testable import BioKernel
 import HealthKit
 import MockKit
 import LoopKit
@@ -54,10 +54,6 @@ class MockPumpManagerDelegate: PumpManagerDelegate {
 }
 
 class MockSettingsStorage: SettingsStorage {
-    func viewModel() -> BioKernel.SettingsViewModel {
-        SettingsViewModel(settings: snapshot())
-    }
-    
     var targetGlucoseInMgDl = 90.0
     var insulinSensitivityInMgDlPerUnit = 45.0
     var correctionDurationInSeconds = 30.0 * 60.0 // 30 minutes in seconds
@@ -237,11 +233,8 @@ class MockGlucoseStorage: GlucoseStorage {
 
 
 class MockDeviceDataManager: DeviceDataManager {
-    func update(filteredGlucoseChartData: [BioKernel.FilteredGlucose]) { }
-    
     var mockPumpManager: PumpManagerUI?
     var mockCgmManager: CGMManager?
-    let mockObservableObject = DeviceDataManagerObservableObject()
     private var lastError: (date: Date, error: Error)?
     
     var pumpManager: PumpManagerUI? {
@@ -286,10 +279,6 @@ class MockDeviceDataManager: DeviceDataManager {
         return []
     }
     
-    func observableObject() -> DeviceDataManagerObservableObject {
-        return mockObservableObject
-    }
-    
     func refreshCgmAndPumpDataFromUI() async {
         // No-op for mock
     }
@@ -329,24 +318,7 @@ class MockDeviceDataManager: DeviceDataManager {
     func updatePumpIsAllowingAutomation(status: PumpManagerStatus) {
         // No-op for mock
     }
-    
-    func update(insulinOnBoard: Double, pumpAlarm: PumpAlarmType?) {
-        mockObservableObject.insulinOnBoard = insulinOnBoard
-        mockObservableObject.pumpAlarm = pumpAlarm
-    }
-    
-    func update(activeAlert: Alert?) {
-        mockObservableObject.activeAlert = activeAlert
-    }
-    
-    func update(glucoseChartData: [GlucoseChartPoint]) {
-        mockObservableObject.glucoseChartData = glucoseChartData
-    }
-    
-    func update(totalAmount: Double, bolusProgressReporter: DoseProgressReporter) {
-        mockObservableObject.doseProgress.update(totalUnits: totalAmount, doseProgressReporter: bolusProgressReporter)
-    }
-    
+
     func cgmPumpMetadata() async -> CgmPumpMetadata {
         return CgmPumpMetadata(cgmStartedAt: nil, cgmExpiresAt: nil, pumpStartedAt: nil, pumpExpiresAt: nil, pumpResevoirPercentRemaining: nil)
     }

@@ -32,7 +32,7 @@ public struct CgmPumpMetadata: Codable {
 }
 
 @MainActor
-public protocol DeviceDataManager {
+public protocol DeviceDataManager: AnyObject {
     var pumpManager: PumpManagerUI? { get }
     func pumpSettingsUI() -> PumpManagerViewController?
     func pumpSettingsUI(for pumpManager: PumpManagerUI) -> PumpManagerViewController
@@ -44,63 +44,23 @@ public protocol DeviceDataManager {
     func cgmSettingsUI() -> CGMManagerViewController?
     func setupCGMManagerUI(withIdentifier identifier: String) -> Swift.Result<SetupUIResult<CGMManagerViewController, CGMManagerUI>, Error>
     func cgmManagerDescriptors() -> [CGMManagerDescriptor]
-    
-    func observableObject() -> DeviceDataManagerObservableObject
+
     func refreshCgmAndPumpDataFromUI() async
     func checkCgmDataAndLoop() async
-    
+
     // for the delegate classes to use
     func setLastError(error: Error)
-    
+
     func updateCgmManager(to manager: CGMManager?)
     func newCgmDataAvailable(readingResult: CGMReadingResult) async
     func updateRawCgmManager(to rawValue: [String: Any]?)
     func updateCgm(hasValidSensorSession: Bool)
-    
+
     func updatePumpManager(to manager: PumpManagerUI?)
     func updateRawPumpManager(to rawValue: [String: Any]?)
     func updatePumpIsAllowingAutomation(status: PumpManagerStatus)
-    func update(insulinOnBoard: Double, pumpAlarm: PumpAlarmType?)
-    func update(activeAlert: LoopKit.Alert?)
-    func update(glucoseChartData: [GlucoseChartPoint])
-    func update(filteredGlucoseChartData: [FilteredGlucose])
-    func update(totalAmount: Double, bolusProgressReporter: DoseProgressReporter)
-    
+
     func cgmPumpMetadata() async -> CgmPumpMetadata
-}
-
-@MainActor
-public class DeviceDataManagerObservableObject: ObservableObject {
-    @Published public var pumpManager: PumpManagerUI?
-    @Published public var cgmManager: CGMManager?
-    @Published public var insulinOnBoard: Double = 0.0
-    @Published public var pumpAlarm: PumpAlarmType?
-    @Published public var lastGlucoseReading: NewGlucoseSample? = nil
-    @Published public var displayGlucosePreference: DisplayGlucosePreference = DisplayGlucosePreference(displayGlucoseUnit: .milligramsPerDeciliter)
-    @Published public var lastClosedLoopRun: ClosedLoopResult? = nil
-    @Published public var activeAlert: LoopKit.Alert? = nil
-    @Published public var glucoseChartData: [GlucoseChartPoint] = []
-    @Published public var filteredGlucoseChartData: [FilteredGlucose] = []
-    @Published public var doseProgress: DoseProgress = DoseProgress()
-    
-    public init() {
-
-    }
-    
-    func digestionCalibrated() -> Double? {
-        guard let lastRun = lastClosedLoopRun else { return nil }
-
-        let tooOld = Date() - 16.minutesToSeconds()
-        guard lastRun.at > tooOld else { return nil }
-
-        guard let snapshot = lastRun.outcome.snapshot else { return nil }
-
-        // added glucose is for an hour, so the basalRate = basalInsulin
-        let basalGlucose = snapshot.insulinSensitivity * snapshot.basalRate
-
-        // assume that 200 mg/dl is the max added glucose, aim for 0 -> 100
-        return 100 * (snapshot.predictedAddedGlucoseInMgDlPerHour - basalGlucose) / 200
-    }
 }
 
 let omniBLEManagerIdentifier: String = "Omnipod-Dash"
@@ -119,28 +79,55 @@ var availableStaticPumpManagers: [PumpManagerDescriptor] {
 
 @MainActor
 class LocalDeviceDataManager: DeviceDataManager {
-    static let shared = LocalDeviceDataManager()
-    
     /*private*/ let log = DiagnosticLog(category: "DeviceDataManager")
     /*private*/ let delegateQueue = DispatchQueue(label: "com.getgrowthmetrics.DeviceManagerQueue", qos: .userInitiated)
     var pumpIsAllowingAutomation: Bool = true
-    
-    /*private*/ let bluetoothProvider = getBluetoothProvider()
+
+    /*private*/ let bluetoothProvider: BluetoothProvider
     /*private*/ let allowDebugFeatures = true
     /*private*/ let allowedInsulinTypes: [InsulinType] = [.apidra, .fiasp, .humalog, .lyumjev, .novolog]
     var cgmHasValidSensorSession: Bool = false
     var lastLoopCompleted: Date = .distantPast
-    
+
     // These are non isolated because we use a dispatch queue to synchronize
     // access to them outside of the actor abstraction
-    nonisolated let cgmManagerDelegate = MosCgmManagerDelegate()
-    nonisolated let pumpManagerDelegate = MosPumpManagerDelegate()
-    
+    nonisolated let cgmManagerDelegate: MosCgmManagerDelegate
+    nonisolated let pumpManagerDelegate: MosPumpManagerDelegate
+
+    private let glucoseStorage: GlucoseStorage
+    private let insulinStorage: InsulinStorage
+    private let settingsStorage: SettingsStorage
+    private let alertStorage: AlertStorage
+    private let closedLoopServiceProvider: @MainActor () -> ClosedLoopService
+
     /// The last error recorded by a device manager
     /// Should be accessed only on the main queue
     private(set) var lastError: (date: Date, error: Error)?
-    
-    init() {
+
+    var observableState: AppObservableState
+
+    init(
+        bluetoothProvider: BluetoothProvider,
+        glucoseStorage: GlucoseStorage,
+        insulinStorage: InsulinStorage,
+        settingsStorage: SettingsStorage,
+        alertStorage: AlertStorage,
+        observableState: AppObservableState,
+        closedLoopService: @MainActor @escaping () -> ClosedLoopService
+    ) {
+        self.bluetoothProvider = bluetoothProvider
+        self.glucoseStorage = glucoseStorage
+        self.insulinStorage = insulinStorage
+        self.settingsStorage = settingsStorage
+        self.alertStorage = alertStorage
+        self.observableState = observableState
+        self.closedLoopServiceProvider = closedLoopService
+        let cgmDelegate = MosCgmManagerDelegate()
+        let pumpDelegate = MosPumpManagerDelegate(insulinStorage: insulinStorage, alertStorage: alertStorage, observableState: observableState)
+        self.cgmManagerDelegate = cgmDelegate
+        self.pumpManagerDelegate = pumpDelegate
+        cgmDelegate.deviceDataManager = self
+        pumpDelegate.deviceDataManager = self
         setupPumpManager()
         setupCgmManager()
         UIDevice.current.isBatteryMonitoringEnabled = true
@@ -201,9 +188,9 @@ class LocalDeviceDataManager: DeviceDataManager {
             
             DispatchQueue.main.async {
                 Task { @MainActor in
-                    self.localObservableObject.cgmManager = self.cgmManager
-                    let lastGlucoseReading = await getGlucoseStorage().lastReading()
-                    self.localObservableObject.lastGlucoseReading = lastGlucoseReading
+                    self.observableState.cgmManager = self.cgmManager
+                    let lastGlucoseReading = await self.glucoseStorage.lastReading()
+                    self.observableState.lastGlucoseReading = lastGlucoseReading
                     self.delegateQueue.async {
                         self.cgmManagerDelegate.lastGlucoseReading = lastGlucoseReading
                         self.pumpManagerDelegate.pumpManagerMustProvideBLEHeartbeat = pumpMustProvideBLEHeartbeat
@@ -217,11 +204,6 @@ class LocalDeviceDataManager: DeviceDataManager {
     var rawCGMManager: CGMManager.RawValue?
     
     // MARK: - Pump
-    var localObservableObject = DeviceDataManagerObservableObject()
-    func observableObject() -> DeviceDataManagerObservableObject {
-        return localObservableObject
-    }
-    
     @PersistedProperty(key: "PumpManagerState")
     var rawPumpManager: PumpManager.RawValue?
     
@@ -237,7 +219,7 @@ class LocalDeviceDataManager: DeviceDataManager {
             // directly if you need it rather than relying on the observable object value
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
-                self.localObservableObject.pumpManager = self.pumpManager
+                self.observableState.pumpManager = self.pumpManager
             }
         }
     }
@@ -258,37 +240,6 @@ class LocalDeviceDataManager: DeviceDataManager {
         }
     }
     
-    func update(insulinOnBoard: Double, pumpAlarm: PumpAlarmType?) {
-        DispatchQueue.main.async {
-            self.localObservableObject.insulinOnBoard = insulinOnBoard
-            self.localObservableObject.pumpAlarm = pumpAlarm
-        }
-    }
-    
-    func update(activeAlert: LoopKit.Alert?) {
-        DispatchQueue.main.async {
-            self.localObservableObject.activeAlert = activeAlert
-        }
-    }
-    
-    func update(filteredGlucoseChartData: [FilteredGlucose]) {
-        DispatchQueue.main.async {
-            self.localObservableObject.filteredGlucoseChartData = filteredGlucoseChartData
-        }
-    }
-    
-    func update(glucoseChartData: [GlucoseChartPoint]) {
-        DispatchQueue.main.async {
-            self.localObservableObject.glucoseChartData = glucoseChartData
-        }
-    }
-    
-    func update(totalAmount: Double, bolusProgressReporter: DoseProgressReporter) {
-        DispatchQueue.main.async {
-            self.localObservableObject.doseProgress.update(totalUnits: totalAmount, doseProgressReporter: bolusProgressReporter)
-        }
-    }
-    
     func setupCGM() {
         dispatchPrecondition(condition: .onQueue(.main))
 
@@ -305,8 +256,8 @@ class LocalDeviceDataManager: DeviceDataManager {
         pumpManager?.delegateQueue = delegateQueue
         
         if let pumpRecordsBasalProfileStartEvents = pumpManager?.pumpRecordsBasalProfileStartEvents {
-            Task {
-                await getInsulinStorage().setPumpRecordsBasalProfileStartEvents(pumpRecordsBasalProfileStartEvents)
+            Task { [insulinStorage] in
+                await insulinStorage.setPumpRecordsBasalProfileStartEvents(pumpRecordsBasalProfileStartEvents)
             }
         }
     }
@@ -413,15 +364,17 @@ class LocalDeviceDataManager: DeviceDataManager {
         }
         let lastPumpSync = await pumpManager.ensureCurrentPumpData()
         print("Last pump sync: \(String(describing: lastPumpSync))")
-        let success = await getClosedLoopService().loop(at: now)
+        let metadata = await cgmPumpMetadata()
+        let closedLoopService = closedLoopServiceProvider()
+        let success = await closedLoopService.loop(at: now, pumpManager: pumpManager, cgmPumpMetadata: metadata)
         if success {
             lastLoopCompleted = now
         }
 
         Task {
-            let lastRun = await getClosedLoopService().latestClosedLoopResult()
+            let lastRun = await closedLoopService.latestClosedLoopResult()
             DispatchQueue.main.async { [weak self] in
-                self?.localObservableObject.lastClosedLoopRun = lastRun
+                self?.observableState.lastClosedLoopRun = lastRun
             }
         }
     }
@@ -431,10 +384,10 @@ class LocalDeviceDataManager: DeviceDataManager {
         case .newData(let values):
             log.default("CGMManager: did update with %d values", values.count)
             
-            await getGlucoseStorage().addCgmEvents(glucoseReadings: values)
-            let lastReading = await getGlucoseStorage().lastReading()
+            await glucoseStorage.addCgmEvents(glucoseReadings: values)
+            let lastReading = await glucoseStorage.lastReading()
             await MainActor.run {
-                self.localObservableObject.lastGlucoseReading = lastReading
+                self.observableState.lastGlucoseReading = lastReading
                 self.delegateQueue.async {
                     self.cgmManagerDelegate.lastGlucoseReading = lastReading
                 }
@@ -467,7 +420,7 @@ class LocalDeviceDataManager: DeviceDataManager {
             return .failure(UnknownPumpManagerIdentifierError())
         }
 
-        let settings = getSettingsStorage().snapshot()
+        let settings = settingsStorage.snapshot()
         let unitsPerHour = settings.pumpBasalRateUnitsPerHour
         let maxBasal = settings.maxBasalRateUnitsPerHour
         let maxBolus = settings.maxBolusUnits
@@ -488,7 +441,7 @@ class LocalDeviceDataManager: DeviceDataManager {
     }
     
     func cgmSettingsUI(for cgmManager: CGMManagerUI) -> CGMManagerViewController {
-        let displayGlucoseUnit = observableObject().displayGlucosePreference
+        let displayGlucoseUnit = observableState.displayGlucosePreference
         var settingsViewController = cgmManager.settingsViewController(bluetoothProvider: bluetoothProvider, displayGlucosePreference: displayGlucoseUnit, colorPalette: .default, allowDebugFeatures: allowDebugFeatures)
         settingsViewController.cgmManagerOnboardingDelegate = cgmManagerDelegate
         return settingsViewController
@@ -504,7 +457,7 @@ class LocalDeviceDataManager: DeviceDataManager {
             return .failure(UnknownCGMManagerIdentifierError())
         }
         
-        let displayGlucoseUnit = observableObject().displayGlucosePreference
+        let displayGlucoseUnit = observableState.displayGlucosePreference
         let result = cgmManagerUIType.setupViewController(bluetoothProvider: bluetoothProvider, displayGlucosePreference: displayGlucoseUnit, colorPalette: .default, allowDebugFeatures: allowDebugFeatures, prefersToSkipUserInteraction: false)
         switch result {
         case .userInteractionRequired(var setupViewController):

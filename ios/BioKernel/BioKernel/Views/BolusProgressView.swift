@@ -8,12 +8,14 @@
 import SwiftUI
 
 struct BolusProgressView: View {
-    @ObservedObject var doseProgress: DoseProgress = getDeviceDataManager().observableObject().doseProgress
+    @EnvironmentObject var appState: AppObservableState
+    @Environment(\.composition) var composition: AppComposition?
     var body: some View {
+        let doseProgress = appState.doseProgress
         VStack {
             Text("Delivered \(String(format: "%0.2f", doseProgress.deliveredUnits)) of \(String(format: "%0.2f", doseProgress.totalUnits)) units")
             Button {
-                getDeviceDataManager().pumpManager?.cancelBolus() { result in
+                composition?.deviceDataManager.pumpManager?.cancelBolus() { result in
                     switch result {
                     case .success:
                         doseProgress.cancel()

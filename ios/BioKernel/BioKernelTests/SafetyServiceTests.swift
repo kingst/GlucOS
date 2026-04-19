@@ -15,16 +15,6 @@ import LoopKit
 final class SafetyServiceTests: XCTestCase {
 
     let insulinAccuracy = 0.0001
-    
-    @MainActor override func setUpWithError() throws {
-        Dependency.useMockConstructors = true
-        Dependency.mock { MockStoredObject.self as StoredObject.Type }
-    }
-
-    override func tearDownWithError() throws {
-        Dependency.resetMocks()
-        Dependency.useMockConstructors = false
-    }
 
     func testSafetyStateBasics() async throws {
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
@@ -101,7 +91,7 @@ final class SafetyServiceTests: XCTestCase {
     // one unit of insulin each. Then on the third the system should instead
     // use the safety insulin value since we've exausted our ML insulin
     func testExtraInsulinClamp() async {
-        let safetyService = LocalSafetyService()
+        let safetyService = LocalSafetyService(storedObjectFactory: MockStoredObject.self)
         let settings = await MockSettingsStorage()
         await settings.update(pumpBasalRateUnitsPerHour: 2.0 / 3)
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
@@ -123,7 +113,7 @@ final class SafetyServiceTests: XCTestCase {
     }
     
     func testBasalAndBolus() async throws {
-        let safetyService = LocalSafetyService()
+        let safetyService = LocalSafetyService(storedObjectFactory: MockStoredObject.self)
         let settings = await MockSettingsStorage()
         await settings.update(pumpBasalRateUnitsPerHour: 2.0 / 3)
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
@@ -140,7 +130,7 @@ final class SafetyServiceTests: XCTestCase {
     }
     
     func testLessInsulinClamp() async {
-        let safetyService = LocalSafetyService()
+        let safetyService = LocalSafetyService(storedObjectFactory: MockStoredObject.self)
         let settings = await MockSettingsStorage()
         await settings.update(pumpBasalRateUnitsPerHour: 2.0 / 3)
         let startDate = Date.f("2018-07-15 03:34:29 +0000")

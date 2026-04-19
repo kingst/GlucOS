@@ -9,9 +9,13 @@
 import SwiftUI
 
 struct DiagnosticDataView: View {
-    @StateObject private var viewModel = DiagnosticViewModel()
+    @StateObject private var viewModel: DiagnosticViewModel
     @State private var selectedView = 0
     @Environment(\.dismiss) var dismiss
+
+    init(viewModel: @autoclosure @escaping () -> DiagnosticViewModel) {
+        self._viewModel = StateObject(wrappedValue: viewModel())
+    }
     
     var body: some View {
         NavigationView {

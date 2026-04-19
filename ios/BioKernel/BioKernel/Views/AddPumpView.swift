@@ -12,11 +12,12 @@ import LoopKitUI
 
 struct AddPumpView: View {
     @State var descriptor: PumpManagerDescriptor?
-    
+
     @Environment(\.dismiss) var dismiss
-    
+    @Environment(\.composition) var composition: AppComposition?
+
     var body: some View {
-        let pumpDescriptors = getDeviceDataManager().pumpManagerDescriptors()
+        let pumpDescriptors = composition?.deviceDataManager.pumpManagerDescriptors() ?? []
         List {
             ForEach(pumpDescriptors, id: \.identifier) { pumpDescriptor in
                 Button {
@@ -29,16 +30,17 @@ struct AddPumpView: View {
         .modifier(NavigationModifier())
         .navigationTitle("Add pump")
         .sheet(item: $descriptor, onDismiss: didDismiss) { detail in
-            let deviceManager = getDeviceDataManager()
-            switch deviceManager.setupPumpManagerUI(withIdentifier: detail.identifier) {
-            case .failure(let error):
-                Text("failed to setup pump manager: \(String(describing: error))")
-            case .success(let success):
-                switch success {
-                case .userInteractionRequired(let setupViewController):
-                    PumpSetupView(setupViewController: setupViewController)
-                case .createdAndOnboarded(let pumpManagerUI):
-                    PumpManagerView(pumpManagerUI: pumpManagerUI)
+            if let composition {
+                switch composition.deviceDataManager.setupPumpManagerUI(withIdentifier: detail.identifier) {
+                case .failure(let error):
+                    Text("failed to setup pump manager: \(String(describing: error))")
+                case .success(let success):
+                    switch success {
+                    case .userInteractionRequired(let setupViewController):
+                        PumpSetupView(setupViewController: setupViewController)
+                    case .createdAndOnboarded(let pumpManagerUI):
+                        PumpManagerView(pumpManagerUI: pumpManagerUI)
+                    }
                 }
             }
         }

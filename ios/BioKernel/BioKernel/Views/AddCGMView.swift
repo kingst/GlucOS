@@ -12,10 +12,11 @@ import LoopKitUI
 
 struct AddCGMView: View {
     @Environment(\.dismiss) var dismiss
+    @Environment(\.composition) var composition: AppComposition?
     @State var descriptor: CGMManagerDescriptor?
-    
+
     var body: some View {
-        let cgmDescriptors = getDeviceDataManager().cgmManagerDescriptors()
+        let cgmDescriptors = composition?.deviceDataManager.cgmManagerDescriptors() ?? []
         List {
             ForEach(cgmDescriptors, id: \.identifier) { cgmDescriptor in
                 Button {
@@ -28,16 +29,17 @@ struct AddCGMView: View {
         .modifier(NavigationModifier())
         .navigationTitle("Add CGM")
         .sheet(item: $descriptor, onDismiss: didDismiss) { detail in
-            let deviceManager = getDeviceDataManager()
-            switch deviceManager.setupCGMManagerUI(withIdentifier: detail.identifier) {
-            case .failure(let error):
-                Text("failed to setup cgm manager: \(String(describing: error))")
-            case .success(let success):
-                switch success {
-                case .userInteractionRequired(let setupViewController):
-                    CGMSetupView(setupViewController: setupViewController)
-                case .createdAndOnboarded(let cgmManagerUI):
-                    CGMManagerView(cgmManagerUI: cgmManagerUI)
+            if let composition {
+                switch composition.deviceDataManager.setupCGMManagerUI(withIdentifier: detail.identifier) {
+                case .failure(let error):
+                    Text("failed to setup cgm manager: \(String(describing: error))")
+                case .success(let success):
+                    switch success {
+                    case .userInteractionRequired(let setupViewController):
+                        CGMSetupView(setupViewController: setupViewController)
+                    case .createdAndOnboarded(let cgmManagerUI):
+                        CGMManagerView(cgmManagerUI: cgmManagerUI)
+                    }
                 }
             }
         }

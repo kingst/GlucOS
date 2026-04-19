@@ -2,11 +2,15 @@ This repo is for GlucOS, and experimental iOS app for automated
 insulin delivery. See @README.md for details about what is unique
 about it.
 
-Overall, I use dependency injection using a custom dependency
-injection system, which you can find here
-@ios/BioKernel/BioKernel/DependencyInjection This is a good place to
-look because it gives an overview of all of the core services that are
-included in the app.
+Overall, I use constructor-injection dependency injection. The
+composition root lives at @ios/BioKernel/BioKernel/DependencyInjection
+in `AppComposition.swift`, which constructs every service in
+dependency order and owns the graph. `AppComposition` is created once
+in `BioKernelApp` and passed into the SwiftUI tree via
+`@Environment(\.composition)`; views read services from it explicitly
+rather than through any global registry. A small `LateBound<T>` box
+inside `AppComposition` is used to break a couple of cyclic deps
+between storages and the services that observe them.
 
 We use a number of submodules, which you can use git to find. These
 provide basic AID abstractions and drivers for CGM and pump hardware.

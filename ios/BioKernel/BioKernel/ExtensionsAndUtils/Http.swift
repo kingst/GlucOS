@@ -23,8 +23,6 @@ extension Http {
 }
 
 struct JsonHttp: Http {
-    static let shared = JsonHttp()
-    
     func post<ResponseType>(url: String, data: Encodable, headers: [String : String]) async -> ResponseType? where ResponseType : Decodable {
         
         guard let url = URL(string: url) else { return nil }

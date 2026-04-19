@@ -25,8 +25,6 @@ final class LoopFunctionTests: XCTestCase {
     let now = Date.f("2024-01-15 10:30:00 +0000")
     
     @MainActor override func setUpWithError() throws {
-        Dependency.useMockConstructors = true
-        
         // Initialize mocks
         settings = MockSettingsStorage()
         glucoseStorage = MockGlucoseStorage()
@@ -36,25 +34,12 @@ final class LoopFunctionTests: XCTestCase {
         pumpManagerDelegate = MockPumpManagerDelegate()
         deviceManager.mockPumpManager = pumpManager
         pumpManager.pumpManagerDelegate = pumpManagerDelegate
-        
-        // Register dependencies
-        Dependency.mock { self.settings as SettingsStorage }
-        Dependency.mock { self.glucoseStorage as GlucoseStorage }
-        Dependency.mock { self.insulinStorage as InsulinStorage }
-        Dependency.mock { self.deviceManager as DeviceDataManager }
-        Dependency.mock { MockStoredObject.self as StoredObject.Type }
-        Dependency.mock { LocalPhysiologicalModels() as PhysiologicalModels }
-        Dependency.mock { MockTargetGlucose() as TargetGlucoseService }
-        Dependency.mock { MockMachineLearning() as MachineLearning }
-        Dependency.mock { MockSafetyService() as SafetyService }
-        Dependency.mock { MockStoredObject() as StoredObject }
-        
-        closedLoop = LocalClosedLoopService(startBackgroundTask: false)
-    }
-    
-    override func tearDownWithError() throws {
-        Dependency.resetMocks()
-        Dependency.useMockConstructors = false
+
+        closedLoop = makeClosedLoopService(
+            settings: settings,
+            glucoseStorage: glucoseStorage,
+            insulinStorage: insulinStorage
+        )
     }
     
     // MARK: - Basic Loop State Tests
@@ -64,8 +49,8 @@ final class LoopFunctionTests: XCTestCase {
         settings.closedLoopEnabled = false
         
         // Test
-        let result: Bool = await closedLoop.loop(at: now)
-        
+        let result: Bool = await closedLoop.loop(at: now, pumpManager: deviceManager.pumpManager, cgmPumpMetadata: deviceManager.cgmPumpMetadata())
+
         // Verify
         XCTAssertFalse(result, "Loop should return false when closed loop is disabled")
         let lastResult = await closedLoop.latestClosedLoopResult()
@@ -85,8 +70,8 @@ final class LoopFunctionTests: XCTestCase {
         )
         
         // Test
-        let result: Bool = await closedLoop.loop(at: now)
-        
+        let result: Bool = await closedLoop.loop(at: now, pumpManager: deviceManager.pumpManager, cgmPumpMetadata: deviceManager.cgmPumpMetadata())
+
         // Verify
         XCTAssertFalse(result, "Loop should return false with stale glucose data")
         let lastResult = await closedLoop.latestClosedLoopResult()
@@ -108,8 +93,8 @@ final class LoopFunctionTests: XCTestCase {
         insulinStorage.mockLastPumpSync = now.addingTimeInterval(-15 * 60)
         
         // Test
-        let result: Bool = await closedLoop.loop(at: now)
-        
+        let result: Bool = await closedLoop.loop(at: now, pumpManager: deviceManager.pumpManager, cgmPumpMetadata: deviceManager.cgmPumpMetadata())
+
         // Verify
         XCTAssertFalse(result, "Loop should return false with stale pump data")
         let lastResult = await closedLoop.latestClosedLoopResult()
@@ -131,8 +116,8 @@ final class LoopFunctionTests: XCTestCase {
         insulinStorage.mockLastPumpSync = now.addingTimeInterval(-5 * 60)
         
         // Test
-        let result: Bool = await closedLoop.loop(at: now)
-        
+        let result: Bool = await closedLoop.loop(at: now, pumpManager: deviceManager.pumpManager, cgmPumpMetadata: deviceManager.cgmPumpMetadata())
+
         // Verify
         XCTAssertFalse(result, "Loop should return false with no pump manager")
         let lastResult = await closedLoop.latestClosedLoopResult()
@@ -156,8 +141,8 @@ final class LoopFunctionTests: XCTestCase {
         insulinStorage.mockLastPumpSync = now.addingTimeInterval(-5 * 60)
         
         // Test
-        let result: Bool = await closedLoop.loop(at: now)
-        
+        let result: Bool = await closedLoop.loop(at: now, pumpManager: deviceManager.pumpManager, cgmPumpMetadata: deviceManager.cgmPumpMetadata())
+
         // Verify
         XCTAssertTrue(result, "Loop should return true for successful temp basal")
         let lastResult = await closedLoop.latestClosedLoopResult()
@@ -186,8 +171,8 @@ final class LoopFunctionTests: XCTestCase {
         insulinStorage.mockLastPumpSync = now.addingTimeInterval(-5 * 60)
         
         // Test
-        let result: Bool = await closedLoop.loop(at: now)
-        
+        let result: Bool = await closedLoop.loop(at: now, pumpManager: deviceManager.pumpManager, cgmPumpMetadata: deviceManager.cgmPumpMetadata())
+
         // Verify
         XCTAssertTrue(result, "Loop should return true for successful micro bolus")
         let lastResult = await closedLoop.latestClosedLoopResult()
@@ -216,8 +201,8 @@ final class LoopFunctionTests: XCTestCase {
         pumpManager.state.pumpErrorDetected = true
         
         // Test
-        let result: Bool = await closedLoop.loop(at: now)
-        
+        let result: Bool = await closedLoop.loop(at: now, pumpManager: deviceManager.pumpManager, cgmPumpMetadata: deviceManager.cgmPumpMetadata())
+
         // Verify
         XCTAssertFalse(result, "Loop should return false when pump returns error")
         let lastResult = await closedLoop.latestClosedLoopResult()
@@ -239,7 +224,12 @@ final class LoopFunctionTests: XCTestCase {
         let mockPhysiological = MockPhysiologicalModels()
         mockPhysiological.mockPredictGlucose = 185  // Rising glucose
         mockPhysiological.mockTempBasalResult = 2.0
-        Dependency.mock { mockPhysiological as PhysiologicalModels }
+        closedLoop = makeClosedLoopService(
+            settings: settings,
+            glucoseStorage: glucoseStorage,
+            insulinStorage: insulinStorage,
+            physiologicalModels: mockPhysiological
+        )
         
         // Mock current data - significantly above target
         await glucoseStorage.addGlucoseReading(
@@ -249,7 +239,7 @@ final class LoopFunctionTests: XCTestCase {
         insulinStorage.mockLastPumpSync = now
         
         // Execute loop
-        let loopResult: ClosedLoopResult = await closedLoop.runLoop(at: now)
+        let loopResult: ClosedLoopResult = await closedLoop.runLoop(at: now, pumpManager: deviceManager.pumpManager, cgmPumpMetadata: deviceManager.cgmPumpMetadata())
         guard case .dosed(let snapshot) = loopResult.outcome else {
             return XCTFail("Loop should complete successfully with microbolus")
         }
@@ -273,7 +263,12 @@ final class LoopFunctionTests: XCTestCase {
         let mockPhysiological = MockPhysiologicalModels()
         mockPhysiological.mockPredictGlucose = 185  // Rising glucose
         mockPhysiological.mockTempBasalResult = 2.0
-        Dependency.mock { mockPhysiological as PhysiologicalModels }
+        closedLoop = makeClosedLoopService(
+            settings: settings,
+            glucoseStorage: glucoseStorage,
+            insulinStorage: insulinStorage,
+            physiologicalModels: mockPhysiological
+        )
         
         // Mock current data - significantly above target
         await glucoseStorage.addGlucoseReading(
@@ -286,8 +281,8 @@ final class LoopFunctionTests: XCTestCase {
         pumpManager.state.bolusEnactmentShouldError = true
         
         // Execute loop
-        let result: Bool = await closedLoop.loop(at: now)
-        
+        let result: Bool = await closedLoop.loop(at: now, pumpManager: deviceManager.pumpManager, cgmPumpMetadata: deviceManager.cgmPumpMetadata())
+
         // Verify
         XCTAssertFalse(result, "Loop should return false when pump returns error during micro bolus")
         let lastResult = await closedLoop.latestClosedLoopResult()

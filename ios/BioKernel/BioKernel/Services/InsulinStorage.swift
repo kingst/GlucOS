@@ -62,13 +62,24 @@ actor LocalInsulinStorage: InsulinStorage {
         let lastPumpReconciliation: Date?
     }
     
-    static let shared = LocalInsulinStorage()
-    
-    let storage = getStoredObject().create(fileName: "pump_events.v2.json")
+    let storage: StoredObject
     var hasDoneInitialReadFromDisk = false
-    let healthKitStorage = getHealthKitStorage()
-    
-    init() {
+    let healthKitStorage: HealthKitStorage
+    private let storedObjectFactory: StoredObject.Type
+    private let watchComms: () -> WatchComms
+    private let settingsStorage: @MainActor () -> SettingsStorage
+
+    init(
+        storedObjectFactory: StoredObject.Type,
+        healthKitStorage: HealthKitStorage,
+        watchComms: @escaping () -> WatchComms,
+        settingsStorage: @MainActor @escaping () -> SettingsStorage
+    ) {
+        self.storedObjectFactory = storedObjectFactory
+        self.storage = storedObjectFactory.create(fileName: "pump_events.v2.json")
+        self.healthKitStorage = healthKitStorage
+        self.watchComms = watchComms
+        self.settingsStorage = settingsStorage
         Task {
             await readFromDisk()
         }
@@ -127,7 +138,7 @@ actor LocalInsulinStorage: InsulinStorage {
         eventLog.append(contentsOf: events)
         let ret = syncDataToDisk()
         updateDelegate?.update(entries: eventLog)
-        await getWatchComms().updateAppContext()
+        await watchComms().updateAppContext()
 
         Task { [healthKitStorage] in
             await healthKitStorage.save(pumpEvents: events)
@@ -144,7 +155,7 @@ actor LocalInsulinStorage: InsulinStorage {
             lastPumpReconciliation = pumpStorage.lastPumpReconciliation
         } else {
             // try to read from the old version
-            let oldStorage = getStoredObject().create(fileName: "pump_events.json")
+            let oldStorage = storedObjectFactory.create(fileName: "pump_events.json")
             eventLog = (try? oldStorage.read()) ?? []
             lastPumpReconciliation = nil
             
@@ -334,7 +345,7 @@ actor LocalInsulinStorage: InsulinStorage {
         // adds a bunch of noise
         guard gap > 1.0 else { return nil }
 
-        let basalRate = await MainActor.run { getSettingsStorage().snapshot().pumpBasalRateUnitsPerHour }
+        let basalRate = await MainActor.run { settingsStorage().snapshot().pumpBasalRateUnitsPerHour }
         let basalRatePerSecond = basalRate / 1.hoursToSeconds()
         let unitsDelivered = basalRatePerSecond * gap
         return DoseEntry(type: .basal, startDate: start, endDate: end, value: basalRate, unit: .unitsPerHour, deliveredUnits: unitsDelivered, insulinType: insulinType, isMutable: false)

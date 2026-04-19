@@ -9,10 +9,11 @@ import SwiftUI
 
 struct BolusView: View {
     @Environment(\.dismiss) var dismiss
+    @Environment(\.composition) var composition: AppComposition?
     @State var bolusAmount: String = ""
     @State var bolusError: String? = nil
     @State var useMealAnnoucements = true
-    
+
     var body: some View {
         VStack {
             if useMealAnnoucements {
@@ -23,18 +24,22 @@ struct BolusView: View {
             Spacer().frame(height: 16)
             Button {
                 Task {
-                    guard let pumpManager = getDeviceDataManager().pumpManager else {
+                    guard let composition else {
+                        bolusError = "App not ready"
+                        return
+                    }
+                    guard let pumpManager = composition.deviceDataManager.pumpManager else {
                         bolusError = "No pump found"
                         return
                     }
-                    
+
                     guard let units = Double(bolusAmount) else {
                         bolusError = "Could not read the bolus amount!"
                         return
                     }
-                    
+
                     let unitsRounded = pumpManager.roundToSupportedBolusVolume(units: units)
-                    let maxBolusUnits = getSettingsStorage().snapshot().maxBolusUnits
+                    let maxBolusUnits = composition.settingsStorage.snapshot().maxBolusUnits
                     
                     guard unitsRounded <= maxBolusUnits else {
                         bolusError = "Bolus \(unitsRounded)U is above the max of \(maxBolusUnits)U"
@@ -52,7 +57,7 @@ struct BolusView: View {
                     case .some(_):
                         bolusError = "Not authenticated"
                     case .none:
-                        if let error = await pumpManager.enactBolus(units: unitsRounded, activationType: .manualNoRecommendation) {
+                        if let error = await pumpManager.enactBolus(units: unitsRounded, activationType: .manualNoRecommendation, observableState: composition.observableState) {
                             bolusError = error.localizedDescription
                             return
                         } else {
@@ -128,8 +133,7 @@ enum MealItemValue: String, CaseIterable {
 }
 
 extension MealItemValue {
-    @MainActor func units() -> Double {
-        let settings = getSettingsStorage().snapshot()
+    func units(settings: CodableSettings) -> Double {
         switch (self) {
         case .less:
             return settings.getBolusAmountForLess()
@@ -150,14 +154,20 @@ struct MealItem: Identifiable {
 
 struct MealAnnounceView: View {
     @Binding var bolusAmount: String
+    @Environment(\.composition) var composition: AppComposition?
     let items = [
         MealItem(description: "More", emoji: "🍔🥤🍟", value: .more),
         MealItem(description: "Usual for me", emoji: "🥪🍎", value: .usual),
         MealItem(description: "Less", emoji: "🥗", value: .less)
     ]
-    
+
     @State private var selectedItem: MealItemValue = .usual
-    
+
+    private func unitsString(for item: MealItemValue) -> String {
+        guard let composition else { return "" }
+        return "\(item.units(settings: composition.settingsStorage.snapshot()))"
+    }
+
     var body: some View {
         Text("Announce carbs").font(.title)
         Form {
@@ -173,10 +183,10 @@ struct MealAnnounceView: View {
             }
             .pickerStyle(.inline)
             .onChange(of: selectedItem) {
-                bolusAmount = "\(selectedItem.units())"
+                bolusAmount = unitsString(for: selectedItem)
             }
             .onAppear {
-                bolusAmount = "\(selectedItem.units())"
+                bolusAmount = unitsString(for: selectedItem)
             }
         }
     }

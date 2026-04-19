@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3B0044762F956C7B0051AFA7 /* AppObservableState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0044752F956C7B0051AFA7 /* AppObservableState.swift */; };
 		3B348D902B5D9ADB000A40E9 /* Double.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B348D8F2B5D9ADB000A40E9 /* Double.swift */; };
 		3B348D922B5D9AEE000A40E9 /* SafetyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B348D912B5D9AEE000A40E9 /* SafetyService.swift */; };
 		3B348DAE2B5DAFB0000A40E9 /* SafetyServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B348DAD2B5DAFB0000A40E9 /* SafetyServiceTests.swift */; };
@@ -34,6 +35,7 @@
 		3B4CFE232C223DD900BDB1CB /* ShareClientUI.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3B7C6D942B083A4C0030DFA7 /* ShareClientUI.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3B5076392F92F77400E5D3A6 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5076382F92F77400E5D3A6 /* PushNotificationService.swift */; };
 		3B50774C2F93DAB800E5D3A6 /* DosingDecisionTestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B50774B2F93DAB800E5D3A6 /* DosingDecisionTestHelpers.swift */; };
+		3BCL5T01000000000000A001 /* ClosedLoopTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BCL5T01000000000000A002 /* ClosedLoopTestSupport.swift */; };
 		3B5329502B5D8451000DED1A /* AddedGlucoseDataFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B53294F2B5D8451000DED1A /* AddedGlucoseDataFrame.swift */; };
 		3B6063B02B54BDA9009D9CBC /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6063AF2B54BDA9009D9CBC /* SettingsViewModel.swift */; };
 		3B6063B22B54BDB7009D9CBC /* DecimalPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6063B12B54BDB7009D9CBC /* DecimalPicker.swift */; };
@@ -113,8 +115,8 @@
 		3C21A5AD2B16753800AC6D51 /* SwiftCharts in Frameworks */ = {isa = PBXBuildFile; productRef = 3C21A5AC2B16753800AC6D51 /* SwiftCharts */; };
 		3C21A5AE2B16755D00AC6D51 /* SwiftCharts in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 3C21A5AC2B16753800AC6D51 /* SwiftCharts */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		3C37CD452B0B36F10066CD84 /* InOrderTaskQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C37CD442B0B36F10066CD84 /* InOrderTaskQueue.swift */; };
-		3C4911E92AF4C6690070D3B4 /* Dependency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C4911E82AF4C6690070D3B4 /* Dependency.swift */; };
-		3C4911EB2AF4C6830070D3B4 /* Bindings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C4911EA2AF4C6830070D3B4 /* Bindings.swift */; };
+		3B0044802F956D0000000001 /* AppComposition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0044812F956D0000000002 /* AppComposition.swift */; };
+		3B0044822F956D0000000003 /* AppContextNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0044832F956D0000000004 /* AppContextNotifier.swift */; };
 		3C4911ED2AF4CA290070D3B4 /* CGMManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C4911EC2AF4CA290070D3B4 /* CGMManager.swift */; };
 		3C4911F12AF4D0630070D3B4 /* ManagerExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C4911F02AF4D0630070D3B4 /* ManagerExtensions.swift */; };
 		3C4911F32AF4D77E0070D3B4 /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C4911F22AF4D77E0070D3B4 /* Colors.swift */; };
@@ -216,6 +218,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		3B0044752F956C7B0051AFA7 /* AppObservableState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppObservableState.swift; sourceTree = "<group>"; };
 		3B348D8F2B5D9ADB000A40E9 /* Double.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Double.swift; sourceTree = "<group>"; };
 		3B348D912B5D9AEE000A40E9 /* SafetyService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SafetyService.swift; sourceTree = "<group>"; };
 		3B348DAD2B5DAFB0000A40E9 /* SafetyServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyServiceTests.swift; sourceTree = "<group>"; };
@@ -237,6 +240,7 @@
 		3B4CFE162C2230DF00BDB1CB /* CGMBLEKitUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CGMBLEKitUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B5076382F92F77400E5D3A6 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
 		3B50774B2F93DAB800E5D3A6 /* DosingDecisionTestHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DosingDecisionTestHelpers.swift; sourceTree = "<group>"; };
+		3BCL5T01000000000000A002 /* ClosedLoopTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClosedLoopTestSupport.swift; sourceTree = "<group>"; };
 		3B53294F2B5D8451000DED1A /* AddedGlucoseDataFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddedGlucoseDataFrame.swift; sourceTree = "<group>"; };
 		3B6063AF2B54BDA9009D9CBC /* SettingsViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		3B6063B12B54BDB7009D9CBC /* DecimalPicker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DecimalPicker.swift; sourceTree = "<group>"; };
@@ -302,8 +306,8 @@
 		3C07C8A12AF9C2AD008F604C /* DoseProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoseProgress.swift; sourceTree = "<group>"; };
 		3C15FE492B0C9C6F00CA1FD4 /* immutable_replay_logs.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = immutable_replay_logs.json; sourceTree = "<group>"; };
 		3C37CD442B0B36F10066CD84 /* InOrderTaskQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InOrderTaskQueue.swift; sourceTree = "<group>"; };
-		3C4911E82AF4C6690070D3B4 /* Dependency.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Dependency.swift; sourceTree = "<group>"; };
-		3C4911EA2AF4C6830070D3B4 /* Bindings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Bindings.swift; sourceTree = "<group>"; };
+		3B0044812F956D0000000002 /* AppComposition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppComposition.swift; sourceTree = "<group>"; };
+		3B0044832F956D0000000004 /* AppContextNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContextNotifier.swift; sourceTree = "<group>"; };
 		3C4911EC2AF4CA290070D3B4 /* CGMManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CGMManager.swift; sourceTree = "<group>"; };
 		3C4911F02AF4D0630070D3B4 /* ManagerExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerExtensions.swift; sourceTree = "<group>"; };
 		3C4911F22AF4D77E0070D3B4 /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
@@ -541,8 +545,8 @@
 		3C4911E72AF4C6290070D3B4 /* DependencyInjection */ = {
 			isa = PBXGroup;
 			children = (
-				3C4911EA2AF4C6830070D3B4 /* Bindings.swift */,
-				3C4911E82AF4C6690070D3B4 /* Dependency.swift */,
+				3B0044812F956D0000000002 /* AppComposition.swift */,
+				3B0044832F956D0000000004 /* AppContextNotifier.swift */,
 			);
 			path = DependencyInjection;
 			sourceTree = "<group>";
@@ -550,6 +554,7 @@
 		3C7553DF2AFDBEF900FAD880 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				3B0044752F956C7B0051AFA7 /* AppObservableState.swift */,
 				3CE9B8AF2B28CB2100B12300 /* AlertStorage.swift */,
 				3B3BEC4F2C3D87B8007F0CCE /* BackgroundService.swift */,
 				3BF1F1E12E4F1A4100AF36AD /* ClosedLoopChartData.swift */,
@@ -621,6 +626,7 @@
 				3B50774B2F93DAB800E5D3A6 /* DosingDecisionTestHelpers.swift */,
 				3CAAFC8F2B0D73C400597055 /* MockClasses.swift */,
 				3CAAFC8B2B0D71AE00597055 /* ReplayLogs.swift */,
+				3BCL5T01000000000000A002 /* ClosedLoopTestSupport.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -841,9 +847,11 @@
 				3BD7937F2AF55DCC00E5FDC9 /* DeviceDataManager.swift in Sources */,
 				3C7553D82AFD947C00FAD880 /* CGMManagerViews.swift in Sources */,
 				3C4911F12AF4D0630070D3B4 /* ManagerExtensions.swift in Sources */,
+				3B0044762F956C7B0051AFA7 /* AppObservableState.swift in Sources */,
 				3B5076392F92F77400E5D3A6 /* PushNotificationService.swift in Sources */,
 				3C4911F32AF4D77E0070D3B4 /* Colors.swift in Sources */,
-				3C4911E92AF4C6690070D3B4 /* Dependency.swift in Sources */,
+				3B0044802F956D0000000001 /* AppComposition.swift in Sources */,
+				3B0044822F956D0000000003 /* AppContextNotifier.swift in Sources */,
 				3BA00A552D23157C0002B051 /* SettingsDataTypes.swift in Sources */,
 				3BF1F1E22E4F1A4100AF36AD /* ClosedLoopChartData.swift in Sources */,
 				3C4F79442AFB17D500786EB5 /* InsulinStorage.swift in Sources */,
@@ -866,7 +874,6 @@
 				3B3C9B182C46EAB700BB7CCF /* GlucoseAlertsViewModel.swift in Sources */,
 				3BAECD202B28F270002B9062 /* HealthKitStorage.swift in Sources */,
 				3C7553DA2AFD961600FAD880 /* AddCGMView.swift in Sources */,
-				3C4911EB2AF4C6830070D3B4 /* Bindings.swift in Sources */,
 				3C7553D62AFD8F7500FAD880 /* HKUnit.swift in Sources */,
 				3B7F08622B31590D002930A4 /* BolusProgressView.swift in Sources */,
 				3B3C9B162C46E23300BB7CCF /* MainViewGlucoseAlertView.swift in Sources */,
@@ -934,6 +941,7 @@
 				3B40DE692D24453F0032328F /* LoopFunctionTests.swift in Sources */,
 				3B7F08412B2DDE33002930A4 /* ClosedLoopTests.swift in Sources */,
 				3B50774C2F93DAB800E5D3A6 /* DosingDecisionTestHelpers.swift in Sources */,
+				3BCL5T01000000000000A001 /* ClosedLoopTestSupport.swift in Sources */,
 				3CAAFC902B0D73C400597055 /* MockClasses.swift in Sources */,
 				3BA00A572D231CA00002B051 /* ClosedLoopSafetyTests.swift in Sources */,
 				3B348DAE2B5DAFB0000A40E9 /* SafetyServiceTests.swift in Sources */,

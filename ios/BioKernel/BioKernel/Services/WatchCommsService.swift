@@ -12,22 +12,37 @@ public protocol WatchComms {
 }
 
 class LocalWatchComms: WatchComms, SessionCommands {
-    static let shared = LocalWatchComms()
-    
+    private let glucoseStorage: GlucoseStorage
+    private let insulinStorage: InsulinStorage
+    private let physiologicalModels: PhysiologicalModels
+    private let glucoseAlertsService: () -> GlucoseAlertStorage
+
+    init(
+        glucoseStorage: GlucoseStorage,
+        insulinStorage: InsulinStorage,
+        physiologicalModels: PhysiologicalModels,
+        glucoseAlertsService: @escaping () -> GlucoseAlertStorage
+    ) {
+        self.glucoseStorage = glucoseStorage
+        self.insulinStorage = insulinStorage
+        self.physiologicalModels = physiologicalModels
+        self.glucoseAlertsService = glucoseAlertsService
+    }
+
     func updateAppContext() async {
         let now = Date()
-        let glucose = await getGlucoseStorage().readingsBetween(startDate: now - 3.hoursToSeconds(), endDate: now).map { StateGlucoseReadings(at: $0.date, glucoseReadingInMgDl: $0.quantity.doubleValue(for: .milligramsPerDeciliter), trend: $0.trend?.symbol) }
+        let glucose = await glucoseStorage.readingsBetween(startDate: now - 3.hoursToSeconds(), endDate: now).map { StateGlucoseReadings(at: $0.date, glucoseReadingInMgDl: $0.quantity.doubleValue(for: .milligramsPerDeciliter), trend: $0.trend?.symbol) }
         guard let mostRecentReading = glucose.last else { return }
-        let prediction = await (getPhysiologicalModels().predictGlucoseIn15Minutes(from: now) ?? mostRecentReading.glucoseReadingInMgDl).clamp(low: 40.0, high: 400.0)
-        let insulinOnBoard = await getInsulinStorage().insulinOnBoard(at: now)
+        let prediction = await (physiologicalModels.predictGlucoseIn15Minutes(from: now) ?? mostRecentReading.glucoseReadingInMgDl).clamp(low: 40.0, high: 400.0)
+        let insulinOnBoard = await insulinStorage.insulinOnBoard(at: now)
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .secondsSince1970
         guard let glucoseReadingData = try? encoder.encode(glucose) else {
             assertionFailure("Could not encode glucose readings")
             return
         }
-        
-        let isPredictedGlucoseInRange = await getGlucoseAlertsService().isInRange(glucose: prediction)
+
+        let isPredictedGlucoseInRange = await glucoseAlertsService().isInRange(glucose: prediction)
         
         updateAppContext([PayloadKeys.glucoseReadingsData: glucoseReadingData,
                           PayloadKeys.predictedGlucose: prediction,

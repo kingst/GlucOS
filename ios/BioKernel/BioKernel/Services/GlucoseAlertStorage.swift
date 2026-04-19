@@ -86,19 +86,28 @@ public protocol GlucoseAlertStorage {
 
 @MainActor
 class PredictiveGlucoseAlertStorage: GlucoseAlertStorage {
-    static let shared = PredictiveGlucoseAlertStorage()
-    
-    let alertViewModel = GlucoseAlertsViewModel()
+    lazy var alertViewModel: GlucoseAlertsViewModel = GlucoseAlertsViewModel(glucoseAlertsService: self)
     var glucoseAlertSettings: GlucoseAlertSettings
-    var storage = getStoredObject().create(fileName: "glucose_alerts.json")
+    var storage: StoredObject
     let notificationIdKey = "notificationId"
     let notificationSentAtKey = "notificationSentAt"
-    
-    init() {
+
+    private let glucoseStorage: GlucoseStorage
+    private let physiologicalModels: PhysiologicalModels
+
+    init(
+        storedObjectFactory: StoredObject.Type,
+        glucoseStorage: GlucoseStorage,
+        physiologicalModels: PhysiologicalModels
+    ) {
+        let storage = storedObjectFactory.create(fileName: "glucose_alerts.json")
+        self.storage = storage
+        self.glucoseStorage = glucoseStorage
+        self.physiologicalModels = physiologicalModels
         let settings = (try? storage.read()) ?? GlucoseAlertSettings.defaults()
         glucoseAlertSettings = settings
-        DispatchQueue.main.async {
-            self.alertViewModel.update(settings: settings, predictedGlucose: nil)
+        DispatchQueue.main.async { [weak self] in
+            self?.alertViewModel.update(settings: settings, predictedGlucose: nil)
         }
     }
     func viewModel() -> GlucoseAlertsViewModel {
@@ -186,8 +195,8 @@ class PredictiveGlucoseAlertStorage: GlucoseAlertStorage {
     
     func onNewGlucoseValue() async {
         let now = Date()
-        guard let mostRecentGlucose = await getGlucoseStorage().lastReading()?.quantity.doubleValue(for: .milligramsPerDeciliter) else { return }
-        let predictedGlucose = await getPhysiologicalModels().predictGlucoseIn15Minutes(from: now) ?? mostRecentGlucose
+        guard let mostRecentGlucose = await glucoseStorage.lastReading()?.quantity.doubleValue(for: .milligramsPerDeciliter) else { return }
+        let predictedGlucose = await physiologicalModels.predictGlucoseIn15Minutes(from: now) ?? mostRecentGlucose
         let currentState = glucoseAlertSettings.alertState
         let nextState = glucoseAlertSettings.nextState(predictedGlucose: predictedGlucose)
         

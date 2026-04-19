@@ -56,15 +56,15 @@ public struct SafetyState: Codable {
 }
 
 actor LocalSafetyService: SafetyService {
-    static let shared = LocalSafetyService()
-    
     let timeHorizon: TimeInterval = 3.hoursToSeconds()
-    
+
     var safetyStates: [SafetyState]
-    private let storage = getStoredObject().create(fileName: "safety_states.json")
-    
-    init() {
-        safetyStates = (try? storage.read()) ?? []
+    private let storage: StoredObject
+
+    init(storedObjectFactory: StoredObject.Type) {
+        let storage = storedObjectFactory.create(fileName: "safety_states.json")
+        self.storage = storage
+        self.safetyStates = (try? storage.read()) ?? []
     }
     
     // Note: we ignore actual insulin delivered and use the
