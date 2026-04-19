@@ -172,14 +172,8 @@ class DiagnosticViewModel: ObservableObject, ClosedLoopChartDataUpdate, PumpEven
         let physiologicalInsulin = safetyResult.physiologicalTempBasal / 12 + safetyResult.physiologicalMicroBolus
         let actualInsulin = safetyResult.actualTempBasal / 12 + safetyResult.actualMicroBolus
 
-        let tempBasal: Double = {
-            if case .tempBasal(let units) = snapshot.decision { return units }
-            return 0
-        }()
-        let microBolus: Double = {
-            if case .microBolus(let units) = snapshot.decision { return units }
-            return 0
-        }()
+        let tempBasal: Double = snapshot.decision.tempBasalUnitsPerHour ?? 0
+        let microBolus: Double = snapshot.decision.microBolusUnits ?? 0
 
         return ClosedLoopChartData(
             at: result.at,

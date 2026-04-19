@@ -11,6 +11,16 @@ public enum DosingDecision: Codable, Equatable {
     case tempBasal(unitsPerHour: Double)
     case microBolus(units: Double)
     case suspendForBiologicalInvariant(mgDlPerHour: Double)
+    
+    var tempBasalUnitsPerHour: Double? {
+        if case .tempBasal(let unitsPerHour) = self { return unitsPerHour }
+        return nil
+    }
+    
+    var microBolusUnits: Double? {
+        if case .microBolus(let units) = self { return units }
+        return nil
+    }
 }
 
 public enum SkipReason: String, Codable {

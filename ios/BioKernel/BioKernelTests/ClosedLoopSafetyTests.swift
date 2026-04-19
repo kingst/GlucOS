@@ -109,8 +109,8 @@ final class ClosedLoopSafetyTests: XCTestCase {
         )
 
         // Verify system stops insulin delivery during violation
-        XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
+        XCTAssertEqual(dose.tempBasalUnitsPerHour, 0.0, accuracy: iobAccuracy)
+        XCTAssertEqual(dose.microBolusUnits, 0.0, accuracy: iobAccuracy)
 
         // Now test recovery when biological invariant returns to normal
         dose = await closedLoop.determineDose(
@@ -124,7 +124,7 @@ final class ClosedLoopSafetyTests: XCTestCase {
         )
 
         // Verify insulin delivery resumes
-        XCTAssertGreaterThan(dose.tempBasal, 0.0)
+        XCTAssertGreaterThan(dose.tempBasalUnitsPerHour, 0.0)
     }
     
     // MARK: - Property-Based Tests
@@ -230,7 +230,7 @@ final class ClosedLoopSafetyTests: XCTestCase {
             )
 
             // Verify that the actual temp basal matches what was selected
-            XCTAssertEqual(dose.tempBasal, 1.5, accuracy: iobAccuracy, "Selected temp basal should be physiological when ML is off")
+            XCTAssertEqual(dose.tempBasalUnitsPerHour, 1.5, accuracy: iobAccuracy, "Selected temp basal should be physiological when ML is off")
             guard case .tempBasal(let selectedUnits) = dose else {
                 return XCTFail("Expected dose to be a temp basal decision")
             }
