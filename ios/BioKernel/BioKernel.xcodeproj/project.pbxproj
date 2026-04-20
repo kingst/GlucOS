@@ -136,11 +136,11 @@
 		3C7553E32AFDC04A00FAD880 /* ClosedLoopService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C7553E22AFDC04A00FAD880 /* ClosedLoopService.swift */; };
 		3CAAFC892B0D567A00597055 /* replay_logs.json in Resources */ = {isa = PBXBuildFile; fileRef = 3CAAFC882B0D567A00597055 /* replay_logs.json */; };
 		3CAAFC8C2B0D71AE00597055 /* ReplayLogs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CAAFC8B2B0D71AE00597055 /* ReplayLogs.swift */; };
-		3CAAFC8E2B0D739200597055 /* InsulinPersistantStorageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CAAFC8D2B0D739200597055 /* InsulinPersistantStorageTests.swift */; };
+		3CAAFC8E2B0D739200597055 /* InsulinPersistentStorageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CAAFC8D2B0D739200597055 /* InsulinPersistentStorageTests.swift */; };
 		3CAAFC902B0D73C400597055 /* MockClasses.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CAAFC8F2B0D73C400597055 /* MockClasses.swift */; };
 		3CAAFC922B0D947E00597055 /* filter_bug.json in Resources */ = {isa = PBXBuildFile; fileRef = 3CAAFC912B0D947E00597055 /* filter_bug.json */; };
 		3CAAFC962B0ED6CE00597055 /* Http.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CAAFC952B0ED6CE00597055 /* Http.swift */; };
-		3CBFB98A2AFE02E90020FC90 /* InulinOnBoardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CBFB9892AFE02E90020FC90 /* InulinOnBoardTests.swift */; };
+		3CBFB98A2AFE02E90020FC90 /* InsulinOnBoardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CBFB9892AFE02E90020FC90 /* InsulinOnBoardTests.swift */; };
 		3CBFB9912AFFAEC80020FC90 /* DateTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CBFB9902AFFAEC80020FC90 /* DateTime.swift */; };
 		3CE9B8B02B28CB2200B12300 /* AlertStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CE9B8AF2B28CB2100B12300 /* AlertStorage.swift */; };
 /* End PBXBuildFile section */
@@ -325,12 +325,12 @@
 		3C7553E22AFDC04A00FAD880 /* ClosedLoopService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClosedLoopService.swift; sourceTree = "<group>"; };
 		3CAAFC882B0D567A00597055 /* replay_logs.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = replay_logs.json; sourceTree = "<group>"; };
 		3CAAFC8B2B0D71AE00597055 /* ReplayLogs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplayLogs.swift; sourceTree = "<group>"; };
-		3CAAFC8D2B0D739200597055 /* InsulinPersistantStorageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsulinPersistantStorageTests.swift; sourceTree = "<group>"; };
+		3CAAFC8D2B0D739200597055 /* InsulinPersistentStorageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsulinPersistentStorageTests.swift; sourceTree = "<group>"; };
 		3CAAFC8F2B0D73C400597055 /* MockClasses.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockClasses.swift; sourceTree = "<group>"; };
 		3CAAFC912B0D947E00597055 /* filter_bug.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = filter_bug.json; sourceTree = "<group>"; };
 		3CAAFC952B0ED6CE00597055 /* Http.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Http.swift; sourceTree = "<group>"; };
 		3CBFB9872AFE02E90020FC90 /* BioKernelTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BioKernelTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		3CBFB9892AFE02E90020FC90 /* InulinOnBoardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InulinOnBoardTests.swift; sourceTree = "<group>"; };
+		3CBFB9892AFE02E90020FC90 /* InsulinOnBoardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsulinOnBoardTests.swift; sourceTree = "<group>"; };
 		3CBFB9902AFFAEC80020FC90 /* DateTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateTime.swift; sourceTree = "<group>"; };
 		3CE9B8AF2B28CB2100B12300 /* AlertStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertStorage.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -636,9 +636,9 @@
 			children = (
 				3BA00A562D231CA00002B051 /* ClosedLoopSafetyTests.swift */,
 				3B7F08402B2DDE33002930A4 /* ClosedLoopTests.swift */,
-				3CAAFC8D2B0D739200597055 /* InsulinPersistantStorageTests.swift */,
+				3CAAFC8D2B0D739200597055 /* InsulinPersistentStorageTests.swift */,
 				3B7C6D9B2B0C09320030DFA7 /* InsulinStorageTests.swift */,
-				3CBFB9892AFE02E90020FC90 /* InulinOnBoardTests.swift */,
+				3CBFB9892AFE02E90020FC90 /* InsulinOnBoardTests.swift */,
 				3B40DE682D24453F0032328F /* LoopFunctionTests.swift */,
 				3B40DE662D243C6C0032328F /* MicroBolusAmountTest.swift */,
 				3B348DAD2B5DAFB0000A40E9 /* SafetyServiceTests.swift */,
@@ -945,11 +945,11 @@
 				3CAAFC902B0D73C400597055 /* MockClasses.swift in Sources */,
 				3BA00A572D231CA00002B051 /* ClosedLoopSafetyTests.swift in Sources */,
 				3B348DAE2B5DAFB0000A40E9 /* SafetyServiceTests.swift in Sources */,
-				3CAAFC8E2B0D739200597055 /* InsulinPersistantStorageTests.swift in Sources */,
+				3CAAFC8E2B0D739200597055 /* InsulinPersistentStorageTests.swift in Sources */,
 				3B40DE672D243C6C0032328F /* MicroBolusAmountTest.swift in Sources */,
 				3B7C6D9C2B0C09320030DFA7 /* InsulinStorageTests.swift in Sources */,
 				3BEE4E202B5FF4A000A09203 /* DateTime.swift in Sources */,
-				3CBFB98A2AFE02E90020FC90 /* InulinOnBoardTests.swift in Sources */,
+				3CBFB98A2AFE02E90020FC90 /* InsulinOnBoardTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
