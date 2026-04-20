@@ -1,15 +1,16 @@
 //
-//  InsulinPersistantStorageTests.swift
+//  InsulinPersistentStorageTests.swift
 //  BioKernelTests
 //
 //  Created by Sam King on 11/21/23.
 //
 
-import XCTest
+import Testing
+import Foundation
 import LoopKit
 @testable import BioKernel
 
-final class InsulinPersistantStorageTests: XCTestCase {
+struct InsulinPersistentStorageTests {
     let iobAccuracy = 0.00000000001
 
     @MainActor private func makeStorage() -> LocalInsulinStorage {
@@ -22,9 +23,10 @@ final class InsulinPersistantStorageTests: XCTestCase {
         )
     }
 
-    func testWithoutFiltering() async throws {
-        let events = ReplayLogs.immutableReplayLogs(for: type(of: self))
-        let at = events.last!.dose!.endDate
+    @Test func withoutFiltering() async throws {
+        let events = ReplayLogs.immutableReplayLogs()
+        let lastDose = try #require(events.last?.dose)
+        let at = lastDose.endDate
 
         let storage = await makeStorage()
         let originalIob = await storage.insulinOnBoard(events: events, at: at)
@@ -32,12 +34,13 @@ final class InsulinPersistantStorageTests: XCTestCase {
         let _ = await storage.addPumpEvents(events, lastReconciliation: at, insulinType: .lyumjev)
         let newIob = await storage.insulinOnBoard(at: at)
 
-        XCTAssertEqual(newIob, originalIob, accuracy: iobAccuracy)
+        #expect(abs(newIob - originalIob) <= iobAccuracy)
     }
 
-    func testWithFiltering() async throws {
-        let events = ReplayLogs.fullReplayLogs(for: type(of: self))
-        let at = events.last!.dose!.endDate
+    @Test func withFiltering() async throws {
+        let events = ReplayLogs.fullReplayLogs()
+        let lastDose = try #require(events.last?.dose)
+        let at = lastDose.endDate
 
         let storage = await makeStorage()
         await storage.setPumpRecordsBasalProfileStartEvents(false)
@@ -46,6 +49,6 @@ final class InsulinPersistantStorageTests: XCTestCase {
         let _ = await storage.addPumpEvents(events, lastReconciliation: at, insulinType: .lyumjev)
         let newIob = await storage.insulinOnBoard(at: at)
 
-        XCTAssertEqual(newIob, originalIob, accuracy: iobAccuracy)
+        #expect(abs(newIob - originalIob) <= iobAccuracy)
     }
 }

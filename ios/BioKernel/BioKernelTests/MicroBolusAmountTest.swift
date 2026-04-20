@@ -5,22 +5,24 @@
 //  Created by Sam King on 12/31/24.
 //
 
-import XCTest
+import Testing
+import Foundation
 import LoopKit
 import MockKit
 @testable import BioKernel
 
-final class MicroBolusTests: XCTestCase {
+@MainActor
+struct MicroBolusTests {
     let insulinAccuracy = 0.00000000001
-    var closedLoop: LocalClosedLoopService!
-    var settings: MockSettingsStorage!
-    var pumpManager: MockPumpManager!
-    
-    @MainActor override func setUpWithError() throws {
-        settings = MockSettingsStorage()
-        pumpManager = MockPumpManager()
+    let closedLoop: LocalClosedLoopService
+    let settings: MockSettingsStorage
+    let pumpManager: MockPumpManager
 
-        closedLoop = makeClosedLoopService(
+    init() {
+        let settings = MockSettingsStorage()
+        let pumpManager = MockPumpManager()
+
+        let closedLoop = makeClosedLoopService(
             settings: settings,
             glucoseStorage: MockGlucoseStorage(),
             insulinStorage: MockInsulinStorage()
@@ -32,13 +34,17 @@ final class MicroBolusTests: XCTestCase {
             maxBasalRateUnitsPerHour: 3.0,
             microBolusDoseFactor: 0.3
         )
+
+        self.settings = settings
+        self.pumpManager = pumpManager
+        self.closedLoop = closedLoop
     }
-    
-    @MainActor func testNoMicroBolusWithinTimeWindow() async throws {
+
+    @Test func noMicroBolusWithinTimeWindow() async throws {
         // Setup: Set last micro bolus to 2 minutes ago
         let at = Date()
         await closedLoop.setLastMicroBolusForTesting(date: at.addingTimeInterval(-2 * 60))
-    
+
         let amount = await closedLoop.microBolusAmount(
             pumpManager: pumpManager, tempBasal: 2.0,
             settings: settings.snapshot(),
@@ -46,15 +52,15 @@ final class MicroBolusTests: XCTestCase {
             targetGlucoseInMgDl: 100,
             at: at
         )
-        
-        XCTAssertNil(amount, "Should not issue micro bolus within 4.2 minutes of previous")
+
+        #expect(amount == nil, "Should not issue micro bolus within 4.2 minutes of previous")
     }
-    
-    @MainActor func testAllowMicroBolusAfterTimeWindow() async throws {
+
+    @Test func allowMicroBolusAfterTimeWindow() async throws {
         // Setup: Set last micro bolus to 5 minutes ago
         let at = Date()
         await closedLoop.setLastMicroBolusForTesting(date: at.addingTimeInterval(-5 * 60))
-        
+
         let amount = await closedLoop.microBolusAmount(
             pumpManager: pumpManager,
             tempBasal: 2.0,
@@ -63,12 +69,12 @@ final class MicroBolusTests: XCTestCase {
             targetGlucoseInMgDl: 100,
             at: at
         )
-        
-        XCTAssertNotNil(amount, "Should allow micro bolus after 4.2 minutes")
-        XCTAssertGreaterThan(amount ?? 0, 0)
+
+        let value = try #require(amount, "Should allow micro bolus after 4.2 minutes")
+        #expect(value > 0)
     }
-    
-    @MainActor func testNoMicroBolusWhenGlucoseCloseToTarget() async throws {
+
+    @Test func noMicroBolusWhenGlucoseCloseToTarget() async throws {
         let amount = await closedLoop.microBolusAmount(
             pumpManager: pumpManager,
             tempBasal: 2.0,
@@ -77,11 +83,11 @@ final class MicroBolusTests: XCTestCase {
             targetGlucoseInMgDl: 100,
             at: Date()
         )
-        
-        XCTAssertNil(amount, "Should not issue micro bolus when glucose is less than 20 mg/dL above target")
+
+        #expect(amount == nil, "Should not issue micro bolus when glucose is less than 20 mg/dL above target")
     }
-    
-    @MainActor func testNoMicroBolusWhenInsulinAmountNegative() async throws {
+
+    @Test func noMicroBolusWhenInsulinAmountNegative() async throws {
         let amount = await closedLoop.microBolusAmount(
             pumpManager: pumpManager,
             tempBasal: -0.5,
@@ -90,13 +96,13 @@ final class MicroBolusTests: XCTestCase {
             targetGlucoseInMgDl: 100,
             at: Date()
         )
-        
-        XCTAssertNil(amount, "Should not issue micro bolus when insulin amount would be negative")
+
+        #expect(amount == nil, "Should not issue micro bolus when insulin amount would be negative")
     }
-    
-    @MainActor func testMicroBolusAmountClampedToMax() async throws {
+
+    @Test func microBolusAmountClampedToMax() async throws {
         settings.update(maxBasalRateUnitsPerHour: 2.0)
-        
+
         let amount = await closedLoop.microBolusAmount(
             pumpManager: pumpManager,
             tempBasal: 5.0, // Much higher than max
@@ -105,12 +111,12 @@ final class MicroBolusTests: XCTestCase {
             targetGlucoseInMgDl: 100,
             at: Date()
         )
-        
-        XCTAssertNotNil(amount)
-        XCTAssertLessThanOrEqual(amount ?? 0, 1.0, "Micro bolus should be clamped to max (2.0 U/hr * 0.5 hr)")
+
+        let value = try #require(amount)
+        #expect(value <= 1.0, "Micro bolus should be clamped to max (2.0 U/hr * 0.5 hr)")
     }
-    
-    @MainActor func testMicroBolusAmountClampedToInsulin() async throws {
+
+    @Test func microBolusAmountClampedToInsulin() async throws {
         // Set a dose factor > 1.0 to test clamping against total insulin
         settings.update(maxBasalRateUnitsPerHour: 10)
         settings.update(microBolusDoseFactor: 1.2)
@@ -127,11 +133,11 @@ final class MicroBolusTests: XCTestCase {
             targetGlucoseInMgDl: 100,
             at: Date()
         )
-        
-        XCTAssertNotNil(amount)
+
+        let value = try #require(amount)
         // With doseFactor=1.2, amount would be 1.2 * 2.5 = 3.0.
         // It should be clamped to insulin, which is 2.5.
-        XCTAssertEqual(amount ?? 0, insulin, accuracy: insulinAccuracy, "Micro bolus should be clamped to the total insulin amount")
+        #expect(abs(value - insulin) <= insulinAccuracy, "Micro bolus should be clamped to the total insulin amount")
     }
 }
 

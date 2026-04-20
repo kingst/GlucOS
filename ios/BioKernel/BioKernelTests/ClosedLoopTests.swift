@@ -5,13 +5,14 @@
 //  Created by Sam King on 12/16/23.
 //
 
-import XCTest
+import Testing
+import Foundation
 import LoopKit
 import OmniBLE
 
 @testable import BioKernel
 
-final class ClosedLoopTests: XCTestCase {
+struct ClosedLoopTests {
     let iobAccuracy = 0.00000000001
 
     @MainActor private func makeService(settings: MockSettingsStorage) -> LocalClosedLoopService {
@@ -22,159 +23,158 @@ final class ClosedLoopTests: XCTestCase {
         )
     }
 
-    func testBaselineIoB() throws {
+    @Test func baselineIoB() throws {
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
         let endDate = startDate + 6.hoursToSeconds()
         let dose = DoseEntry(type: .tempBasal, startDate: startDate, endDate: endDate, value: 0.4, unit: .unitsPerHour, insulinType: .humalog, isMutable: false)
-        
+
         let iob = dose.insulinOnBoard(at: endDate)
         // From the Python unit tests
-        XCTAssertEqual(iob, 0.8589151141064484, accuracy: iobAccuracy)
+        #expect(abs(iob - 0.8589151141064484) <= iobAccuracy)
     }
-    
+
     // copied from the OmniBLE code
     func roundToSupportedBasalRate(unitsPerHour: Double) -> Double {
         // We do support rounding a 0 U/hr rate to 0
         return OmniBLEPumpManager.onboardingSupportedBasalRates.last(where: { $0 <= unitsPerHour }) ?? 0
     }
-    
-    func testBasalRateRounding() throws {
-        XCTAssertEqual(roundToSupportedBasalRate(unitsPerHour: 0.31), 0.3, accuracy: iobAccuracy)
-        XCTAssertEqual(roundToSupportedBasalRate(unitsPerHour: 0.3491), 0.3, accuracy: iobAccuracy)
-        XCTAssertEqual(roundToSupportedBasalRate(unitsPerHour: 0.351), 0.35, accuracy: iobAccuracy)
+
+    @Test func basalRateRounding() throws {
+        #expect(abs(roundToSupportedBasalRate(unitsPerHour: 0.31) - 0.3) <= iobAccuracy)
+        #expect(abs(roundToSupportedBasalRate(unitsPerHour: 0.3491) - 0.3) <= iobAccuracy)
+        #expect(abs(roundToSupportedBasalRate(unitsPerHour: 0.351) - 0.35) <= iobAccuracy)
     }
-    
-    func testDoseLogic() async {
+
+    @Test func doseLogic() async {
         let settings = await MockSettingsStorage()
         let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: false, useMachineLearningClosedLoop: false, useBiologicalInvariant: false)
-        
-let dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
-        
-        XCTAssertEqual(dose.tempBasal, 1.0, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
+
+        let dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+
+        #expect(abs(dose.tempBasal - 1.0) <= iobAccuracy)
+        #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
     }
-    
-    func testDoseLogicUseMachineLearning() async {
+
+    @Test func doseLogicUseMachineLearning() async {
         let settings = await MockSettingsStorage()
         let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: false, useMachineLearningClosedLoop: true, useBiologicalInvariant: false)
-        
-let dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
-        
-        XCTAssertEqual(dose.tempBasal, 1.5, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
+
+        let dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+
+        #expect(abs(dose.tempBasal - 1.5) <= iobAccuracy)
+        #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
     }
-    
-    func testDoseLogicUseMachineLearningMicroBolus() async {
+
+    @Test func doseLogicUseMachineLearningMicroBolus() async {
         let settings = await MockSettingsStorage()
         let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: true, useBiologicalInvariant: false)
-        
-let dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
-        
-        XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.25, accuracy: iobAccuracy)
+
+        let dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+
+        #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
+        #expect(abs(dose.microBolus - 0.25) <= iobAccuracy)
     }
-    
-    func testDoseLogicUseMicroBolus() async {
+
+    @Test func doseLogicUseMicroBolus() async {
         let settings = await MockSettingsStorage()
         let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: false, useBiologicalInvariant: false)
-        
-var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
-        
-        XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.2, accuracy: iobAccuracy)
-        
+
+        var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+
+        #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
+        #expect(abs(dose.microBolus - 0.2) <= iobAccuracy)
+
         dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.02, microBolusSafety: 0.25, biologicalInvariant: nil)
-        
-        XCTAssertEqual(dose.tempBasal, 1.0, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
+
+        #expect(abs(dose.tempBasal - 1.0) <= iobAccuracy)
+        #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
     }
-    
-    func testDoseLogicUseBiologicalInvariant() async {
+
+    @Test func doseLogicUseBiologicalInvariant() async {
         let settings = await MockSettingsStorage()
         let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: false, useMachineLearningClosedLoop: false, useBiologicalInvariant: true)
-        
-var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
-        
-        XCTAssertEqual(dose.tempBasal, 1.0, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
-        
+
+        var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
+
+        #expect(abs(dose.tempBasal - 1.0) <= iobAccuracy)
+        #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
+
         dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45)
-        
-        XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
-        
+
+        #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
+        #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
+
         dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
-        
-        XCTAssertEqual(dose.tempBasal, 1.0, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
+
+        #expect(abs(dose.tempBasal - 1.0) <= iobAccuracy)
+        #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
     }
-    
-    func testDoseLogicUseMicroBolusBiologicalInvariant() async {
+
+    @Test func doseLogicUseMicroBolusBiologicalInvariant() async {
         let settings = await MockSettingsStorage()
         let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: false, useBiologicalInvariant: true)
-        
-var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
-        
-        XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.2, accuracy: iobAccuracy)
-        
+
+        var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
+
+        #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
+        #expect(abs(dose.microBolus - 0.2) <= iobAccuracy)
+
         dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45)
-        
-        XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
-        
+
+        #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
+        #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
+
         dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
-        
-        XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.2, accuracy: iobAccuracy)
+
+        #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
+        #expect(abs(dose.microBolus - 0.2) <= iobAccuracy)
     }
-    
-    func testDoseLogicUseMachineLearningBiologicalInvariant() async {
+
+    @Test func doseLogicUseMachineLearningBiologicalInvariant() async {
         let settings = await MockSettingsStorage()
         let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: false, useMachineLearningClosedLoop: true, useBiologicalInvariant: true)
-        
-var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
-        
-        XCTAssertEqual(dose.tempBasal, 1.5, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
-        
+
+        var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
+
+        #expect(abs(dose.tempBasal - 1.5) <= iobAccuracy)
+        #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
+
         dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45)
-        
-        XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
-        
+
+        #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
+        #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
+
         dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
-        
-        XCTAssertEqual(dose.tempBasal, 1.5, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
+
+        #expect(abs(dose.tempBasal - 1.5) <= iobAccuracy)
+        #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
     }
-    
-    func testDoseLogicUseAll() async {
+
+    @Test func doseLogicUseAll() async {
         let settings = await MockSettingsStorage()
         let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: true, useBiologicalInvariant: true)
-        
-var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
-        
-        XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.25, accuracy: iobAccuracy)
-        
+
+        var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
+
+        #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
+        #expect(abs(dose.microBolus - 0.25) <= iobAccuracy)
+
         dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45)
-        
-        XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.0, accuracy: iobAccuracy)
-        
+
+        #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
+        #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
+
         dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
-        
-        XCTAssertEqual(dose.tempBasal, 0.0, accuracy: iobAccuracy)
-        XCTAssertEqual(dose.microBolus, 0.25, accuracy: iobAccuracy)
+
+        #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
+        #expect(abs(dose.microBolus - 0.25) <= iobAccuracy)
     }
-    
 }
