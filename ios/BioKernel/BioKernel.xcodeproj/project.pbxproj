@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		3B0044762F956C7B0051AFA7 /* AppObservableState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0044752F956C7B0051AFA7 /* AppObservableState.swift */; };
+		3B0044802F956D0000000001 /* AppComposition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0044812F956D0000000002 /* AppComposition.swift */; };
+		3B0044822F956D0000000003 /* AppContextNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0044832F956D0000000004 /* AppContextNotifier.swift */; };
 		3B348D902B5D9ADB000A40E9 /* Double.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B348D8F2B5D9ADB000A40E9 /* Double.swift */; };
 		3B348D922B5D9AEE000A40E9 /* SafetyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B348D912B5D9AEE000A40E9 /* SafetyService.swift */; };
 		3B348DAE2B5DAFB0000A40E9 /* SafetyServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B348DAD2B5DAFB0000A40E9 /* SafetyServiceTests.swift */; };
@@ -35,7 +37,6 @@
 		3B4CFE232C223DD900BDB1CB /* ShareClientUI.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3B7C6D942B083A4C0030DFA7 /* ShareClientUI.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3B5076392F92F77400E5D3A6 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5076382F92F77400E5D3A6 /* PushNotificationService.swift */; };
 		3B50774C2F93DAB800E5D3A6 /* DosingDecisionTestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B50774B2F93DAB800E5D3A6 /* DosingDecisionTestHelpers.swift */; };
-		3BCL5T01000000000000A001 /* ClosedLoopTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BCL5T01000000000000A002 /* ClosedLoopTestSupport.swift */; };
 		3B5329502B5D8451000DED1A /* AddedGlucoseDataFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B53294F2B5D8451000DED1A /* AddedGlucoseDataFrame.swift */; };
 		3B6063B02B54BDA9009D9CBC /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6063AF2B54BDA9009D9CBC /* SettingsViewModel.swift */; };
 		3B6063B22B54BDB7009D9CBC /* DecimalPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6063B12B54BDB7009D9CBC /* DecimalPicker.swift */; };
@@ -86,6 +87,8 @@
 		3BBC7C762B15620200410123 /* LoopTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3BBC7C752B15620200410123 /* LoopTestingKit.framework */; };
 		3BBC7C772B15620200410123 /* LoopTestingKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3BBC7C752B15620200410123 /* LoopTestingKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3BBC7C7D2B15679700410123 /* BolusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BBC7C7C2B15679700410123 /* BolusView.swift */; };
+		3BCL5T01000000000000A001 /* ClosedLoopTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BCL5T01000000000000A002 /* ClosedLoopTestSupport.swift */; };
+		3BD3FFA92F9C311B0056F151 /* HealthKitSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD3FFA82F9C311B0056F151 /* HealthKitSettingsView.swift */; };
 		3BD7937D2AF55B8200E5FDC9 /* PersistedProperty.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD7937C2AF55B8200E5FDC9 /* PersistedProperty.swift */; };
 		3BD7937F2AF55DCC00E5FDC9 /* DeviceDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD7937E2AF55DCC00E5FDC9 /* DeviceDataManager.swift */; };
 		3BD793812AF55F5800E5FDC9 /* DiagnosticLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD793802AF55F5800E5FDC9 /* DiagnosticLog.swift */; };
@@ -115,8 +118,6 @@
 		3C21A5AD2B16753800AC6D51 /* SwiftCharts in Frameworks */ = {isa = PBXBuildFile; productRef = 3C21A5AC2B16753800AC6D51 /* SwiftCharts */; };
 		3C21A5AE2B16755D00AC6D51 /* SwiftCharts in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 3C21A5AC2B16753800AC6D51 /* SwiftCharts */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		3C37CD452B0B36F10066CD84 /* InOrderTaskQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C37CD442B0B36F10066CD84 /* InOrderTaskQueue.swift */; };
-		3B0044802F956D0000000001 /* AppComposition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0044812F956D0000000002 /* AppComposition.swift */; };
-		3B0044822F956D0000000003 /* AppContextNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0044832F956D0000000004 /* AppContextNotifier.swift */; };
 		3C4911ED2AF4CA290070D3B4 /* CGMManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C4911EC2AF4CA290070D3B4 /* CGMManager.swift */; };
 		3C4911F12AF4D0630070D3B4 /* ManagerExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C4911F02AF4D0630070D3B4 /* ManagerExtensions.swift */; };
 		3C4911F32AF4D77E0070D3B4 /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C4911F22AF4D77E0070D3B4 /* Colors.swift */; };
@@ -219,6 +220,8 @@
 
 /* Begin PBXFileReference section */
 		3B0044752F956C7B0051AFA7 /* AppObservableState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppObservableState.swift; sourceTree = "<group>"; };
+		3B0044812F956D0000000002 /* AppComposition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppComposition.swift; sourceTree = "<group>"; };
+		3B0044832F956D0000000004 /* AppContextNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContextNotifier.swift; sourceTree = "<group>"; };
 		3B348D8F2B5D9ADB000A40E9 /* Double.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Double.swift; sourceTree = "<group>"; };
 		3B348D912B5D9AEE000A40E9 /* SafetyService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SafetyService.swift; sourceTree = "<group>"; };
 		3B348DAD2B5DAFB0000A40E9 /* SafetyServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyServiceTests.swift; sourceTree = "<group>"; };
@@ -240,7 +243,6 @@
 		3B4CFE162C2230DF00BDB1CB /* CGMBLEKitUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CGMBLEKitUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B5076382F92F77400E5D3A6 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
 		3B50774B2F93DAB800E5D3A6 /* DosingDecisionTestHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DosingDecisionTestHelpers.swift; sourceTree = "<group>"; };
-		3BCL5T01000000000000A002 /* ClosedLoopTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClosedLoopTestSupport.swift; sourceTree = "<group>"; };
 		3B53294F2B5D8451000DED1A /* AddedGlucoseDataFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddedGlucoseDataFrame.swift; sourceTree = "<group>"; };
 		3B6063AF2B54BDA9009D9CBC /* SettingsViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		3B6063B12B54BDB7009D9CBC /* DecimalPicker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DecimalPicker.swift; sourceTree = "<group>"; };
@@ -282,6 +284,8 @@
 		3BBC7C732B155C7F00410123 /* FaceId.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceId.swift; sourceTree = "<group>"; };
 		3BBC7C752B15620200410123 /* LoopTestingKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = LoopTestingKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3BBC7C7C2B15679700410123 /* BolusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusView.swift; sourceTree = "<group>"; };
+		3BCL5T01000000000000A002 /* ClosedLoopTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClosedLoopTestSupport.swift; sourceTree = "<group>"; };
+		3BD3FFA82F9C311B0056F151 /* HealthKitSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitSettingsView.swift; sourceTree = "<group>"; };
 		3BD7937C2AF55B8200E5FDC9 /* PersistedProperty.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PersistedProperty.swift; sourceTree = "<group>"; };
 		3BD7937E2AF55DCC00E5FDC9 /* DeviceDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceDataManager.swift; sourceTree = "<group>"; };
 		3BD793802AF55F5800E5FDC9 /* DiagnosticLog.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DiagnosticLog.swift; sourceTree = "<group>"; };
@@ -306,8 +310,6 @@
 		3C07C8A12AF9C2AD008F604C /* DoseProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoseProgress.swift; sourceTree = "<group>"; };
 		3C15FE492B0C9C6F00CA1FD4 /* immutable_replay_logs.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = immutable_replay_logs.json; sourceTree = "<group>"; };
 		3C37CD442B0B36F10066CD84 /* InOrderTaskQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InOrderTaskQueue.swift; sourceTree = "<group>"; };
-		3B0044812F956D0000000002 /* AppComposition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppComposition.swift; sourceTree = "<group>"; };
-		3B0044832F956D0000000004 /* AppContextNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContextNotifier.swift; sourceTree = "<group>"; };
 		3C4911EC2AF4CA290070D3B4 /* CGMManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CGMManager.swift; sourceTree = "<group>"; };
 		3C4911F02AF4D0630070D3B4 /* ManagerExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerExtensions.swift; sourceTree = "<group>"; };
 		3C4911F22AF4D77E0070D3B4 /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
@@ -588,6 +590,7 @@
 				3B6EC2312BD8131A008BFD4D /* DigestionGauge.swift */,
 				3B3C9B112C46B12300BB7CCF /* GlucoseAlertsView.swift */,
 				3B36F6802B311E8F00008F4A /* GlucoseChartView.swift */,
+				3BD3FFA82F9C311B0056F151 /* HealthKitSettingsView.swift */,
 				3BF1F1E52E4F1D3D00AF36AD /* InsulinView.swift */,
 				3B36F6782B311BAF00008F4A /* MainView.swift */,
 				3B3C9B132C46DEB800BB7CCF /* MainViewAlertView.swift */,
@@ -850,6 +853,7 @@
 				3B0044762F956C7B0051AFA7 /* AppObservableState.swift in Sources */,
 				3B5076392F92F77400E5D3A6 /* PushNotificationService.swift in Sources */,
 				3C4911F32AF4D77E0070D3B4 /* Colors.swift in Sources */,
+				3BD3FFA92F9C311B0056F151 /* HealthKitSettingsView.swift in Sources */,
 				3B0044802F956D0000000001 /* AppComposition.swift in Sources */,
 				3B0044822F956D0000000003 /* AppContextNotifier.swift in Sources */,
 				3BA00A552D23157C0002B051 /* SettingsDataTypes.swift in Sources */,

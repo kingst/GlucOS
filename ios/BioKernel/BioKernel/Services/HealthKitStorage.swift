@@ -31,6 +31,9 @@ public protocol HealthKitStorage {
     func fetchGlucoseSamples(startDate: Date, endDate: Date) async -> [HKQuantitySample]
     func fetchInsulinSamples(startDate: Date, endDate: Date) async -> [HKQuantitySample]
     func authorize() async throws
+    func authorizationStatus() async -> HKAuthorizationStatus
+    func preferences() async -> HealthKitPreferences
+    func updatePreferences(_ preferences: HealthKitPreferences) async
 }
 
 struct HealthKitMetadataKeys {
@@ -38,13 +41,42 @@ struct HealthKitMetadataKeys {
     static let insulinTypeKey = "bioKernel.insulinType"
 }
 
+public struct HealthKitPreferences: Codable, Equatable, Sendable {
+    public var writeGlucose: Bool
+    public var writeInsulin: Bool
+
+    public init(writeGlucose: Bool = true, writeInsulin: Bool = true) {
+        self.writeGlucose = writeGlucose
+        self.writeInsulin = writeInsulin
+    }
+}
+
 actor LocalHealthKitStorage: HealthKitStorage {
     let healthStore = HKHealthStore()
     let glucoseType = HKObjectType.quantityType(forIdentifier: .bloodGlucose)!
     let insulinType = HKObjectType.quantityType(forIdentifier: .insulinDelivery)!
-    
+
     var isGlucoseDuplicateRemovalRunning = false
     var isInsulinDuplicateRemovalRunning = false
+
+    private let preferencesStorage: StoredObject
+    private var cachedPreferences: HealthKitPreferences
+
+    init(storedObjectFactory: StoredObject.Type) {
+        let preferencesStorage = storedObjectFactory.create(fileName: "health_kit_preferences.json")
+        self.preferencesStorage = preferencesStorage
+        let loaded: HealthKitPreferences? = try? preferencesStorage.read()
+        self.cachedPreferences = loaded ?? HealthKitPreferences()
+    }
+
+    func preferences() -> HealthKitPreferences {
+        return cachedPreferences
+    }
+
+    func updatePreferences(_ preferences: HealthKitPreferences) {
+        cachedPreferences = preferences
+        try? preferencesStorage.write(preferences)
+    }
     
     func save(glucoseSamples: [NewGlucoseSample]) async {
         for sample in glucoseSamples {
@@ -65,10 +97,11 @@ actor LocalHealthKitStorage: HealthKitStorage {
     }
 
     func save(_ glucoseSample: LoopKit.NewGlucoseSample, metadata: [String: Any]) async {
+        guard cachedPreferences.writeGlucose else { return }
         guard HKHealthStore.isHealthDataAvailable(), healthStore.authorizationStatus(for: glucoseType) == .sharingAuthorized else {
             return
         }
-        
+
         do {
             let sample = glucoseSample.quantitySampleWithMetadata(metadata)
             try await healthStore.save(sample)
@@ -85,10 +118,11 @@ actor LocalHealthKitStorage: HealthKitStorage {
     }
     
     func save(_ pumpEvent: LoopKit.NewPumpEvent, metadata: [String: Any]) async {
+        guard cachedPreferences.writeInsulin else { return }
         guard HKHealthStore.isHealthDataAvailable(), healthStore.authorizationStatus(for: glucoseType) == .sharingAuthorized else {
             return
         }
-        
+
         guard let dose = pumpEvent.dose, !dose.isMutable, let deliveredUnits = dose.deliveredUnits else { return }
         
         var metadataWithInsulin = metadata
@@ -188,6 +222,11 @@ actor LocalHealthKitStorage: HealthKitStorage {
     func authorize() async throws {
         let typesToShare: Set<HKSampleType> = [glucoseType, insulinType]
         try await healthStore.requestAuthorization(toShare: typesToShare, read: typesToShare)
+    }
+
+    func authorizationStatus() -> HKAuthorizationStatus {
+        guard HKHealthStore.isHealthDataAvailable() else { return .notDetermined }
+        return healthStore.authorizationStatus(for: glucoseType)
     }
 }
 

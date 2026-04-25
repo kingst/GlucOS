@@ -74,7 +74,7 @@ final class AppComposition {
         let http = JsonHttp()
         let bluetoothProvider = BluetoothStateManager()
         let observableState = AppObservableState()
-        let healthKitStorage = LocalHealthKitStorage()
+        let healthKitStorage = LocalHealthKitStorage(storedObjectFactory: storedObjectFactory)
         let targetGlucoseService = LocalTargetGlucoseService()
         let machineLearning = AIDosing()
         let pushNotificationService = LocalPushNotificationService()
