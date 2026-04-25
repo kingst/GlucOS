@@ -51,6 +51,14 @@ final class AppComposition {
     let observableState: AppObservableState
 
     init() {
+        // The app may be woken by CGM Bluetooth before first unlock (e.g. after
+        // an OS update overnight). Downgrade every existing file in our
+        // documents directory to FileProtectionType.none so reads on that wake
+        // path don't fail. Files written from this build forward are already
+        // .noFileProtection via StoredJsonObject / PersistedProperty; this
+        // migration only matters for files left over from prior installs.
+        AppComposition.migrateExistingFilesToNoFileProtection()
+
         // Late-bound boxes resolve cyclic dependencies. The storages need
         // WatchComms, alerts, and background-service references that don't
         // exist yet at storage-construction time; they're set before init
@@ -165,6 +173,38 @@ final class AppComposition {
         self.closedLoopService = closedLoopService
         self.deviceDataManager = deviceDataManager
         self.backgroundService = backgroundService
+    }
+}
+
+// MARK: - BFU file-protection migration
+
+extension AppComposition {
+    fileprivate static func migrateExistingFilesToNoFileProtection() {
+        let fileManager = FileManager.default
+        guard let documents = try? fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false) else {
+            print("BFU migration: could not resolve documents directory")
+            return
+        }
+
+        let contents: [URL]
+        do {
+            contents = try fileManager.contentsOfDirectory(at: documents, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles])
+        } catch {
+            print("BFU migration: could not enumerate documents: \(error)")
+            return
+        }
+
+        for url in contents {
+            let isFile = (try? url.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) ?? false
+            guard isFile else { continue }
+            let currentProtection = (try? fileManager.attributesOfItem(atPath: url.path)[.protectionKey] as? FileProtectionType)?.rawValue ?? "unknown"
+            print("BFU migration: \(url.lastPathComponent) current protection: \(currentProtection)")
+            do {
+                try fileManager.setAttributes([.protectionKey: FileProtectionType.none], ofItemAtPath: url.path)
+            } catch {
+                print("BFU migration: failed to downgrade \(url.lastPathComponent): \(error)")
+            }
+        }
     }
 }
 

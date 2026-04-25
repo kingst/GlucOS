@@ -71,6 +71,13 @@ public struct GlucoseAlertSettings: Codable {
     }
 }
 
+struct NotificationState: Codable {
+    var id: String?
+    var sentAt: Date?
+
+    static let none = NotificationState(id: nil, sentAt: nil)
+}
+
 @MainActor
 public protocol GlucoseAlertStorage {
     func viewModel() -> GlucoseAlertsViewModel
@@ -89,8 +96,8 @@ class PredictiveGlucoseAlertStorage: GlucoseAlertStorage {
     lazy var alertViewModel: GlucoseAlertsViewModel = GlucoseAlertsViewModel(glucoseAlertsService: self)
     var glucoseAlertSettings: GlucoseAlertSettings
     var storage: StoredObject
-    let notificationIdKey = "notificationId"
-    let notificationSentAtKey = "notificationSentAt"
+    var notificationStateStorage: StoredObject
+    var notificationState: NotificationState
 
     private let glucoseStorage: GlucoseStorage
     private let physiologicalModels: PhysiologicalModels
@@ -101,11 +108,14 @@ class PredictiveGlucoseAlertStorage: GlucoseAlertStorage {
         physiologicalModels: PhysiologicalModels
     ) {
         let storage = storedObjectFactory.create(fileName: "glucose_alerts.json")
+        let notificationStateStorage = storedObjectFactory.create(fileName: "glucose_alert_notification_state.json")
         self.storage = storage
+        self.notificationStateStorage = notificationStateStorage
         self.glucoseStorage = glucoseStorage
         self.physiologicalModels = physiologicalModels
         let settings = (try? storage.read()) ?? GlucoseAlertSettings.defaults()
         glucoseAlertSettings = settings
+        notificationState = (try? notificationStateStorage.read()) ?? .none
         DispatchQueue.main.async { [weak self] in
             self?.alertViewModel.update(settings: settings, predictedGlucose: nil)
         }
@@ -119,31 +129,28 @@ class PredictiveGlucoseAlertStorage: GlucoseAlertStorage {
     }
     
     func clearCurrentNotification() {
-        guard let notificationId = UserDefaults.standard.string(forKey: notificationIdKey) else { return }
+        guard let notificationId = notificationState.id else { return }
         NotificationManager.shared.removeDeliveredNotification(withIdentifier: notificationId)
-        UserDefaults.standard.setValue(nil, forKey: notificationIdKey)
-        UserDefaults.standard.setValue(nil, forKey: notificationSentAtKey)
+        setNotificationState(.none)
     }
-    
+
     func scheduleNotification(at: Date, alertString: String) {
         clearCurrentNotification()
         print("NOTIF: schedule notification")
         let notificationId = NotificationManager.shared.scheduleNotification(title: "BeaGL Alert", body: alertString, timeInterval: 10)
-        UserDefaults.standard.setValue(notificationId, forKey: notificationIdKey)
-        UserDefaults.standard.setValue(at, forKey: notificationSentAtKey)
+        setNotificationState(NotificationState(id: notificationId, sentAt: at))
     }
-    
+
     func updateNotification(alertString: String) {
-        guard let notificationId = UserDefaults.standard.string(forKey: notificationIdKey) else { return }
+        guard let notificationId = notificationState.id else { return }
         NotificationManager.shared.updateDeliveredNotification(withIdentifier: notificationId, newBody: alertString)
     }
-    
+
     func updateNotification(at: Date, currentState: GlucoseAlertState, nextState: GlucoseAlertState, alertString: String?) -> Bool {
         let alertString = alertString ?? "Your glucose is in range"
-        
-        let notificationSentAt = UserDefaults.standard.object(forKey: notificationSentAtKey) as? Date
+
         // add a minute to deal with sensor timing noise, etc
-        let duration = (notificationSentAt.map({ at.timeIntervalSince($0) }) ?? 24.hoursToSeconds()) + 1.minutesToSeconds()
+        let duration = (notificationState.sentAt.map({ at.timeIntervalSince($0) }) ?? 24.hoursToSeconds()) + 1.minutesToSeconds()
         print("NOTIF: duration \(duration.secondsToMinutes())m")
         switch(currentState, nextState) {
         case (_, .inRange):
@@ -237,6 +244,15 @@ class PredictiveGlucoseAlertStorage: GlucoseAlertStorage {
             try storage.write(alertSettings)
         } catch {
             print("Could not write glucose alert settings to disk")
+        }
+    }
+
+    private func setNotificationState(_ state: NotificationState) {
+        self.notificationState = state
+        do {
+            try notificationStateStorage.write(state)
+        } catch {
+            print("Could not write notification state to disk")
         }
     }
 }

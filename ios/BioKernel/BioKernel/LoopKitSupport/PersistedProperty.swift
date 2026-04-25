@@ -54,7 +54,7 @@ import os.log
             }
             do {
                 let data = try PropertyListSerialization.data(fromPropertyList: newValue, format: .binary, options: 0)
-                try data.write(to: storageURL, options: .atomic)
+                try data.write(to: storageURL, options: [.atomic, .noFileProtection])
                 os_log(.info, "Wrote %{public}@ to %{public}@", key, storageURL.absoluteString)
             } catch {
                 os_log(.error, "Error saving %{public}@: %{public}@", key, error.localizedDescription)

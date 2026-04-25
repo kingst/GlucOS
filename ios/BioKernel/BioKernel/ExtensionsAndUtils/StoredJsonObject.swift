@@ -84,7 +84,7 @@ struct StoredJsonObject: StoredObject {
                 encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             }
             let data = try encoder.encode(object)
-            try data.write(to: storageURL, options: .atomic)
+            try data.write(to: storageURL, options: [.atomic, .noFileProtection])
         } catch _ as EncodingError {
             throw StoredJsonObjectError.encodingError
         } catch {
