@@ -54,8 +54,6 @@ public struct CodableSettings: Codable {
     let maxBolusUnits: Double
     let shutOffGlucoseInMgDl: Double
     public let targetGlucoseInMgDl: Double
-    let freshnessIntervalInSeconds: Double
-    let correctionDurationInSeconds: Double
     let closedLoopEnabled: Bool
     let useMachineLearningClosedLoop: Bool
     let useMicroBolus: Bool?
@@ -70,6 +68,11 @@ public struct CodableSettings: Codable {
     let useBiologicalInvariant: Bool?
     let machineLearningGain: Double?
 
+    // Note: We hard code this at 30 minutes because of Omnipod limitations
+    let correctionDurationInSeconds = 30.minutesToSeconds()
+    // Hard code because we don't want to change it
+    let freshnessIntervalInSeconds = 10.minutesToSeconds()
+    
     static let useMicroBolusDefault = false
     static let useBiologicalInvariantDefault = false
     static let microBolusDoseFactorDefault = 0.3
@@ -142,11 +145,6 @@ public struct CodableSettings: Codable {
         self.pidDerivativeGain = pidDerivativeGain
         self.useBiologicalInvariant = useBiologicalInvariant
         self.machineLearningGain = machineLearningGain
-        
-        // Note: We hard code this at 30 minutes because of Omnipod limitations
-        self.correctionDurationInSeconds = 30.minutesToSeconds()
-        // Hard code because we don't want to change it
-        self.freshnessIntervalInSeconds = 10.minutesToSeconds()
     }
     
     static func defaults() -> CodableSettings {
@@ -173,8 +171,6 @@ public struct CodableSettings: Codable {
         self.maxBolusUnits = try c.decode(Double.self, forKey: k("maxBolusUnits"))
         self.shutOffGlucoseInMgDl = try c.decode(Double.self, forKey: k("shutOffGlucoseInMgDl"))
         self.targetGlucoseInMgDl = try c.decode(Double.self, forKey: k("targetGlucoseInMgDl"))
-        self.freshnessIntervalInSeconds = try c.decode(Double.self, forKey: k("freshnessIntervalInSeconds"))
-        self.correctionDurationInSeconds = try c.decode(Double.self, forKey: k("correctionDurationInSeconds"))
         self.closedLoopEnabled = try c.decode(Bool.self, forKey: k("closedLoopEnabled"))
         self.useMachineLearningClosedLoop = try c.decode(Bool.self, forKey: k("useMachineLearningClosedLoop"))
         self.useMicroBolus = try c.decodeIfPresent(Bool.self, forKey: k("useMicroBolus"))
