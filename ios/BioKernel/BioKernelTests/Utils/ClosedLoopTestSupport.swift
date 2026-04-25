@@ -15,10 +15,10 @@ func makeClosedLoopService(
     targetGlucoseService: TargetGlucoseService = MockTargetGlucose(),
     machineLearning: MachineLearning = MockMachineLearning(),
     safetyService: SafetyService = MockSafetyService()
-) -> LocalClosedLoopService {
+) -> LoopRunner {
     let physModels = physiologicalModels
         ?? LocalPhysiologicalModels(glucoseStorage: glucoseStorage, insulinStorage: insulinStorage)
-    return LocalClosedLoopService(
+    return LoopRunner(
         storedObjectFactory: MockStoredObject.self,
         glucoseStorage: glucoseStorage,
         insulinStorage: insulinStorage,

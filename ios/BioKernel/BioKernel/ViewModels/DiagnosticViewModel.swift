@@ -164,8 +164,8 @@ class DiagnosticViewModel: ObservableObject, ClosedLoopChartDataUpdate, PumpEven
     private func convertToChartData(result: ClosedLoopResult) -> ClosedLoopChartData? {
         guard case .dosed(let snapshot) = result.outcome else { return nil }
 
-        let pid = snapshot.pidTempBasalResult
-        let safetyResult = snapshot.safetyResult
+        let pid = snapshot.outputs.pidTempBasalResult
+        let safetyAnalysis = snapshot.outputs.safetyAnalysis
 
         let derivative = pid.derivative ?? 0
         let proportionalContribution = pid.Kp * pid.error
@@ -173,18 +173,18 @@ class DiagnosticViewModel: ObservableObject, ClosedLoopChartDataUpdate, PumpEven
         let integratorContribution = pid.Ki * pid.accumulatedError
         let totalPidContribution = proportionalContribution + derivativeContribution + integratorContribution
 
-        let mlInsulin = safetyResult.machineLearningTempBasal / 12 + safetyResult.machineLearningMicroBolus
-        let physiologicalInsulin = safetyResult.physiologicalTempBasal / 12 + safetyResult.physiologicalMicroBolus
-        let actualInsulin = safetyResult.actualTempBasal / 12 + safetyResult.actualMicroBolus
+        let tempBasal: Double = snapshot.outputs.decision.tempBasalUnitsPerHour ?? 0
+        let microBolus: Double = snapshot.outputs.decision.microBolusUnits ?? 0
 
-        let tempBasal: Double = snapshot.decision.tempBasalUnitsPerHour ?? 0
-        let microBolus: Double = snapshot.decision.microBolusUnits ?? 0
+        let mlInsulin = safetyAnalysis.machineLearningTempBasal / 12 + safetyAnalysis.machineLearningMicroBolus
+        let physiologicalInsulin = safetyAnalysis.physiologicalTempBasal / 12 + safetyAnalysis.physiologicalMicroBolus
+        let actualInsulin = tempBasal / 12 + microBolus
 
         return ClosedLoopChartData(
             at: result.at,
-            glucose: snapshot.glucoseInMgDl,
-            insulinOnBoard: snapshot.insulinOnBoard,
-            basalRate: snapshot.basalRate,
+            glucose: snapshot.inputs.glucoseInMgDl,
+            insulinOnBoard: snapshot.inputs.insulinOnBoard,
+            basalRate: snapshot.outputs.basalRate,
             basalRateInsulinOnBoard: pid.basalRateInsulinOnBoard ?? 0,
             proportionalContribution: proportionalContribution,
             derivativeContribution: derivativeContribution,
@@ -195,7 +195,7 @@ class DiagnosticViewModel: ObservableObject, ClosedLoopChartDataUpdate, PumpEven
             mlInsulin: mlInsulin,
             physiologicalInsulin: physiologicalInsulin,
             actualInsulin: actualInsulin,
-            machineLearningInsulinLastThreeHours: safetyResult.machineLearningInsulinLastThreeHours,
+            machineLearningInsulinLastThreeHours: safetyAnalysis.machineLearningInsulinLastThreeHours,
             tempBasal: tempBasal,
             microBolusAmount: microBolus
         )

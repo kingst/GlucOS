@@ -17,7 +17,7 @@ import G7SensorKit
 struct LoopFunctionTests {
     let tempBasalAccuracy = 0.00000000001
 
-    var closedLoop: LocalClosedLoopService
+    var closedLoop: LoopRunner
     let settings: MockSettingsStorage
     let glucoseStorage: MockGlucoseStorage
     let insulinStorage: MockInsulinStorage
@@ -159,7 +159,7 @@ struct LoopFunctionTests {
             Issue.record("Outcome should be .dosed for successful temp basal")
             return
         }
-        guard case .tempBasal = snapshot.decision else {
+        guard case .tempBasal = snapshot.outputs.decision else {
             Issue.record("Decision should be .tempBasal")
             return
         }
@@ -191,7 +191,7 @@ struct LoopFunctionTests {
             Issue.record("Outcome should be .dosed for successful micro bolus")
             return
         }
-        guard case .microBolus = snapshot.decision else {
+        guard case .microBolus = snapshot.outputs.decision else {
             Issue.record("Decision should be .microBolus")
             return
         }
@@ -231,8 +231,7 @@ struct LoopFunctionTests {
         settings.update(maxBasalRateUnitsPerHour: 2.0)
         settings.update(useMicroBolus: true, useMachineLearningClosedLoop: false, useBiologicalInvariant: false)
 
-        // Clear any previous micro bolus timestamp
-        await closedLoop.setLastMicroBolusForTesting(date: nil)
+        // lastMicroBolus is derived from closedLoopResults; with no prior dosed runs, it's nil.
 
         // Mock physiological models to return rising glucose prediction
         let mockPhysiological = MockPhysiologicalModels()
@@ -258,7 +257,7 @@ struct LoopFunctionTests {
             Issue.record("Loop should complete successfully with microbolus")
             return
         }
-        guard case .microBolus(let units) = snapshot.decision else {
+        guard case .microBolus(let units) = snapshot.outputs.decision else {
             Issue.record("Decision should be .microBolus")
             return
         }
@@ -272,8 +271,7 @@ struct LoopFunctionTests {
         settings.update(maxBasalRateUnitsPerHour: 2.0)
         settings.update(useMicroBolus: true, useMachineLearningClosedLoop: false, useBiologicalInvariant: false)
 
-        // Clear any previous micro bolus timestamp
-        await closedLoop.setLastMicroBolusForTesting(date: nil)
+        // lastMicroBolus is derived from closedLoopResults; with no prior dosed runs, it's nil.
 
         // Mock physiological models to return rising glucose prediction
         let mockPhysiological = MockPhysiologicalModels()
@@ -306,7 +304,7 @@ struct LoopFunctionTests {
             Issue.record("Outcome should be .pumpError")
             return
         }
-        guard case .microBolus(let units) = snapshot.decision else {
+        guard case .microBolus(let units) = snapshot.outputs.decision else {
             Issue.record("Decision should be .microBolus even though delivery failed")
             return
         }

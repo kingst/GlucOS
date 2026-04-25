@@ -54,14 +54,12 @@ public struct CodableSettings: Codable {
     let maxBolusUnits: Double
     let shutOffGlucoseInMgDl: Double
     public let targetGlucoseInMgDl: Double
-    let freshnessIntervalInSeconds: Double
-    let correctionDurationInSeconds: Double
     let closedLoopEnabled: Bool
     let useMachineLearningClosedLoop: Bool
     let useMicroBolus: Bool?
     let microBolusDoseFactor: Double?
     let learnedBasalRatesUnitsPerHour: LearnedSettingsSchedule
-    let learnedInsulinSensivityInMgDlPerUnit: LearnedSettingsSchedule
+    let learnedInsulinSensitivityInMgDlPerUnit: LearnedSettingsSchedule
     let bolusAmountForLess: Double?
     let bolusAmountForUsual: Double?
     let bolusAmountForMore: Double?
@@ -70,6 +68,11 @@ public struct CodableSettings: Codable {
     let useBiologicalInvariant: Bool?
     let machineLearningGain: Double?
 
+    // Note: We hard code this at 30 minutes because of Omnipod limitations
+    let correctionDurationInSeconds = 30.minutesToSeconds()
+    // Hard code because we don't want to change it
+    let freshnessIntervalInSeconds = 10.minutesToSeconds()
+    
     static let useMicroBolusDefault = false
     static let useBiologicalInvariantDefault = false
     static let microBolusDoseFactorDefault = 0.3
@@ -81,7 +84,7 @@ public struct CodableSettings: Codable {
     static let machineLearningGainDefault = 1.5
     
     func learnedInsulinSensitivity(at: Date) -> Double {
-        return learnedInsulinSensivityInMgDlPerUnit.value(at: at) ?? insulinSensitivityInMgDlPerUnit
+        return learnedInsulinSensitivityInMgDlPerUnit.value(at: at) ?? insulinSensitivityInMgDlPerUnit
     }
     
     func isMicroBolusEnabled() -> Bool { useMicroBolus ?? CodableSettings.useMicroBolusDefault }
@@ -134,7 +137,7 @@ public struct CodableSettings: Codable {
         self.useMicroBolus = useMicroBolus
         self.microBolusDoseFactor = microBolusDoseFactor
         self.learnedBasalRatesUnitsPerHour = learnedBasalRateUnitsPerHour
-        self.learnedInsulinSensivityInMgDlPerUnit = learnedInsulinSensitivityInMgDlPerUnit
+        self.learnedInsulinSensitivityInMgDlPerUnit = learnedInsulinSensitivityInMgDlPerUnit
         self.bolusAmountForLess = bolusAmountForLess
         self.bolusAmountForUsual = bolusAmountForUsual
         self.bolusAmountForMore = bolusAmountForMore
@@ -142,14 +145,48 @@ public struct CodableSettings: Codable {
         self.pidDerivativeGain = pidDerivativeGain
         self.useBiologicalInvariant = useBiologicalInvariant
         self.machineLearningGain = machineLearningGain
-        
-        // Note: We hard code this at 30 minutes because of Omnipod limitations
-        self.correctionDurationInSeconds = 30.minutesToSeconds()
-        // Hard code because we don't want to change it
-        self.freshnessIntervalInSeconds = 10.minutesToSeconds()
     }
     
     static func defaults() -> CodableSettings {
         return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: 0.3, insulinSensitivityInMgDlPerUnit: 45, maxBasalRateUnitsPerHour: 2, maxBolusUnits: 5, shutOffGlucoseInMgDl: 85, targetGlucoseInMgDl: 90, closedLoopEnabled: false, useMachineLearningClosedLoop: false, useMicroBolus: useMicroBolusDefault, microBolusDoseFactor: microBolusDoseFactorDefault, learnedBasalRateUnitsPerHour: LearnedSettingsSchedule.empty(), learnedInsulinSensitivityInMgDlPerUnit: LearnedSettingsSchedule.empty(), bolusAmountForLess: bolusAmountForLessDefault, bolusAmountForUsual: bolusAmountForUsualDefault, bolusAmountForMore: bolusAmountForMoreDefault, pidIntegratorGain: pidIntegratorGainDefault, pidDerivativeGain: pidDerivativeGainDefault, useBiologicalInvariant: useBiologicalInvariantDefault, machineLearningGain: machineLearningGainDefault)
+    }
+
+    // Decoder migration: the legacy on-disk key was the misspelled `learnedInsulinSensivityInMgDlPerUnit`.
+    // Prefer the corrected key; fall back to the legacy. Encoding uses the corrected key
+    // (Swift's auto-synthesized encoder, since we only override init(from:)).
+    public init(from decoder: Decoder) throws {
+        struct AnyKey: CodingKey {
+            var stringValue: String
+            var intValue: Int? { nil }
+            init(stringValue: String) { self.stringValue = stringValue }
+            init?(intValue: Int) { nil }
+        }
+        let c = try decoder.container(keyedBy: AnyKey.self)
+        func k(_ s: String) -> AnyKey { AnyKey(stringValue: s) }
+
+        self.created = try c.decode(Date.self, forKey: k("created"))
+        self.pumpBasalRateUnitsPerHour = try c.decode(Double.self, forKey: k("pumpBasalRateUnitsPerHour"))
+        self.insulinSensitivityInMgDlPerUnit = try c.decode(Double.self, forKey: k("insulinSensitivityInMgDlPerUnit"))
+        self.maxBasalRateUnitsPerHour = try c.decode(Double.self, forKey: k("maxBasalRateUnitsPerHour"))
+        self.maxBolusUnits = try c.decode(Double.self, forKey: k("maxBolusUnits"))
+        self.shutOffGlucoseInMgDl = try c.decode(Double.self, forKey: k("shutOffGlucoseInMgDl"))
+        self.targetGlucoseInMgDl = try c.decode(Double.self, forKey: k("targetGlucoseInMgDl"))
+        self.closedLoopEnabled = try c.decode(Bool.self, forKey: k("closedLoopEnabled"))
+        self.useMachineLearningClosedLoop = try c.decode(Bool.self, forKey: k("useMachineLearningClosedLoop"))
+        self.useMicroBolus = try c.decodeIfPresent(Bool.self, forKey: k("useMicroBolus"))
+        self.microBolusDoseFactor = try c.decodeIfPresent(Double.self, forKey: k("microBolusDoseFactor"))
+        self.learnedBasalRatesUnitsPerHour = try c.decode(LearnedSettingsSchedule.self, forKey: k("learnedBasalRatesUnitsPerHour"))
+        if let isf = try c.decodeIfPresent(LearnedSettingsSchedule.self, forKey: k("learnedInsulinSensitivityInMgDlPerUnit")) {
+            self.learnedInsulinSensitivityInMgDlPerUnit = isf
+        } else {
+            self.learnedInsulinSensitivityInMgDlPerUnit = try c.decodeIfPresent(LearnedSettingsSchedule.self, forKey: k("learnedInsulinSensivityInMgDlPerUnit")) ?? .empty()
+        }
+        self.bolusAmountForLess = try c.decodeIfPresent(Double.self, forKey: k("bolusAmountForLess"))
+        self.bolusAmountForUsual = try c.decodeIfPresent(Double.self, forKey: k("bolusAmountForUsual"))
+        self.bolusAmountForMore = try c.decodeIfPresent(Double.self, forKey: k("bolusAmountForMore"))
+        self.pidIntegratorGain = try c.decodeIfPresent(Double.self, forKey: k("pidIntegratorGain"))
+        self.pidDerivativeGain = try c.decodeIfPresent(Double.self, forKey: k("pidDerivativeGain"))
+        self.useBiologicalInvariant = try c.decodeIfPresent(Bool.self, forKey: k("useBiologicalInvariant"))
+        self.machineLearningGain = try c.decodeIfPresent(Double.self, forKey: k("machineLearningGain"))
     }
 }
