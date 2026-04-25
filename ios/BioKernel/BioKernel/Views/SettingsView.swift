@@ -47,19 +47,8 @@ struct SettingsView: View {
                     }.onChange(of: settingsViewModel.useBiologicalInvariant) {
                         hasModifications = true
                     }
-                    Button {
-                        Task {
-                            do {
-                                try await settingsViewModel.authorizeHealthKit()
-                            } catch {
-                                errorString = error.localizedDescription
-                            }
-                        }
-                    } label: {
-                        Text("Authorize health kit")
-                    }
                 }
-                
+
                 Section("Therapy settings") {
                     DecimalPicker(title: "Insulin sensitivity", selection: $settingsViewModel.insulinSensitivity, items: settingsViewModel.insulinSensitivityValues, hasModifications: $hasModifications)
                     DecimalPicker(title: "Pump basal rate", selection: $settingsViewModel.pumpBasalRate, items: settingsViewModel.basalRateValues, hasModifications: $hasModifications)

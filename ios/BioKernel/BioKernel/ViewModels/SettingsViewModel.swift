@@ -96,7 +96,6 @@ public class SettingsViewModel: ObservableObject {
     var mlInsulinSensitivitySchedule: DecimalSettingSchedule
 
     private let settingsStorage: SettingsStorage
-    private let healthKitStorage: HealthKitStorage
     private let deviceDataManager: DeviceDataManager
 
     func save() async throws {
@@ -107,10 +106,6 @@ public class SettingsViewModel: ObservableObject {
         }
 
         try await persistUpdatedSettings()
-    }
-
-    func authorizeHealthKit() async throws {
-        try await healthKitStorage.authorize()
     }
 
     private func persistUpdatedSettings() async throws {
@@ -166,11 +161,9 @@ public class SettingsViewModel: ObservableObject {
     init(
         settings: CodableSettings,
         settingsStorage: SettingsStorage,
-        healthKitStorage: HealthKitStorage,
         deviceDataManager: DeviceDataManager
     ) {
         self.settingsStorage = settingsStorage
-        self.healthKitStorage = healthKitStorage
         self.deviceDataManager = deviceDataManager
         closedLoopEnabled = settings.closedLoopEnabled
         useMachineLearningClosedLoop = settings.useMachineLearningClosedLoop

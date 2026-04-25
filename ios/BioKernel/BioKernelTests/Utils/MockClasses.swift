@@ -159,6 +159,9 @@ class MockHealthKitStore: HealthKitStorage {
     func fetchGlucoseSamples(startDate: Date, endDate: Date) async -> [HKQuantitySample] { return [] }
     func fetchInsulinSamples(startDate: Date, endDate: Date) async -> [HKQuantitySample] { return [] }
     func authorize() async throws { }
+    func authorizationStatus() async -> HKAuthorizationStatus { .notDetermined }
+    func preferences() async -> HealthKitPreferences { HealthKitPreferences() }
+    func updatePreferences(_ preferences: HealthKitPreferences) async { }
 }
 
 class MockWatchComms: WatchComms {
