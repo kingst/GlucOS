@@ -23,8 +23,8 @@ struct HealthKitSettingsView: View {
 
             if authorizationStatus == .sharingAuthorized {
                 Section {
-                    Toggle("Write CGM to HealthKit", isOn: writeGlucoseBinding)
-                    Toggle("Write insulin to HealthKit", isOn: writeInsulinBinding)
+                    Toggle("Write CGM to HealthKit", isOn: $preferences.writeGlucose)
+                    Toggle("Write insulin to HealthKit", isOn: $preferences.writeInsulin)
                 } footer: {
                     Text("When enabled, GlucOS writes new glucose readings and insulin doses to Apple Health.")
                 }
@@ -45,26 +45,10 @@ struct HealthKitSettingsView: View {
             await refreshAuthorizationStatus()
             await loadPreferences()
         }
-    }
-
-    private var writeGlucoseBinding: Binding<Bool> {
-        Binding(
-            get: { preferences.writeGlucose },
-            set: { newValue in
-                preferences.writeGlucose = newValue
-                persistPreferences()
-            }
-        )
-    }
-
-    private var writeInsulinBinding: Binding<Bool> {
-        Binding(
-            get: { preferences.writeInsulin },
-            set: { newValue in
-                preferences.writeInsulin = newValue
-                persistPreferences()
-            }
-        )
+        .onChange(of: preferences) { _, newValue in
+            guard let storage = composition?.healthKitStorage else { return }
+            Task { await storage.updatePreferences(newValue) }
+        }
     }
 
     func authorize() async {
@@ -85,11 +69,5 @@ struct HealthKitSettingsView: View {
     func loadPreferences() async {
         guard let storage = composition?.healthKitStorage else { return }
         preferences = await storage.preferences()
-    }
-
-    private func persistPreferences() {
-        guard let storage = composition?.healthKitStorage else { return }
-        let snapshot = preferences
-        Task { await storage.updatePreferences(snapshot) }
     }
 }
