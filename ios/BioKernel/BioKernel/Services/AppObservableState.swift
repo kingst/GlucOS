@@ -38,9 +38,9 @@ public final class AppObservableState: ObservableObject {
         guard let snapshot = lastRun.outcome.snapshot else { return nil }
 
         // added glucose is for an hour, so the basalRate = basalInsulin
-        let basalGlucose = snapshot.insulinSensitivity * snapshot.basalRate
+        let basalGlucose = snapshot.outputs.insulinSensitivity * snapshot.outputs.basalRate
 
         // assume that 200 mg/dl is the max added glucose, aim for 0 -> 100
-        return 100 * (snapshot.predictedAddedGlucoseInMgDlPerHour - basalGlucose) / 200
+        return 100 * (snapshot.outputs.predictedAddedGlucoseInMgDlPerHour - basalGlucose) / 200
     }
 }

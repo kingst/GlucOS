@@ -20,7 +20,7 @@ struct ClosedLoopSafetyTests {
         settings: MockSettingsStorage,
         glucoseStorage: GlucoseStorage = MockGlucoseStorage(),
         insulinStorage: InsulinStorage = MockInsulinStorage()
-    ) -> LocalClosedLoopService {
+    ) -> LoopRunner {
         return makeClosedLoopService(
             settings: settings,
             glucoseStorage: glucoseStorage,
@@ -32,39 +32,18 @@ struct ClosedLoopSafetyTests {
 
     @Test func maxBasalSafetyLimits() async throws {
         let settings = MockSettingsStorage()
-        let closedLoop = makeService(settings: settings)
         let maxBasal = 2.0
         settings.update(maxBasalRateUnitsPerHour: maxBasal)
-
-        // Test exactly at max basal
-        let exactMaxBasal = await closedLoop.applyGuardrails(
+        let guardrails = Guardrails(
+            settings: settings.snapshot(),
             glucoseInMgDl: 180,
             predictedGlucoseInMgDl: 200,
-            newBasalRateRaw: maxBasal,
-            settings: settings.snapshot(),
             roundToSupportedBasalRate: { $0 }
         )
-        #expect(abs(exactMaxBasal - maxBasal) <= iobAccuracy)
 
-        // Test slightly above max basal
-        let slightlyAboveMax = await closedLoop.applyGuardrails(
-            glucoseInMgDl: 180,
-            predictedGlucoseInMgDl: 200,
-            newBasalRateRaw: maxBasal + 0.1,
-            settings: settings.snapshot(),
-            roundToSupportedBasalRate: { $0 }
-        )
-        #expect(abs(slightlyAboveMax - maxBasal) <= iobAccuracy)
-
-        // Test far above max basal
-        let farAboveMax = await closedLoop.applyGuardrails(
-            glucoseInMgDl: 180,
-            predictedGlucoseInMgDl: 200,
-            newBasalRateRaw: maxBasal * 2,
-            settings: settings.snapshot(),
-            roundToSupportedBasalRate: { $0 }
-        )
-        #expect(abs(farAboveMax - maxBasal) <= iobAccuracy)
+        #expect(abs(guardrails.clamp(maxBasal) - maxBasal) <= iobAccuracy)
+        #expect(abs(guardrails.clamp(maxBasal + 0.1) - maxBasal) <= iobAccuracy)
+        #expect(abs(guardrails.clamp(maxBasal * 2) - maxBasal) <= iobAccuracy)
     }
 
     // MARK: - Stale Data Tests
@@ -94,14 +73,12 @@ struct ClosedLoopSafetyTests {
     // MARK: - Recovery Tests
     @Test func recoveryFromSafetyViolations() async throws {
         let settings = MockSettingsStorage()
-        let closedLoop = makeService(settings: settings)
         settings.update(useBiologicalInvariant: true)
 
         // First create a biological invariant violation
-        var dose = await closedLoop.determineDose(
+        var dose = DoseSelector.decide(
             settings: settings.snapshot(),
             physiologicalTempBasal: 1.0,
-            mlTempBasal: 2.0,
             safetyTempBasal: 1.5,
             microBolusPhysiological: 0.2,
             microBolusSafety: 0.25,
@@ -113,10 +90,9 @@ struct ClosedLoopSafetyTests {
         #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
 
         // Now test recovery when biological invariant returns to normal
-        dose = await closedLoop.determineDose(
+        dose = DoseSelector.decide(
             settings: settings.snapshot(),
             physiologicalTempBasal: 1.0,
-            mlTempBasal: 2.0,
             safetyTempBasal: 1.5,
             microBolusPhysiological: 0.2,
             microBolusSafety: 0.25,
@@ -168,61 +144,89 @@ struct ClosedLoopSafetyTests {
 
     @Test func negativeBasalRateClampedToZero() async throws {
         let settings = MockSettingsStorage()
-        let closedLoop = makeService(settings: settings)
-
-        let result = await closedLoop.applyGuardrails(
+        let guardrails = Guardrails(
+            settings: settings.snapshot(),
             glucoseInMgDl: 120,
             predictedGlucoseInMgDl: 130,
-            newBasalRateRaw: -0.5,
-            settings: settings.snapshot(),
             roundToSupportedBasalRate: { $0 }
         )
 
-        #expect(abs(result - 0.0) <= iobAccuracy, "Negative basal rate should be clamped to zero")
+        #expect(abs(guardrails.clamp(-0.5) - 0.0) <= iobAccuracy, "Negative basal rate should be clamped to zero")
     }
 
     @Test func shutOffBasalRateWhenCurrentGlucoseBelowThreshold() async throws {
         let settings = MockSettingsStorage()
-        let closedLoop = makeService(settings: settings)
         settings.update(shutOffGlucoseInMgDl: 80.0)
-
-        let result = await closedLoop.applyGuardrails(
+        let guardrails = Guardrails(
+            settings: settings.snapshot(),
             glucoseInMgDl: 75.0, // Below threshold
             predictedGlucoseInMgDl: 85.0, // Above threshold
-            newBasalRateRaw: 1.0,
-            settings: settings.snapshot(),
             roundToSupportedBasalRate: { $0 }
         )
 
-        #expect(abs(result - 0.0) <= iobAccuracy, "Basal rate should be zero when current glucose is below shutoff threshold")
+        #expect(abs(guardrails.clamp(1.0) - 0.0) <= iobAccuracy, "Basal rate should be zero when current glucose is below shutoff threshold")
     }
 
     @Test func shutOffBasalRateWhenPredictedGlucoseBelowThreshold() async throws {
         let settings = MockSettingsStorage()
-        let closedLoop = makeService(settings: settings)
         settings.update(shutOffGlucoseInMgDl: 80.0)
-
-        let result = await closedLoop.applyGuardrails(
+        let guardrails = Guardrails(
+            settings: settings.snapshot(),
             glucoseInMgDl: 85.0, // Above threshold
             predictedGlucoseInMgDl: 75.0, // Below threshold
-            newBasalRateRaw: 1.0,
-            settings: settings.snapshot(),
             roundToSupportedBasalRate: { $0 }
         )
 
-        #expect(abs(result - 0.0) <= iobAccuracy, "Basal rate should be zero when predicted glucose is below shutoff threshold")
+        #expect(abs(guardrails.clamp(1.0) - 0.0) <= iobAccuracy, "Basal rate should be zero when predicted glucose is below shutoff threshold")
+    }
+
+    @Test func guardrailsClampPropertyRandomized() async throws {
+        let settings = MockSettingsStorage()
+        let maxBasal = 3.0
+        let shutOff = 80.0
+        settings.update(maxBasalRateUnitsPerHour: maxBasal)
+        settings.update(shutOffGlucoseInMgDl: shutOff)
+        let snapshot = settings.snapshot()
+
+        // Deterministic exploration of the input space.
+        var rng = SystemRandomNumberGenerator()
+        for _ in 0..<200 {
+            let glucose = Double.random(in: 40...300, using: &rng)
+            let predicted = Double.random(in: 40...300, using: &rng)
+            let raw = Double.random(in: -2...maxBasal * 2, using: &rng)
+
+            let guardrails = Guardrails(
+                settings: snapshot,
+                glucoseInMgDl: glucose,
+                predictedGlucoseInMgDl: predicted,
+                roundToSupportedBasalRate: { $0 }
+            )
+            let clamped = guardrails.clamp(raw)
+
+            // Property: output is in [0, maxBasal]
+            #expect(clamped >= 0, "Guardrails.clamp output should be non-negative (raw=\(raw))")
+            #expect(clamped <= maxBasal, "Guardrails.clamp output should not exceed maxBasal (raw=\(raw))")
+
+            // Property: output is 0 when glucose <= shutOff or predicted <= shutOff
+            if glucose <= shutOff || predicted <= shutOff {
+                #expect(clamped == 0.0, "Guardrails.clamp should shut off when glucose or predicted is below threshold")
+            }
+
+            // Property: negative inputs clamp to 0 (when not shut off, inputs < 0 still must be 0)
+            if raw < 0 {
+                #expect(clamped == 0.0, "Negative raw input must clamp to zero")
+            }
+        }
     }
 
     // MARK: - Tests for bugs we've found
     @Test func determineDoseActualTempBasalMatchesSelectedTempBasal() async throws {
         let settings = MockSettingsStorage()
-        let closedLoop = makeService(settings: settings)
         settings.update(useMicroBolus: false, useMachineLearningClosedLoop: false, useBiologicalInvariant: false)
 
-        let dose = await closedLoop.determineDose(
+        let dose = DoseSelector.decide(
             settings: settings.snapshot(),
             physiologicalTempBasal: 1.5, // This should be selected since ML is off
-            mlTempBasal: 2.0,
             safetyTempBasal: 2.0,
             microBolusPhysiological: 0.0,
             microBolusSafety: 0.0,

@@ -12,16 +12,9 @@ import OmniBLE
 
 @testable import BioKernel
 
+@MainActor
 struct ClosedLoopTests {
     let iobAccuracy = 0.00000000001
-
-    @MainActor private func makeService(settings: MockSettingsStorage) -> LocalClosedLoopService {
-        return makeClosedLoopService(
-            settings: settings,
-            glucoseStorage: MockGlucoseStorage(),
-            insulinStorage: MockInsulinStorage()
-        )
-    }
 
     @Test func baselineIoB() throws {
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
@@ -47,10 +40,9 @@ struct ClosedLoopTests {
 
     @Test func doseLogic() async {
         let settings = await MockSettingsStorage()
-        let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: false, useMachineLearningClosedLoop: false, useBiologicalInvariant: false)
 
-        let dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+        let dose = DoseSelector.decide(settings: settings.snapshot(), physiologicalTempBasal: 1.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
 
         #expect(abs(dose.tempBasal - 1.0) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
@@ -58,10 +50,9 @@ struct ClosedLoopTests {
 
     @Test func doseLogicUseMachineLearning() async {
         let settings = await MockSettingsStorage()
-        let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: false, useMachineLearningClosedLoop: true, useBiologicalInvariant: false)
 
-        let dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+        let dose = DoseSelector.decide(settings: settings.snapshot(), physiologicalTempBasal: 1.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
 
         #expect(abs(dose.tempBasal - 1.5) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
@@ -69,10 +60,9 @@ struct ClosedLoopTests {
 
     @Test func doseLogicUseMachineLearningMicroBolus() async {
         let settings = await MockSettingsStorage()
-        let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: true, useBiologicalInvariant: false)
 
-        let dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+        let dose = DoseSelector.decide(settings: settings.snapshot(), physiologicalTempBasal: 1.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
 
         #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.25) <= iobAccuracy)
@@ -80,15 +70,14 @@ struct ClosedLoopTests {
 
     @Test func doseLogicUseMicroBolus() async {
         let settings = await MockSettingsStorage()
-        let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: false, useBiologicalInvariant: false)
 
-        var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+        var dose = DoseSelector.decide(settings: settings.snapshot(), physiologicalTempBasal: 1.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
 
         #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.2) <= iobAccuracy)
 
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.02, microBolusSafety: 0.25, biologicalInvariant: nil)
+        dose = DoseSelector.decide(settings: settings.snapshot(), physiologicalTempBasal: 1.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.02, microBolusSafety: 0.25, biologicalInvariant: nil)
 
         #expect(abs(dose.tempBasal - 1.0) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
@@ -96,20 +85,19 @@ struct ClosedLoopTests {
 
     @Test func doseLogicUseBiologicalInvariant() async {
         let settings = await MockSettingsStorage()
-        let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: false, useMachineLearningClosedLoop: false, useBiologicalInvariant: true)
 
-        var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
+        var dose = DoseSelector.decide(settings: settings.snapshot(), physiologicalTempBasal: 1.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
 
         #expect(abs(dose.tempBasal - 1.0) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
 
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45)
+        dose = DoseSelector.decide(settings: settings.snapshot(), physiologicalTempBasal: 1.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45)
 
         #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
 
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+        dose = DoseSelector.decide(settings: settings.snapshot(), physiologicalTempBasal: 1.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
 
         #expect(abs(dose.tempBasal - 1.0) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
@@ -117,20 +105,19 @@ struct ClosedLoopTests {
 
     @Test func doseLogicUseMicroBolusBiologicalInvariant() async {
         let settings = await MockSettingsStorage()
-        let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: false, useBiologicalInvariant: true)
 
-        var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
+        var dose = DoseSelector.decide(settings: settings.snapshot(), physiologicalTempBasal: 1.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
 
         #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.2) <= iobAccuracy)
 
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45)
+        dose = DoseSelector.decide(settings: settings.snapshot(), physiologicalTempBasal: 1.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45)
 
         #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
 
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+        dose = DoseSelector.decide(settings: settings.snapshot(), physiologicalTempBasal: 1.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
 
         #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.2) <= iobAccuracy)
@@ -138,20 +125,19 @@ struct ClosedLoopTests {
 
     @Test func doseLogicUseMachineLearningBiologicalInvariant() async {
         let settings = await MockSettingsStorage()
-        let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: false, useMachineLearningClosedLoop: true, useBiologicalInvariant: true)
 
-        var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
+        var dose = DoseSelector.decide(settings: settings.snapshot(), physiologicalTempBasal: 1.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
 
         #expect(abs(dose.tempBasal - 1.5) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
 
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45)
+        dose = DoseSelector.decide(settings: settings.snapshot(), physiologicalTempBasal: 1.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45)
 
         #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
 
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+        dose = DoseSelector.decide(settings: settings.snapshot(), physiologicalTempBasal: 1.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
 
         #expect(abs(dose.tempBasal - 1.5) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
@@ -159,22 +145,50 @@ struct ClosedLoopTests {
 
     @Test func doseLogicUseAll() async {
         let settings = await MockSettingsStorage()
-        let closedLoop = await makeService(settings: settings)
         await settings.update(useMicroBolus: true, useMachineLearningClosedLoop: true, useBiologicalInvariant: true)
 
-        var dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
+        var dose = DoseSelector.decide(settings: settings.snapshot(), physiologicalTempBasal: 1.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -25)
 
         #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.25) <= iobAccuracy)
 
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45)
+        dose = DoseSelector.decide(settings: settings.snapshot(), physiologicalTempBasal: 1.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: -45)
 
         #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.0) <= iobAccuracy)
 
-        dose = await closedLoop.determineDose(settings: settings.snapshot(), physiologicalTempBasal: 1.0, mlTempBasal: 2.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
+        dose = DoseSelector.decide(settings: settings.snapshot(), physiologicalTempBasal: 1.0, safetyTempBasal: 1.5, microBolusPhysiological: 0.2, microBolusSafety: 0.25, biologicalInvariant: nil)
 
         #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.25) <= iobAccuracy)
+    }
+
+    @Test func legacyInsulinSensitivityKeyDecodes() async throws {
+        // Pre-rename on-disk format used the misspelled key.
+        // After the rename, existing files must still decode without resetting user settings.
+        let json = """
+        {
+            "created": "2025-01-01T00:00:00Z",
+            "pumpBasalRateUnitsPerHour": 0.3,
+            "insulinSensitivityInMgDlPerUnit": 45,
+            "maxBasalRateUnitsPerHour": 2,
+            "maxBolusUnits": 5,
+            "shutOffGlucoseInMgDl": 85,
+            "targetGlucoseInMgDl": 90,
+            "freshnessIntervalInSeconds": 600,
+            "correctionDurationInSeconds": 1800,
+            "closedLoopEnabled": true,
+            "useMachineLearningClosedLoop": false,
+            "learnedBasalRatesUnitsPerHour": {},
+            "learnedInsulinSensivityInMgDlPerUnit": { "midnightToFour": 42 }
+        }
+        """.data(using: .utf8)!
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let settings = try decoder.decode(CodableSettings.self, from: json)
+
+        // The legacy schedule should land on the renamed property.
+        #expect(settings.learnedInsulinSensitivityInMgDlPerUnit.midnightToFour == 42)
     }
 }

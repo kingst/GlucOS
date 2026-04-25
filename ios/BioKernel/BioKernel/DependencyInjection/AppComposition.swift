@@ -124,7 +124,7 @@ final class AppComposition {
         watchCommsBox.set(watchComms)
 
         // Tier 6 — closed loop
-        let closedLoopService = LocalClosedLoopService(
+        let closedLoopService = LoopRunner(
             storedObjectFactory: storedObjectFactory,
             glucoseStorage: glucoseStorage,
             insulinStorage: insulinStorage,
