@@ -9,6 +9,7 @@ import LoopKit
 @testable import BioKernel
 
 @MainActor
+@Suite(.serialized)
 struct PhysiologicalModelsTests {
     let now = Date.f("2024-01-15 10:30:00 +0000")
     let settings: MockSettingsStorage
