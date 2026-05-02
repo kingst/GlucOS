@@ -46,6 +46,21 @@ public protocol PhysiologicalModels {
     func deltaGlucoseError(settings: CodableSettings, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> Double?
 }
 
+/// Live PID controller state that survives app restart. The same numbers are
+/// also captured per-loop inside `PIDTempBasalResult` (in `closed_loop_results.json`)
+/// for diagnostics, but this file is the source of truth the controller resumes
+/// from. `savedAt` drives the staleness check in `LocalPhysiologicalModels`: if
+/// the next `tempBasal` runs `staleStateThreshold` or more after `savedAt`, the
+/// integrator and filter are reset to defaults rather than resumed from a stale
+/// snapshot.
+struct PIDState: Codable {
+    let savedAt: Date
+    let lastGlucose: Double?
+    let lastGlucoseAt: Date?
+    let accumulatedError: Double
+    let lastFilteredGlucose: Double?
+}
+
 struct PhysiologicalUtilities {
     static func calculateBasalBaselineInsulinOnBoard(basalRate: Double, insulinType: InsulinType) -> Double {
         let now = Date()
@@ -56,12 +71,25 @@ struct PhysiologicalUtilities {
 }
 
 actor LocalPhysiologicalModels: PhysiologicalModels {
+    static let staleStateThreshold: TimeInterval = 23 * 60
+
     private let glucoseStorage: GlucoseStorage
     private let insulinStorage: InsulinStorage
+    private let stateStorage: StoredObject
+    private var lastSavedAt: Date?
 
-    init(glucoseStorage: GlucoseStorage, insulinStorage: InsulinStorage) {
+    init(storedObjectFactory: StoredObject.Type, glucoseStorage: GlucoseStorage, insulinStorage: InsulinStorage) {
         self.glucoseStorage = glucoseStorage
         self.insulinStorage = insulinStorage
+        let stateStorage = storedObjectFactory.create(fileName: "pid_state.json")
+        self.stateStorage = stateStorage
+        if let restored: PIDState = try? stateStorage.read() {
+            self.lastGlucose = restored.lastGlucose
+            self.lastGlucoseAt = restored.lastGlucoseAt
+            self.accumulatedError = restored.accumulatedError
+            self.lastFilteredGlucose = restored.lastFilteredGlucose
+            self.lastSavedAt = restored.savedAt
+        }
     }
 
     func predictGlucoseIn15Minutes(from now: Date) async -> Double? {
@@ -132,6 +160,9 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
     }
     
     func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> PIDTempBasalResult {
+        if let lastSavedAt, at.timeIntervalSince(lastSavedAt) >= Self.staleStateThreshold {
+            resetPidState()
+        }
         let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
         let correctionDuration = settings.correctionDurationInSeconds
         let basalRate = settings.learnedBasalRate(at: at)
@@ -182,7 +213,31 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
         lastGlucose = glucoseInMgDl
         lastGlucoseAt = at
         lastFilteredGlucose = filteredGlucose
-        
+        persistState(at: at)
+
         return result
+    }
+
+    private func resetPidState() {
+        lastGlucose = nil
+        lastGlucoseAt = nil
+        accumulatedError = 0.0
+        lastFilteredGlucose = nil
+    }
+
+    private func persistState(at: Date) {
+        lastSavedAt = at
+        let state = PIDState(
+            savedAt: at,
+            lastGlucose: lastGlucose,
+            lastGlucoseAt: lastGlucoseAt,
+            accumulatedError: accumulatedError,
+            lastFilteredGlucose: lastFilteredGlucose
+        )
+        do {
+            try stateStorage.write(state)
+        } catch {
+            print("Failed to write PID state: \(error)")
+        }
     }
 }

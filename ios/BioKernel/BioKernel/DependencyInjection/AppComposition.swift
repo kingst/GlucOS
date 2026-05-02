@@ -102,6 +102,7 @@ final class AppComposition {
 
         // Tier 2 — physiology depends on storages
         let physiologicalModels = LocalPhysiologicalModels(
+            storedObjectFactory: storedObjectFactory,
             glucoseStorage: glucoseStorage,
             insulinStorage: insulinStorage
         )

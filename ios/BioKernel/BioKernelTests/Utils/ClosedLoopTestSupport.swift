@@ -17,7 +17,7 @@ func makeClosedLoopService(
     safetyService: SafetyService = MockSafetyService()
 ) -> LoopRunner {
     let physModels = physiologicalModels
-        ?? LocalPhysiologicalModels(glucoseStorage: glucoseStorage, insulinStorage: insulinStorage)
+        ?? LocalPhysiologicalModels(storedObjectFactory: MockStoredObject.self, glucoseStorage: glucoseStorage, insulinStorage: insulinStorage)
     return LoopRunner(
         storedObjectFactory: MockStoredObject.self,
         glucoseStorage: glucoseStorage,
