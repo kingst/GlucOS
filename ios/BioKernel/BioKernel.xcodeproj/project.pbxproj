@@ -10,6 +10,7 @@
 		3B0044762F956C7B0051AFA7 /* AppObservableState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0044752F956C7B0051AFA7 /* AppObservableState.swift */; };
 		3B0044802F956D0000000001 /* AppComposition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0044812F956D0000000002 /* AppComposition.swift */; };
 		3B0044822F956D0000000003 /* AppContextNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0044832F956D0000000004 /* AppContextNotifier.swift */; };
+		3B016DDA2FA64E720011F6EC /* LoopOutcomeCodableTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B016DD92FA64E720011F6EC /* LoopOutcomeCodableTests.swift */; };
 		3B348D902B5D9ADB000A40E9 /* Double.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B348D8F2B5D9ADB000A40E9 /* Double.swift */; };
 		3B348D922B5D9AEE000A40E9 /* SafetyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B348D912B5D9AEE000A40E9 /* SafetyService.swift */; };
 		3B348DAE2B5DAFB0000A40E9 /* SafetyServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B348DAD2B5DAFB0000A40E9 /* SafetyServiceTests.swift */; };
@@ -222,6 +223,7 @@
 		3B0044752F956C7B0051AFA7 /* AppObservableState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppObservableState.swift; sourceTree = "<group>"; };
 		3B0044812F956D0000000002 /* AppComposition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppComposition.swift; sourceTree = "<group>"; };
 		3B0044832F956D0000000004 /* AppContextNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContextNotifier.swift; sourceTree = "<group>"; };
+		3B016DD92FA64E720011F6EC /* LoopOutcomeCodableTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopOutcomeCodableTests.swift; sourceTree = "<group>"; };
 		3B348D8F2B5D9ADB000A40E9 /* Double.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Double.swift; sourceTree = "<group>"; };
 		3B348D912B5D9AEE000A40E9 /* SafetyService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SafetyService.swift; sourceTree = "<group>"; };
 		3B348DAD2B5DAFB0000A40E9 /* SafetyServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyServiceTests.swift; sourceTree = "<group>"; };
@@ -643,6 +645,7 @@
 				3B7C6D9B2B0C09320030DFA7 /* InsulinStorageTests.swift */,
 				3CBFB9892AFE02E90020FC90 /* InsulinOnBoardTests.swift */,
 				3B40DE682D24453F0032328F /* LoopFunctionTests.swift */,
+				3B016DD92FA64E720011F6EC /* LoopOutcomeCodableTests.swift */,
 				3B40DE662D243C6C0032328F /* MicroBolusAmountTest.swift */,
 				3B348DAD2B5DAFB0000A40E9 /* SafetyServiceTests.swift */,
 				3C15FE482B0C9C5000CA1FD4 /* Resources */,
@@ -954,6 +957,7 @@
 				3B7C6D9C2B0C09320030DFA7 /* InsulinStorageTests.swift in Sources */,
 				3BEE4E202B5FF4A000A09203 /* DateTime.swift in Sources */,
 				3CBFB98A2AFE02E90020FC90 /* InsulinOnBoardTests.swift in Sources */,
+				3B016DDA2FA64E720011F6EC /* LoopOutcomeCodableTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

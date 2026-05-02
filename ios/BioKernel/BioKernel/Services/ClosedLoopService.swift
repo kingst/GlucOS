@@ -170,7 +170,8 @@ actor LoopRunner: ClosedLoopService {
         let outputs = await pipeline.run(inputs)
         let snapshot = LoopSnapshot(
             inputs: LoopSnapshotInputs(glucoseInMgDl: glucoseInMgDl, insulinOnBoard: insulinOnBoard),
-            outputs: outputs
+            outputs: outputs,
+            replay: LoopReplayInputs(dataFrame: dataFrame, lastMicroBolus: lastMicroBolus)
         )
         print("Looping, glucose: \(glucoseInMgDl) mg/dl, iob: \(insulinOnBoard), decision: \(outputs.decision)")
 

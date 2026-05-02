@@ -34,6 +34,40 @@ public enum LoopOutcome: Codable {
     case skipped(SkipReason)
     case dosed(LoopSnapshot)
     case pumpError(attempted: LoopSnapshot)
+
+    private enum CodingKeys: String, CodingKey {
+        case skipped, dosed, pumpError
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let reason = try container.decodeIfPresent(SkipReason.self, forKey: .skipped) {
+            self = .skipped(reason)
+        } else if let snapshot = try container.decodeIfPresent(LoopSnapshot.self, forKey: .dosed) {
+            self = .dosed(snapshot)
+        } else if let snapshot = try container.decodeIfPresent(LoopSnapshot.self, forKey: .pumpError) {
+            self = .pumpError(attempted: snapshot)
+        } else {
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "LoopOutcome must contain one of: skipped, dosed, pumpError"
+                )
+            )
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .skipped(let reason):
+            try container.encode(reason, forKey: .skipped)
+        case .dosed(let snapshot):
+            try container.encode(snapshot, forKey: .dosed)
+        case .pumpError(let snapshot):
+            try container.encode(snapshot, forKey: .pumpError)
+        }
+    }
 }
 
 public extension LoopOutcome {
@@ -183,6 +217,14 @@ public struct LoopSnapshotInputs: Codable {
     let insulinOnBoard: Double
 }
 
+/// Inputs needed to deterministically replay the dosing pipeline against a
+/// persisted result. Held separately from `LoopSnapshotInputs` so that UI code
+/// reading the lean snapshot doesn't pay for the heavier replay payload.
+public struct LoopReplayInputs: Codable {
+    let dataFrame: [AddedGlucoseDataRow]?
+    let lastMicroBolus: Date?
+}
+
 public struct StageTimings: Codable {
     let pidDurationInSeconds: TimeInterval
     let mlDurationInSeconds: TimeInterval
@@ -204,6 +246,7 @@ public struct PipelineOutputs: Codable {
 public struct LoopSnapshot: Codable {
     let inputs: LoopSnapshotInputs
     let outputs: PipelineOutputs
+    let replay: LoopReplayInputs
 }
 
 /// Runtime inputs to the dosing pipeline. Not Codable: holds rounding closures that

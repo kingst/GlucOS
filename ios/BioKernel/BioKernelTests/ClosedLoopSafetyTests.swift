@@ -61,7 +61,7 @@ struct ClosedLoopSafetyTests {
         let closedLoop = makeService(settings: settings, glucoseStorage: mockGlucoseStorage)
 
         // Attempt to loop with stale data
-        let metadata = CgmPumpMetadata(cgmStartedAt: nil, cgmExpiresAt: nil, pumpStartedAt: nil, pumpExpiresAt: nil, pumpResevoirPercentRemaining: nil)
+        let metadata = CgmPumpMetadata(cgmStartedAt: nil, cgmExpiresAt: nil, pumpStartedAt: nil, pumpExpiresAt: nil, pumpResevoirPercentRemaining: nil, supportedBasalRates: [], supportedBolusVolumes: [])
         let loopResult: Bool = await closedLoop.loop(at: glucoseDate, pumpManager: nil, cgmPumpMetadata: metadata)
         #expect(!loopResult, "Loop should not complete with stale CGM data")
 

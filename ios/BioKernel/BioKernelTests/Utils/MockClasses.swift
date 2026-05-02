@@ -323,7 +323,7 @@ class MockDeviceDataManager: DeviceDataManager {
     }
 
     func cgmPumpMetadata() async -> CgmPumpMetadata {
-        return CgmPumpMetadata(cgmStartedAt: nil, cgmExpiresAt: nil, pumpStartedAt: nil, pumpExpiresAt: nil, pumpResevoirPercentRemaining: nil)
+        return CgmPumpMetadata(cgmStartedAt: nil, cgmExpiresAt: nil, pumpStartedAt: nil, pumpExpiresAt: nil, pumpResevoirPercentRemaining: nil, supportedBasalRates: [], supportedBolusVolumes: [])
     }
 }
 

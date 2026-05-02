@@ -21,13 +21,17 @@ public struct CgmPumpMetadata: Codable {
     public let pumpStartedAt: Date?
     public let pumpExpiresAt: Date?
     public let pumpResevoirPercentRemaining: Double?
-    
-    public init(cgmStartedAt: Date?, cgmExpiresAt: Date?, pumpStartedAt: Date?, pumpExpiresAt: Date?, pumpResevoirPercentRemaining: Double?) {
+    public let supportedBasalRates: [Double]
+    public let supportedBolusVolumes: [Double]
+
+    public init(cgmStartedAt: Date?, cgmExpiresAt: Date?, pumpStartedAt: Date?, pumpExpiresAt: Date?, pumpResevoirPercentRemaining: Double?, supportedBasalRates: [Double], supportedBolusVolumes: [Double]) {
         self.cgmStartedAt = cgmStartedAt
         self.cgmExpiresAt = cgmExpiresAt
         self.pumpStartedAt = pumpStartedAt
         self.pumpExpiresAt = pumpExpiresAt
         self.pumpResevoirPercentRemaining = pumpResevoirPercentRemaining
+        self.supportedBasalRates = supportedBasalRates
+        self.supportedBolusVolumes = supportedBolusVolumes
     }
 }
 
@@ -173,7 +177,9 @@ class LocalDeviceDataManager: DeviceDataManager {
         let pumpStartedAt = (pumpManager as? OmniBLEPumpManager)?.podActivatedAt
         let pumpExpiresAt = (pumpManager as? OmniBLEPumpManager)?.podExpiresAt
         let pumpPercentRemaining = (pumpManager as? OmniBLEPumpManager)?.reservoirLevel?.percentage
-        return CgmPumpMetadata(cgmStartedAt: cgmStartedAt, cgmExpiresAt: cgmExpiresAt, pumpStartedAt: pumpStartedAt, pumpExpiresAt: pumpExpiresAt, pumpResevoirPercentRemaining: pumpPercentRemaining)
+        let supportedBasalRates = pumpManager?.supportedBasalRates ?? []
+        let supportedBolusVolumes = pumpManager?.supportedBolusVolumes ?? []
+        return CgmPumpMetadata(cgmStartedAt: cgmStartedAt, cgmExpiresAt: cgmExpiresAt, pumpStartedAt: pumpStartedAt, pumpExpiresAt: pumpExpiresAt, pumpResevoirPercentRemaining: pumpPercentRemaining, supportedBasalRates: supportedBasalRates, supportedBolusVolumes: supportedBolusVolumes)
     }
     
     // MARK: - CGM
