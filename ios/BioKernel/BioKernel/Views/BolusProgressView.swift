@@ -8,10 +8,9 @@
 import SwiftUI
 
 struct BolusProgressView: View {
-    @EnvironmentObject var appState: AppObservableState
+    @ObservedObject var doseProgress: DoseProgress
     @Environment(\.composition) var composition: AppComposition?
     var body: some View {
-        let doseProgress = appState.doseProgress
         VStack {
             Text("Delivered \(String(format: "%0.2f", doseProgress.deliveredUnits)) of \(String(format: "%0.2f", doseProgress.totalUnits)) units")
             Button {
@@ -45,5 +44,5 @@ struct BolusProgressView: View {
 }
 
 #Preview {
-    BolusProgressView()
+    BolusProgressView(doseProgress: DoseProgress())
 }

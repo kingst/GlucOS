@@ -14,7 +14,7 @@ struct MainViewAlertView: View {
     var body: some View {
         VStack {
             if !appState.doseProgress.isComplete {
-                BolusProgressView()
+                BolusProgressView(doseProgress: appState.doseProgress)
             } else if let alertString = glucoseAlertsViewModel.alertString {
                 MainViewGlucoseAlertView(alertString: alertString)
             } else {
