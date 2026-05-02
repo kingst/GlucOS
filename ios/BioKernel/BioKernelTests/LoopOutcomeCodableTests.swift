@@ -27,13 +27,11 @@ struct LoopOutcomeCodableTests {
             deltaGlucoseError: nil,
             basalRateInsulinOnBoard: 0.53
         )
-        let safety = SafetyAnalysis(
-            machineLearningTempBasal: 0,
+        let candidates = DoseCandidates(
             physiologicalTempBasal: 0,
-            machineLearningMicroBolus: 0,
+            mlTempBasal: 0,
             physiologicalMicroBolus: 0,
-            machineLearningInsulinLastThreeHours: 0,
-            biologicalInvariantMgDlPerHour: nil
+            mlMicroBolus: 0
         )
         let outputs = PipelineOutputs(
             predictedGlucoseInMgDl: 146.5,
@@ -41,7 +39,8 @@ struct LoopOutcomeCodableTests {
             insulinSensitivity: 55,
             basalRate: 0.3,
             pidTempBasalResult: pid,
-            safetyAnalysis: safety,
+            candidates: candidates,
+            machineLearningInsulinLastThreeHours: 0,
             decision: .tempBasal(unitsPerHour: 0),
             timings: StageTimings(
                 pidDurationInSeconds: 0.0002,

@@ -195,7 +195,7 @@ actor LoopRunner: ClosedLoopService {
         await safetyService.record(
             at: at,
             decision: outputs.decision,
-            analysis: outputs.safetyAnalysis,
+            candidates: outputs.candidates,
             duration: settings.correctionDurationInSeconds
         )
 

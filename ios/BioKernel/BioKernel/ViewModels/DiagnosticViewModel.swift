@@ -165,7 +165,6 @@ class DiagnosticViewModel: ObservableObject, ClosedLoopChartDataUpdate, PumpEven
         guard case .dosed(let snapshot) = result.outcome else { return nil }
 
         let pid = snapshot.outputs.pidTempBasalResult
-        let safetyAnalysis = snapshot.outputs.safetyAnalysis
 
         let derivative = pid.derivative ?? 0
         let proportionalContribution = pid.Kp * pid.error
@@ -176,9 +175,7 @@ class DiagnosticViewModel: ObservableObject, ClosedLoopChartDataUpdate, PumpEven
         let tempBasal: Double = snapshot.outputs.decision.tempBasalUnitsPerHour ?? 0
         let microBolus: Double = snapshot.outputs.decision.microBolusUnits ?? 0
 
-        let mlInsulin = safetyAnalysis.machineLearningTempBasal / 12 + safetyAnalysis.machineLearningMicroBolus
-        let physiologicalInsulin = safetyAnalysis.physiologicalTempBasal / 12 + safetyAnalysis.physiologicalMicroBolus
-        let actualInsulin = tempBasal / 12 + microBolus
+        let insulin = snapshot.outputs.candidates.insulinPerLoopInterval(for: snapshot.outputs.decision)
 
         return ClosedLoopChartData(
             at: result.at,
@@ -192,10 +189,10 @@ class DiagnosticViewModel: ObservableObject, ClosedLoopChartDataUpdate, PumpEven
             totalPidContribution: totalPidContribution,
             deltaGlucoseError: pid.deltaGlucoseError ?? 0,
             accumulatedError: pid.accumulatedError,
-            mlInsulin: mlInsulin,
-            physiologicalInsulin: physiologicalInsulin,
-            actualInsulin: actualInsulin,
-            machineLearningInsulinLastThreeHours: safetyAnalysis.machineLearningInsulinLastThreeHours,
+            mlInsulin: insulin.ml,
+            physiologicalInsulin: insulin.physiological,
+            actualInsulin: insulin.programmed,
+            machineLearningInsulinLastThreeHours: snapshot.outputs.machineLearningInsulinLastThreeHours,
             tempBasal: tempBasal,
             microBolusAmount: microBolus
         )

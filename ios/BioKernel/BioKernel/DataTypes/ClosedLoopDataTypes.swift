@@ -85,13 +85,30 @@ public extension LoopOutcome {
     }
 }
 
-public struct SafetyAnalysis: Codable {
-    let machineLearningTempBasal: Double
-    let physiologicalTempBasal: Double
-    let machineLearningMicroBolus: Double
-    let physiologicalMicroBolus: Double
-    let machineLearningInsulinLastThreeHours: Double
-    let biologicalInvariantMgDlPerHour: Double?
+/// Per-tick candidates the dose selector chose between. Both forms (temp basal,
+/// microBolus) are computed every tick; only one fires based on settings.
+/// `mlTempBasal` is post-safety (what would actually be delivered), not the raw
+/// ML model output. `mlMicroBolus` is derived from `mlTempBasal` via the bolus policy.
+public struct DoseCandidates: Codable {
+    let physiologicalTempBasal: Double      // U/hr
+    let mlTempBasal: Double                 // U/hr — post-safety candidate
+    let physiologicalMicroBolus: Double     // U
+    let mlMicroBolus: Double                // U
+}
+
+public extension DoseCandidates {
+    /// Insulin (U over one loop interval) projected onto the branch that actually
+    /// fired. Lets diagnostics compare actual vs phys vs ML on a single axis.
+    func insulinPerLoopInterval(for decision: DosingDecision) -> (programmed: Double, physiological: Double, ml: Double) {
+        switch decision {
+        case .tempBasal(let unitsPerHour):
+            return (unitsPerHour / 12, physiologicalTempBasal / 12, mlTempBasal / 12)
+        case .microBolus(let units):
+            return (units, physiologicalMicroBolus, mlMicroBolus)
+        case .suspendForBiologicalInvariant:
+            return (0, 0, 0)
+        }
+    }
 }
 
 /// Pre conditions:
@@ -237,7 +254,8 @@ public struct PipelineOutputs: Codable {
     let insulinSensitivity: Double
     let basalRate: Double
     let pidTempBasalResult: PIDTempBasalResult
-    let safetyAnalysis: SafetyAnalysis
+    let candidates: DoseCandidates
+    let machineLearningInsulinLastThreeHours: Double
     let decision: DosingDecision
     let timings: StageTimings
     let predictedAddedGlucoseInMgDlPerHour: Double
@@ -334,13 +352,11 @@ struct DosingPipeline {
             biologicalInvariant: biologicalInvariant
         )
 
-        let safetyAnalysis = SafetyAnalysis(
-            machineLearningTempBasal: mlTempBasal,
+        let candidates = DoseCandidates(
             physiologicalTempBasal: physiologicalTempBasal,
-            machineLearningMicroBolus: microBolusSafety,
+            mlTempBasal: safetyTempBasal,
             physiologicalMicroBolus: microBolusPhysiological,
-            machineLearningInsulinLastThreeHours: safetyTempBasalResult.machineLearningInsulinLastThreeHours,
-            biologicalInvariantMgDlPerHour: biologicalInvariant
+            mlMicroBolus: microBolusSafety
         )
 
         let addedGlucose = dataFrame?.addedGlucosePerHour30m(insulinSensitivity: insulinSensitivity) ?? 0
@@ -351,7 +367,8 @@ struct DosingPipeline {
             insulinSensitivity: insulinSensitivity,
             basalRate: basalRate,
             pidTempBasalResult: pidTempBasal,
-            safetyAnalysis: safetyAnalysis,
+            candidates: candidates,
+            machineLearningInsulinLastThreeHours: safetyTempBasalResult.machineLearningInsulinLastThreeHours,
             decision: decision,
             timings: StageTimings(
                 pidDurationInSeconds: pidDuration,

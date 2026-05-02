@@ -125,9 +125,9 @@ class MockSafetyService: SafetyService {
     func tempBasal(at: Date, settings: CodableSettings, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval) async -> BioKernel.SafetyTempBasal {
         return SafetyTempBasal(tempBasal: 0, machineLearningInsulinLastThreeHours: 0)
     }
-    
-    func updateAfterProgrammingPump(at: Date, programmedTempBasalUnitsPerHour: Double, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval, programmedMicroBolus: Double, safetyMicroBolus: Double, machineLearningMicroBolus: Double, biologicalInvariantViolation: Bool) async {
-        
+
+    func record(at: Date, decision: DosingDecision, candidates: DoseCandidates, duration: TimeInterval) async {
+
     }
 }
 

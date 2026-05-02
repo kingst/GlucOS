@@ -61,6 +61,7 @@
 		3B7C6D9C2B0C09320030DFA7 /* InsulinStorageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B7C6D9B2B0C09320030DFA7 /* InsulinStorageTests.swift */; };
 		3B7F08412B2DDE33002930A4 /* ClosedLoopTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B7F08402B2DDE33002930A4 /* ClosedLoopTests.swift */; };
 		3B7F08622B31590D002930A4 /* BolusProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B7F08612B31590D002930A4 /* BolusProgressView.swift */; };
+		3B8704402FA68DF60005DDE0 /* SafetyStateCodableTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B87043F2FA68DF60005DDE0 /* SafetyStateCodableTests.swift */; };
 		3B8906552E50EA9500F32799 /* DiagnosticChartScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B8906542E50EA9500F32799 /* DiagnosticChartScrollView.swift */; };
 		3B96F2542D08A2A800ABBA16 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B96F2532D08A2A800ABBA16 /* WidgetKit.framework */; };
 		3B96F2562D08A2A800ABBA16 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B96F2552D08A2A800ABBA16 /* SwiftUI.framework */; };
@@ -267,6 +268,7 @@
 		3B7C6D9B2B0C09320030DFA7 /* InsulinStorageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsulinStorageTests.swift; sourceTree = "<group>"; };
 		3B7F08402B2DDE33002930A4 /* ClosedLoopTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClosedLoopTests.swift; sourceTree = "<group>"; };
 		3B7F08612B31590D002930A4 /* BolusProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusProgressView.swift; sourceTree = "<group>"; };
+		3B87043F2FA68DF60005DDE0 /* SafetyStateCodableTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyStateCodableTests.swift; sourceTree = "<group>"; };
 		3B8906542E50EA9500F32799 /* DiagnosticChartScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticChartScrollView.swift; sourceTree = "<group>"; };
 		3B96F2522D08A2A800ABBA16 /* LauncherWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LauncherWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B96F2532D08A2A800ABBA16 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -648,6 +650,7 @@
 				3B016DD92FA64E720011F6EC /* LoopOutcomeCodableTests.swift */,
 				3B40DE662D243C6C0032328F /* MicroBolusAmountTest.swift */,
 				3B348DAD2B5DAFB0000A40E9 /* SafetyServiceTests.swift */,
+				3B87043F2FA68DF60005DDE0 /* SafetyStateCodableTests.swift */,
 				3C15FE482B0C9C5000CA1FD4 /* Resources */,
 				3CAAFC8A2B0D719E00597055 /* Utils */,
 			);
@@ -955,6 +958,7 @@
 				3CAAFC8E2B0D739200597055 /* InsulinPersistentStorageTests.swift in Sources */,
 				3B40DE672D243C6C0032328F /* MicroBolusAmountTest.swift in Sources */,
 				3B7C6D9C2B0C09320030DFA7 /* InsulinStorageTests.swift in Sources */,
+				3B8704402FA68DF60005DDE0 /* SafetyStateCodableTests.swift in Sources */,
 				3BEE4E202B5FF4A000A09203 /* DateTime.swift in Sources */,
 				3CBFB98A2AFE02E90020FC90 /* InsulinOnBoardTests.swift in Sources */,
 				3B016DDA2FA64E720011F6EC /* LoopOutcomeCodableTests.swift in Sources */,

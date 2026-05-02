@@ -19,7 +19,7 @@ struct SafetyServiceTests {
 
     @Test func safetyStateBasics() async throws {
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
-        let safetyState = SafetyState(at: startDate, duration: 30.minutesToSeconds(), programmedTempBasalUnitsPerHour: 1.2, safetyTempBasalUnitsPerHour: 1.2, machineLearningTempBasalUnitsPerHour: 1.2, programmedMicroBolus: 0.0, safetyMicroBolus: 0.0, machineLearningMicroBolus: 0.0, biologicalInvariantViolation: false)
+        let safetyState = SafetyState(at: startDate, duration: 30.minutesToSeconds(), kind: .tempBasal(programmed: 1.2, physiological: 1.2))
 
         // look at a time before our command ran
         let beforeUnits = safetyState.deltaUnitsDeliveredByMachineLearning(from: startDate - 5.minutesToSeconds(), to: startDate)
@@ -30,17 +30,11 @@ struct SafetyServiceTests {
         let unitsFromSafetyTempBasal = safetyState.deltaUnitsDeliveredByMachineLearning(from: startDate, to: startDate + 5.minutesToSeconds())
 
         #expect(abs(unitsFromSafetyTempBasal - 0.0) <= insulinAccuracy)
-
-        let safetyState2 = SafetyState(at: startDate, duration: 30.minutesToSeconds(), programmedTempBasalUnitsPerHour: 1.2, safetyTempBasalUnitsPerHour: 1.2, machineLearningTempBasalUnitsPerHour: 2.4, programmedMicroBolus: 0.0, safetyMicroBolus: 0.0, machineLearningMicroBolus: 0.0, biologicalInvariantViolation: false)
-
-        let unitsFromProgrammed = safetyState2.deltaUnitsDeliveredByMachineLearning(from: startDate, to: startDate + 5.minutesToSeconds())
-
-        #expect(abs(unitsFromProgrammed - 0.0) <= insulinAccuracy)
     }
 
     @Test func safetyStateCalculation() async throws {
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
-        let safetyStateEqual = SafetyState(at: startDate, duration: 30.minutesToSeconds(), programmedTempBasalUnitsPerHour: 1.2, safetyTempBasalUnitsPerHour: 0, machineLearningTempBasalUnitsPerHour: 1.2, programmedMicroBolus: 0, safetyMicroBolus: 0, machineLearningMicroBolus: 0, biologicalInvariantViolation: false)
+        let safetyStateEqual = SafetyState(at: startDate, duration: 30.minutesToSeconds(), kind: .tempBasal(programmed: 1.2, physiological: 0))
 
         let mlInsulin = safetyStateEqual.deltaUnitsDeliveredByMachineLearning(from: startDate, to: startDate + 5.minutesToSeconds())
         #expect(abs(mlInsulin - 0.1) <= insulinAccuracy)
@@ -52,17 +46,11 @@ struct SafetyServiceTests {
         // make sure that we can start in the middle
         let mlInsulin3 = safetyStateEqual.deltaUnitsDeliveredByMachineLearning(from: startDate + 25.minutesToSeconds(), to: startDate + 60.minutesToSeconds())
         #expect(abs(mlInsulin3 - 0.1) <= insulinAccuracy)
-
-        // check when the programmed value is in between phys and ml
-        let safetyStateNotEqual = SafetyState(at: startDate, duration: 30.minutesToSeconds(), programmedTempBasalUnitsPerHour: 1.2, safetyTempBasalUnitsPerHour: 0, machineLearningTempBasalUnitsPerHour: 2.4, programmedMicroBolus: 0, safetyMicroBolus: 0, machineLearningMicroBolus: 0, biologicalInvariantViolation: false)
-
-        let mlInsulin4 = safetyStateNotEqual.deltaUnitsDeliveredByMachineLearning(from: startDate, to: startDate + 5.minutesToSeconds())
-        #expect(abs(mlInsulin4 - 0.1) <= insulinAccuracy)
     }
 
     @Test func safetyStateTempBasal() async throws {
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
-        let safetyStateEqual = SafetyState(at: startDate, duration: 30.minutesToSeconds(), programmedTempBasalUnitsPerHour: 1.2, safetyTempBasalUnitsPerHour: 0, machineLearningTempBasalUnitsPerHour: 1.2, programmedMicroBolus: 0, safetyMicroBolus: 0, machineLearningMicroBolus: 0, biologicalInvariantViolation: false)
+        let safetyStateEqual = SafetyState(at: startDate, duration: 30.minutesToSeconds(), kind: .tempBasal(programmed: 1.2, physiological: 0))
 
         var mlInsulin = safetyStateEqual.deltaUnitsDeliveredByMachineLearning(from: startDate + 30.minutesToSeconds(), to: startDate + 60.minutesToSeconds())
         #expect(abs(mlInsulin - 0.0) <= insulinAccuracy)
@@ -73,7 +61,7 @@ struct SafetyServiceTests {
 
     @Test func safetyStateMicroBolus() async throws {
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
-        let safetyStateEqual = SafetyState(at: startDate, duration: 1.minutesToSeconds(), programmedTempBasalUnitsPerHour: 0, safetyTempBasalUnitsPerHour: 0, machineLearningTempBasalUnitsPerHour: 0, programmedMicroBolus: 2.0, safetyMicroBolus: 0, machineLearningMicroBolus: 2.0, biologicalInvariantViolation: false)
+        let safetyStateEqual = SafetyState(at: startDate, duration: 1.minutesToSeconds(), kind: .microBolus(programmed: 2.0, physiological: 0))
 
         // checks to make sure that we're accounting for a micro bolus
         var mlInsulin = safetyStateEqual.deltaUnitsDeliveredByMachineLearning(from: startDate, to: startDate + 30.minutesToSeconds())
@@ -88,6 +76,13 @@ struct SafetyServiceTests {
         #expect(abs(mlInsulin - 0.0) <= insulinAccuracy)
     }
 
+    @Test func suspendedKindAccumulatesNoMlInsulin() async throws {
+        let startDate = Date.f("2018-07-15 03:34:29 +0000")
+        let suspended = SafetyState(at: startDate, duration: 30.minutesToSeconds(), kind: .suspended)
+        let mlInsulin = suspended.deltaUnitsDeliveredByMachineLearning(from: startDate, to: startDate + 30.minutesToSeconds())
+        #expect(abs(mlInsulin - 0.0) <= insulinAccuracy)
+    }
+
     // for this test we will deliver two ML doses that provide an excess of
     // one unit of insulin each. Then on the third the system should instead
     // use the safety insulin value since we've exausted our ML insulin
@@ -97,14 +92,16 @@ struct SafetyServiceTests {
         await settings.update(pumpBasalRateUnitsPerHour: 2.0 / 3)
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
 
+        let candidates = DoseCandidates(physiologicalTempBasal: 1.0, mlTempBasal: 3.0, physiologicalMicroBolus: 0, mlMicroBolus: 0)
+
         // our first dose that will run for 30 minutes
-        await safetyService.updateAfterProgrammingPump(at: startDate, programmedTempBasalUnitsPerHour: 3.0, safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds(), programmedMicroBolus: 0, safetyMicroBolus: 0, machineLearningMicroBolus: 0, biologicalInvariantViolation: false)
+        await safetyService.record(at: startDate, decision: .tempBasal(unitsPerHour: 3.0), candidates: candidates, duration: 30.minutesToSeconds())
 
         let firstTempBasal = await safetyService.tempBasal(at: startDate + 30.minutesToSeconds(), settings: settings.snapshot(), safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
 
         #expect(abs(firstTempBasal.tempBasal - 3.0) <= insulinAccuracy)
 
-        await safetyService.updateAfterProgrammingPump(at: startDate + 30.minutesToSeconds(), programmedTempBasalUnitsPerHour: firstTempBasal.tempBasal, safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds(), programmedMicroBolus: 0, safetyMicroBolus: 0, machineLearningMicroBolus: 0, biologicalInvariantViolation: false)
+        await safetyService.record(at: startDate + 30.minutesToSeconds(), decision: .tempBasal(unitsPerHour: firstTempBasal.tempBasal), candidates: candidates, duration: 30.minutesToSeconds())
 
         // at this point we have already delivered 2 units from ML, which is
         // our cap so the system should fall back to the safety tempBasal
@@ -119,70 +116,61 @@ struct SafetyServiceTests {
         await settings.update(pumpBasalRateUnitsPerHour: 2.0 / 3)
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
 
+        let basalCandidates = DoseCandidates(physiologicalTempBasal: 0, mlTempBasal: 1.2, physiologicalMicroBolus: 0, mlMicroBolus: 0)
+        let bolusCandidates = DoseCandidates(physiologicalTempBasal: 0, mlTempBasal: 0, physiologicalMicroBolus: 0, mlMicroBolus: 2.9)
+
         // our first dose is a temp basal
-        await safetyService.updateAfterProgrammingPump(at: startDate, programmedTempBasalUnitsPerHour: 1.2, safetyTempBasalUnitsPerHour: 0, machineLearningTempBasalUnitsPerHour: 1.2, duration: 30.minutesToSeconds(), programmedMicroBolus: 0, safetyMicroBolus: 0, machineLearningMicroBolus: 0, biologicalInvariantViolation: false)
+        await safetyService.record(at: startDate, decision: .tempBasal(unitsPerHour: 1.2), candidates: basalCandidates, duration: 30.minutesToSeconds())
 
         // add a micro bolus after 5 minutes
-        await safetyService.updateAfterProgrammingPump(at: startDate + 5.minutesToSeconds(), programmedTempBasalUnitsPerHour: 0, safetyTempBasalUnitsPerHour: 0, machineLearningTempBasalUnitsPerHour: 0, duration: 30.minutesToSeconds(), programmedMicroBolus: 2.9, safetyMicroBolus: 0, machineLearningMicroBolus: 2.9, biologicalInvariantViolation: false)
+        await safetyService.record(at: startDate + 5.minutesToSeconds(), decision: .microBolus(units: 2.9), candidates: bolusCandidates, duration: 30.minutesToSeconds())
 
         let secondTempBasal = await safetyService.tempBasal(at: startDate + 60.minutesToSeconds(), settings: settings.snapshot(), safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
 
         #expect(abs(secondTempBasal.tempBasal - 1.0) <= insulinAccuracy)
     }
 
-    // The per-branch zeroing invariant: `record(decision:analysis:...)` must only feed
-    // candidates from the branch that actually fired into SafetyState. Without this,
-    // a .microBolus tick records programmed=0 against the unused physiologicalTempBasal
-    // candidate and SafetyState.deltaUnits* accumulates a phantom negative delta.
-    @Test func recordZeroesOutUnusedBranchFields() async throws {
+    // `record(decision:candidates:...)` projects each decision form onto the matching
+    // SafetyState.Kind case, dropping the unused form's candidates. This was previously
+    // a "zero out unused branch fields" pattern; making Kind enum-shaped removes the
+    // hazard structurally — cases that don't apply simply don't exist on this state.
+    @Test func recordProjectsDecisionOntoMatchingKind() async throws {
         let safetyService = LocalSafetyService(storedObjectFactory: MockStoredObject.self)
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
         let duration = 30.minutesToSeconds()
 
-        // Both branches' candidates are non-zero, so a leak from the unused branch
-        // would show up as a non-zero stored field.
-        let analysis = SafetyAnalysis(
-            machineLearningTempBasal: 1.3,
+        let candidates = DoseCandidates(
             physiologicalTempBasal: 0.95,
-            machineLearningMicroBolus: 0.3,
+            mlTempBasal: 1.3,
             physiologicalMicroBolus: 0.2,
-            machineLearningInsulinLastThreeHours: 0,
-            biologicalInvariantMgDlPerHour: nil
+            mlMicroBolus: 0.3
         )
 
-        await safetyService.record(at: startDate, decision: .tempBasal(unitsPerHour: 1.5), analysis: analysis, duration: duration)
-        await safetyService.record(at: startDate + 5.minutesToSeconds(), decision: .microBolus(units: 0.3), analysis: analysis, duration: duration)
-        await safetyService.record(at: startDate + 10.minutesToSeconds(), decision: .suspendForBiologicalInvariant(mgDlPerHour: -50), analysis: analysis, duration: duration)
+        await safetyService.record(at: startDate, decision: .tempBasal(unitsPerHour: 1.5), candidates: candidates, duration: duration)
+        await safetyService.record(at: startDate + 5.minutesToSeconds(), decision: .microBolus(units: 0.3), candidates: candidates, duration: duration)
+        await safetyService.record(at: startDate + 10.minutesToSeconds(), decision: .suspendForBiologicalInvariant(mgDlPerHour: -50), candidates: candidates, duration: duration)
 
         let states = await safetyService.safetyStates
         #expect(states.count == 3)
 
-        let tempBasalState = states[0]
-        #expect(tempBasalState.programmedTempBasalUnitsPerHour == 1.5)
-        #expect(tempBasalState.safetyTempBasalUnitsPerHour == 0.95)
-        #expect(tempBasalState.machineLearningTempBasalUnitsPerHour == 1.3)
-        #expect(tempBasalState.programmedMicroBolus == 0)
-        #expect(tempBasalState.safetyMicroBolus == 0)
-        #expect(tempBasalState.machineLearningMicroBolus == 0)
-        #expect(tempBasalState.biologicalInvariantViolation == false)
+        guard case .tempBasal(let basalProgrammed, let basalPhysiological) = states[0].kind else {
+            Issue.record("Expected .tempBasal kind for tempBasal decision; got \(states[0].kind)")
+            return
+        }
+        #expect(basalProgrammed == 1.5)
+        #expect(basalPhysiological == 0.95)
 
-        let microBolusState = states[1]
-        #expect(microBolusState.programmedTempBasalUnitsPerHour == 0)
-        #expect(microBolusState.safetyTempBasalUnitsPerHour == 0)
-        #expect(microBolusState.machineLearningTempBasalUnitsPerHour == 0)
-        #expect(microBolusState.programmedMicroBolus == 0.3)
-        #expect(microBolusState.safetyMicroBolus == 0.2)
-        #expect(microBolusState.machineLearningMicroBolus == 0.3)
-        #expect(microBolusState.biologicalInvariantViolation == false)
+        guard case .microBolus(let bolusProgrammed, let bolusPhysiological) = states[1].kind else {
+            Issue.record("Expected .microBolus kind for microBolus decision; got \(states[1].kind)")
+            return
+        }
+        #expect(bolusProgrammed == 0.3)
+        #expect(bolusPhysiological == 0.2)
 
-        let suspendState = states[2]
-        #expect(suspendState.programmedTempBasalUnitsPerHour == 0)
-        #expect(suspendState.safetyTempBasalUnitsPerHour == 0)
-        #expect(suspendState.machineLearningTempBasalUnitsPerHour == 0)
-        #expect(suspendState.programmedMicroBolus == 0)
-        #expect(suspendState.safetyMicroBolus == 0)
-        #expect(suspendState.machineLearningMicroBolus == 0)
-        #expect(suspendState.biologicalInvariantViolation == true)
+        guard case .suspended = states[2].kind else {
+            Issue.record("Expected .suspended kind for suspend decision; got \(states[2].kind)")
+            return
+        }
     }
 
     @Test func lessInsulinClamp() async {
@@ -195,12 +183,59 @@ struct SafetyServiceTests {
 
         #expect(abs(firstTempBasal.tempBasal - 0.0) <= insulinAccuracy)
 
-        await safetyService.updateAfterProgrammingPump(at: startDate, programmedTempBasalUnitsPerHour: 0, safetyTempBasalUnitsPerHour: 4.0, machineLearningTempBasalUnitsPerHour: 0, duration: 30.minutesToSeconds(), programmedMicroBolus: 0, safetyMicroBolus: 0, machineLearningMicroBolus: 0, biologicalInvariantViolation: false)
+        // programmed=0 against physiological=4.0 → -2.0 U delivered (deficit) over 30 min
+        let candidates = DoseCandidates(physiologicalTempBasal: 4.0, mlTempBasal: 0.0, physiologicalMicroBolus: 0, mlMicroBolus: 0)
+        await safetyService.record(at: startDate, decision: .tempBasal(unitsPerHour: 0), candidates: candidates, duration: 30.minutesToSeconds())
 
         // at this point we have a deficit of 2 units from ML, which is
         // our cap so the system should fall back to the safety tempBasal
         let secondTempBasal = await safetyService.tempBasal(at: startDate + 30.minutesToSeconds(), settings: settings.snapshot(), safetyTempBasalUnitsPerHour: 4.0, machineLearningTempBasalUnitsPerHour: 0.0, duration: 30.minutesToSeconds())
 
         #expect(abs(secondTempBasal.tempBasal - 4.0) <= insulinAccuracy)
+    }
+
+    // A `.suspended` tick must contribute 0 to the historical ML insulin tally,
+    // even when the candidates passed alongside it are non-trivial. Otherwise a
+    // biological-invariant suspension would spuriously fill the budget and clamp
+    // legitimate ML deviations on the next tick.
+    @Test func suspendedTickContributesZeroToMlBudget() async {
+        let safetyService = LocalSafetyService(storedObjectFactory: MockStoredObject.self)
+        let settings = await MockSettingsStorage()
+        await settings.update(pumpBasalRateUnitsPerHour: 2.0 / 3)
+        let startDate = Date.f("2018-07-15 03:34:29 +0000")
+
+        // Non-trivial candidates: a buggy `.suspended` path could read these and
+        // accumulate phantom delta. Correct behavior ignores them entirely.
+        let candidates = DoseCandidates(physiologicalTempBasal: 0, mlTempBasal: 3.0, physiologicalMicroBolus: 0, mlMicroBolus: 0.5)
+
+        await safetyService.record(at: startDate, decision: .suspendForBiologicalInvariant(mgDlPerHour: -50), candidates: candidates, duration: 30.minutesToSeconds())
+
+        // With historicalMlInsulin=0, requesting ml=3.0 vs safety=1.0 over 30 min
+        // (delta = 1.0 U) sits well inside the 2.0 U / 3-hour budget — should pass through unchanged.
+        let result = await safetyService.tempBasal(at: startDate + 5.minutesToSeconds(), settings: settings.snapshot(), safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
+
+        #expect(abs(result.tempBasal - 3.0) <= insulinAccuracy)
+    }
+
+    // Mirrors `extraInsulinClamp` but isolated to the microBolus path. Two boluses
+    // each 1 U over physiological exhaust the 2 U / 3-hour cap; the next ML temp
+    // basal request must clamp back to safety.
+    @Test func microBolusOnlyExhaustsMlBudgetThenClamps() async {
+        let safetyService = LocalSafetyService(storedObjectFactory: MockStoredObject.self)
+        let settings = await MockSettingsStorage()
+        await settings.update(pumpBasalRateUnitsPerHour: 2.0 / 3)
+        let startDate = Date.f("2018-07-15 03:34:29 +0000")
+
+        let candidates = DoseCandidates(physiologicalTempBasal: 0, mlTempBasal: 0, physiologicalMicroBolus: 0.1, mlMicroBolus: 1.1)
+
+        // Two micro-boluses, each 1.0 U over physiological → 2.0 U total ML credit consumed
+        await safetyService.record(at: startDate, decision: .microBolus(units: 1.1), candidates: candidates, duration: 30.minutesToSeconds())
+        await safetyService.record(at: startDate + 5.minutesToSeconds(), decision: .microBolus(units: 1.1), candidates: candidates, duration: 30.minutesToSeconds())
+
+        // ML wants 3.0, safety wants 1.0. Budget exhausted, so the upper clamp
+        // forces deltaUnits → 0 and the result lands at safety.
+        let result = await safetyService.tempBasal(at: startDate + 10.minutesToSeconds(), settings: settings.snapshot(), safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
+
+        #expect(abs(result.tempBasal - 1.0) <= insulinAccuracy)
     }
 }
