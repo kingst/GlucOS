@@ -160,7 +160,7 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
     }
     
     func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> PIDTempBasalResult {
-        if let lastSavedAt, at.timeIntervalSince(lastSavedAt) >= Self.staleStateThreshold {
+        if let lastSavedAt, at.timeIntervalSince(lastSavedAt) >= Self.staleStateThreshold || at < lastSavedAt {
             resetPidState()
         }
         let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
