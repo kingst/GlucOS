@@ -34,13 +34,13 @@ class StateViewModel: ObservableObject, SessionUpdateDelegate {
 }
 
 extension BioKernelState {
-    func minutesSinceLastReading() -> Int? {
+    func minutesSinceLastReading(now: Date = Date()) -> Int? {
         guard let lastUpdate = self.glucoseReadings.last?.at else { return nil }
-        return Int(Date().timeIntervalSince(lastUpdate).secondsToMinutes())
+        return Int(now.timeIntervalSince(lastUpdate).secondsToMinutes())
     }
-    
-    func readingAgeColor() -> Color {
-        guard let minutesSinceLastReading = minutesSinceLastReading() else { return .red }
+
+    func readingAgeColor(now: Date = Date()) -> Color {
+        guard let minutesSinceLastReading = minutesSinceLastReading(now: now) else { return .red }
         if minutesSinceLastReading < 6 {
             return .green
         } else if minutesSinceLastReading < 12 {
