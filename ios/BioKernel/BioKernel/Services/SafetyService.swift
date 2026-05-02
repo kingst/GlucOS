@@ -13,6 +13,61 @@ public protocol SafetyService {
     func updateAfterProgrammingPump(at: Date, programmedTempBasalUnitsPerHour: Double, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval, programmedMicroBolus: Double, safetyMicroBolus: Double, machineLearningMicroBolus: Double, biologicalInvariantViolation: Bool) async
 }
 
+public extension SafetyService {
+    /// Records a tick from a `DosingDecision` + `SafetyAnalysis`, feeding only the
+    /// candidates from the branch that actually fired into `SafetyState`. The unused
+    /// branch's fields are 0 so `SafetyState.deltaUnits*` doesn't compare programmed=0
+    /// against an unused candidate and accumulate a phantom delta.
+    func record(at: Date, decision: DosingDecision, analysis: SafetyAnalysis, duration: TimeInterval) async {
+        let programmedTempBasal: Double
+        let safetyTempBasal: Double
+        let machineLearningTempBasal: Double
+        let programmedMicroBolus: Double
+        let safetyMicroBolus: Double
+        let machineLearningMicroBolus: Double
+        let biologicalInvariantViolation: Bool
+
+        switch decision {
+        case .tempBasal(let unitsPerHour):
+            programmedTempBasal = unitsPerHour
+            safetyTempBasal = analysis.physiologicalTempBasal
+            machineLearningTempBasal = analysis.machineLearningTempBasal
+            programmedMicroBolus = 0
+            safetyMicroBolus = 0
+            machineLearningMicroBolus = 0
+            biologicalInvariantViolation = false
+        case .microBolus(let units):
+            programmedTempBasal = 0
+            safetyTempBasal = 0
+            machineLearningTempBasal = 0
+            programmedMicroBolus = units
+            safetyMicroBolus = analysis.physiologicalMicroBolus
+            machineLearningMicroBolus = analysis.machineLearningMicroBolus
+            biologicalInvariantViolation = false
+        case .suspendForBiologicalInvariant:
+            programmedTempBasal = 0
+            safetyTempBasal = 0
+            machineLearningTempBasal = 0
+            programmedMicroBolus = 0
+            safetyMicroBolus = 0
+            machineLearningMicroBolus = 0
+            biologicalInvariantViolation = true
+        }
+
+        await updateAfterProgrammingPump(
+            at: at,
+            programmedTempBasalUnitsPerHour: programmedTempBasal,
+            safetyTempBasalUnitsPerHour: safetyTempBasal,
+            machineLearningTempBasalUnitsPerHour: machineLearningTempBasal,
+            duration: duration,
+            programmedMicroBolus: programmedMicroBolus,
+            safetyMicroBolus: safetyMicroBolus,
+            machineLearningMicroBolus: machineLearningMicroBolus,
+            biologicalInvariantViolation: biologicalInvariantViolation
+        )
+    }
+}
+
 public struct SafetyTempBasal {
     let tempBasal: Double
     let machineLearningInsulinLastThreeHours: Double

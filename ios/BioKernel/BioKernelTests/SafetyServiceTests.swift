@@ -130,6 +130,61 @@ struct SafetyServiceTests {
         #expect(abs(secondTempBasal.tempBasal - 1.0) <= insulinAccuracy)
     }
 
+    // The per-branch zeroing invariant: `record(decision:analysis:...)` must only feed
+    // candidates from the branch that actually fired into SafetyState. Without this,
+    // a .microBolus tick records programmed=0 against the unused physiologicalTempBasal
+    // candidate and SafetyState.deltaUnits* accumulates a phantom negative delta.
+    @Test func recordZeroesOutUnusedBranchFields() async throws {
+        let safetyService = LocalSafetyService(storedObjectFactory: MockStoredObject.self)
+        let startDate = Date.f("2018-07-15 03:34:29 +0000")
+        let duration = 30.minutesToSeconds()
+
+        // Both branches' candidates are non-zero, so a leak from the unused branch
+        // would show up as a non-zero stored field.
+        let analysis = SafetyAnalysis(
+            machineLearningTempBasal: 1.3,
+            physiologicalTempBasal: 0.95,
+            machineLearningMicroBolus: 0.3,
+            physiologicalMicroBolus: 0.2,
+            machineLearningInsulinLastThreeHours: 0,
+            biologicalInvariantMgDlPerHour: nil
+        )
+
+        await safetyService.record(at: startDate, decision: .tempBasal(unitsPerHour: 1.5), analysis: analysis, duration: duration)
+        await safetyService.record(at: startDate + 5.minutesToSeconds(), decision: .microBolus(units: 0.3), analysis: analysis, duration: duration)
+        await safetyService.record(at: startDate + 10.minutesToSeconds(), decision: .suspendForBiologicalInvariant(mgDlPerHour: -50), analysis: analysis, duration: duration)
+
+        let states = await safetyService.safetyStates
+        #expect(states.count == 3)
+
+        let tempBasalState = states[0]
+        #expect(tempBasalState.programmedTempBasalUnitsPerHour == 1.5)
+        #expect(tempBasalState.safetyTempBasalUnitsPerHour == 0.95)
+        #expect(tempBasalState.machineLearningTempBasalUnitsPerHour == 1.3)
+        #expect(tempBasalState.programmedMicroBolus == 0)
+        #expect(tempBasalState.safetyMicroBolus == 0)
+        #expect(tempBasalState.machineLearningMicroBolus == 0)
+        #expect(tempBasalState.biologicalInvariantViolation == false)
+
+        let microBolusState = states[1]
+        #expect(microBolusState.programmedTempBasalUnitsPerHour == 0)
+        #expect(microBolusState.safetyTempBasalUnitsPerHour == 0)
+        #expect(microBolusState.machineLearningTempBasalUnitsPerHour == 0)
+        #expect(microBolusState.programmedMicroBolus == 0.3)
+        #expect(microBolusState.safetyMicroBolus == 0.2)
+        #expect(microBolusState.machineLearningMicroBolus == 0.3)
+        #expect(microBolusState.biologicalInvariantViolation == false)
+
+        let suspendState = states[2]
+        #expect(suspendState.programmedTempBasalUnitsPerHour == 0)
+        #expect(suspendState.safetyTempBasalUnitsPerHour == 0)
+        #expect(suspendState.machineLearningTempBasalUnitsPerHour == 0)
+        #expect(suspendState.programmedMicroBolus == 0)
+        #expect(suspendState.safetyMicroBolus == 0)
+        #expect(suspendState.machineLearningMicroBolus == 0)
+        #expect(suspendState.biologicalInvariantViolation == true)
+    }
+
     @Test func lessInsulinClamp() async {
         let safetyService = LocalSafetyService(storedObjectFactory: MockStoredObject.self)
         let settings = await MockSettingsStorage()

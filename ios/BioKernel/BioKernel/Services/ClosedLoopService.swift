@@ -191,18 +191,11 @@ actor LoopRunner: ClosedLoopService {
         }
 
         // if we got here the pump commands were sent successfully
-        let safetyAnalysis = outputs.safetyAnalysis
-        let biologicalInvariantViolation: Bool = if case .suspendForBiologicalInvariant = outputs.decision { true } else { false }
-        await safetyService.updateAfterProgrammingPump(
+        await safetyService.record(
             at: at,
-            programmedTempBasalUnitsPerHour: outputs.decision.tempBasalUnitsPerHour ?? 0,
-            safetyTempBasalUnitsPerHour: safetyAnalysis.physiologicalTempBasal,
-            machineLearningTempBasalUnitsPerHour: safetyAnalysis.machineLearningTempBasal,
-            duration: settings.correctionDurationInSeconds,
-            programmedMicroBolus: outputs.decision.microBolusUnits ?? 0,
-            safetyMicroBolus: safetyAnalysis.physiologicalMicroBolus,
-            machineLearningMicroBolus: safetyAnalysis.machineLearningMicroBolus,
-            biologicalInvariantViolation: biologicalInvariantViolation
+            decision: outputs.decision,
+            analysis: outputs.safetyAnalysis,
+            duration: settings.correctionDurationInSeconds
         )
 
         // FIXME: I think I got the beeping to stop
