@@ -45,46 +45,79 @@ struct MLUtilities {
 }
 
 actor AIDosing: MachineLearning {
+    private let insulinStorage: InsulinStorage
+
+    init(insulinStorage: InsulinStorage) {
+        self.insulinStorage = insulinStorage
+    }
+
     private func log(_ str: String) async {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ssZZZZZ"
         let at = dateFormatter.string(from: Date())
-        
+
         let logString = "\(at): AI temp basal: \(str)"
         print(logString)
     }
 
-    // This version of the algorithm is specifically to dose more insulin
+    /// Proportional controller with dynamicISF, decoupled from the reactive safe (PID) model.
+    /// Computes the correction insulin needed to bring glucose to target using an
+    /// aggressiveness-adjusted ISF, then nets it against actual IOB relative to the
+    /// baseline IOB we'd expect from continuous basal delivery.
+    ///
+    /// Intent: dose more aggressively above target. Returns nil when at/below target so the
+    /// pipeline falls back to the physiological tempBasal.
     func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date, pidTempBasal: PIDTempBasalResult) async -> Double? {
-        
+
         await log("start")
         let dataFrame = dataFrame ?? []
-        
+
         // since this model is just about dosing more, if we have been low at
         // all in the past two hours just bail
         let min = dataFrame.map({ $0.glucose }).min() ?? 75
         guard min >= 70 else { await log("low in dataFrame, bail"); return nil }
 
-        return glucosDynamicISF(glucose: glucoseInMgDl, targetGlucose: targetGlucoseInMgDl, pidTempBasal: pidTempBasal)
-    }
-
-    /// Simplified version of dynamicISF from Trio. Since dynamicISF isn't based on anything
-    /// physiological -- it's just math to dose more when you're high -- let's keep the math super simple.
-    ///
-    /// Conceptually what this is trying to do is get the individual back into a more manageable range
-    /// so that the more principled adaptations can take over.
-    func glucosDynamicISF(glucose: Double, targetGlucose: Double, pidTempBasal: PIDTempBasalResult) -> Double? {
-
-        // increase dose by up to 50%
+        // ML is intended to dose more aggressively above target; defer to phys otherwise
+        guard glucoseInMgDl > targetGlucoseInMgDl else { return nil }
+        // if glucose is dropping already, we can bail from ML dosing
+        guard let derivative = pidTempBasal.derivative, derivative >= 0 else {
+            return nil
+        }
+        
+        // dynamicISF: lower ISF (more aggressive) linearly with glucose excess above target,
+        // capped at a 50% increase in dosing.
         let maxInsulinScalingIncrease = 0.5
         let glucoseRangeForScaling = 150.0
+        let rawScaling = 1 + maxInsulinScalingIncrease * (glucoseInMgDl - targetGlucoseInMgDl) / glucoseRangeForScaling
+        let scalingFactor = rawScaling.clamp(low: 1, high: 1 + maxInsulinScalingIncrease)
+        let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
+        guard insulinSensitivity > 0 else { return nil }
+        let mlInsulinSensitivity = insulinSensitivity / scalingFactor
+
+        // baseline IOB we'd expect from continuous basal delivery
+        let basalRate = settings.learnedBasalRate(at: at)
+        let insulinType = await insulinStorage.currentInsulinType()
+        let basalBaselineIoB = PhysiologicalUtilities.calculateBasalBaselineInsulinOnBoard(basalRate: basalRate, insulinType: insulinType)
+
+        // P-controller in glucose units, converted to insulin via the adjusted ISF,
+        // then netted against the IOB excess over baseline.
+        let correctionInsulin = (glucoseInMgDl - targetGlucoseInMgDl) / mlInsulinSensitivity
+        let mlDose = basalBaselineIoB + correctionInsulin - insulinOnBoard
+
+        // if mlDose is 0 or negative, we can just use the reactive safe
+        // controller value
+        guard mlDose > 0 else {
+            await log("ISF_ml: Negative mlDose \(mlDose), fall back to the reactive safe controller")
+            return nil
+        }
         
-        // This conceptually lowers insulin sensitivity for glucose values between
-        // targetGlucose -> targetGlucose + 150 linearly to dose more
-        // insulin while above target
-        guard glucose > targetGlucose else { return nil }
-        let scalingFactor = 1 + maxInsulinScalingIncrease * (glucose - targetGlucose) / glucoseRangeForScaling
-        return pidTempBasal.tempBasal * scalingFactor.clamp(low: 1, high: 1 + maxInsulinScalingIncrease)
+        // convert correction insulin to a tempBasal rate over the correction window
+        let correctionDuration = settings.correctionDurationInSeconds
+        guard correctionDuration > 0 else { return nil }
+        let tempBasal = max(0, mlDose * 1.hoursToSeconds() / correctionDuration + basalRate)
+
+        await log("ISF_ml: \(mlInsulinSensitivity) baseIoB: \(basalBaselineIoB) IoB: \(insulinOnBoard) correction: \(correctionInsulin) mlDose: \(mlDose) tempBasal: \(tempBasal)")
+        return tempBasal
     }
 }
 
