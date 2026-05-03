@@ -63,10 +63,12 @@ struct PIDState: Codable {
 
 struct PhysiologicalUtilities {
     static func calculateBasalBaselineInsulinOnBoard(basalRate: Double, insulinType: InsulinType) -> Double {
-        let now = Date()
         // we use basalBaselineInsulinOnBoard to figure out how much iob we should have in steady state
-        // when we're operating at our basal rate
-        return DoseEntry(type: .basal, startDate: now - 6.hoursToSeconds(), endDate: now, value: basalRate, unit: .unitsPerHour, insulinType: insulinType, isMutable: false).insulinOnBoard(at: now)
+        // when we're operating at our basal rate. The insulin model is time-translation invariant
+        // (depends only on elapsed time since each dose), so we use a fixed anchor to keep this pure.
+        let endDate = Date(timeIntervalSinceReferenceDate: 0)
+        let startDate = endDate - 6.hoursToSeconds()
+        return DoseEntry(type: .basal, startDate: startDate, endDate: endDate, value: basalRate, unit: .unitsPerHour, insulinType: insulinType, isMutable: false).insulinOnBoard(at: endDate)
     }
 }
 

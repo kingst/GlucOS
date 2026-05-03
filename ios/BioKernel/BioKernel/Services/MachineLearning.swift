@@ -46,14 +46,14 @@ struct MLUtilities {
 
 actor AIDosing: MachineLearning {
     private let insulinStorage: InsulinStorage
-
+    private let dateFormatter = DateFormatter()
+    
     init(insulinStorage: InsulinStorage) {
         self.insulinStorage = insulinStorage
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ssZZZZZ"
     }
 
     private func log(_ str: String) async {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ssZZZZZ"
         let at = dateFormatter.string(from: Date())
 
         let logString = "\(at): AI temp basal: \(str)"
