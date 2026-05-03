@@ -96,6 +96,11 @@ actor LocalSafetyService: SafetyService {
         let lowerBound = min(lowerBoundInsulinUnits - historicalMlInsulin, 0)
         let deltaUnits = (mlTempBasalUnits - reactiveSafeTempBasalUnits).clamp(low: lowerBound, high: upperBound)
 
+        // avoid divide by 0 possibility by falling back to the reactive safe model
+        guard duration > 0 else {
+            return SafetyTempBasal(tempBasal: reactiveSafeTempBasalUnitsPerHour, machineLearningInsulinLastThreeHours: historicalMlInsulin)
+        }
+        
         // now convert units back to tempBasal and add it to our safety value
         let deltaTempBasal = deltaUnits * 1.hoursToSeconds() / duration
 
