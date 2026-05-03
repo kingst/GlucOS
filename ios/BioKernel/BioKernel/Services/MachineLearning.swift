@@ -80,7 +80,7 @@ actor AIDosing: MachineLearning {
         // ML is intended to dose more aggressively above target; defer to phys otherwise
         guard glucoseInMgDl > targetGlucoseInMgDl else { return nil }
         // if glucose is dropping already, we can bail from ML dosing
-        guard let derivative = pidTempBasal.derivative, derivative >= 0 else {
+        guard let derivative = pidTempBasal.derivative, derivative > 0 else {
             return nil
         }
         
@@ -114,7 +114,7 @@ actor AIDosing: MachineLearning {
         // convert correction insulin to a tempBasal rate over the correction window
         let correctionDuration = settings.correctionDurationInSeconds
         guard correctionDuration > 0 else { return nil }
-        let tempBasal = max(0, mlDose * 1.hoursToSeconds() / correctionDuration + basalRate)
+        let tempBasal = (mlDose * 1.hoursToSeconds() / correctionDuration + basalRate).clamp(low: 0, high: settings.maxBasalRate())
 
         await log("ISF_ml: \(mlInsulinSensitivity) baseIoB: \(basalBaselineIoB) IoB: \(insulinOnBoard) correction: \(correctionInsulin) mlDose: \(mlDose) tempBasal: \(tempBasal)")
         return tempBasal
