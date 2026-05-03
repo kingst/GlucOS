@@ -81,6 +81,7 @@ actor AIDosing: MachineLearning {
         guard glucoseInMgDl > targetGlucoseInMgDl else { return nil }
         // if glucose is dropping already, we can bail from ML dosing
         guard let derivative = pidTempBasal.derivative, derivative > 0 else {
+            await log("derivative \(pidTempBasal.derivative ?? 0) bail")
             return nil
         }
         
