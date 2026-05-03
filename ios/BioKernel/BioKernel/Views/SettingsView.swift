@@ -57,7 +57,7 @@ struct SettingsView: View {
                 Section("Guardrails") {
                     DecimalPicker(title: "Max basal rate", selection: $settingsViewModel.maxBasalRate, items: settingsViewModel.maxBasalRateValues, hasModifications: $hasModifications)
                     DecimalPicker(title: "Max bolus", selection: $settingsViewModel.maxBolus, items: settingsViewModel.maxBolusValues, hasModifications: $hasModifications)
-                    DecimalPicker(title: "Glucose safety limit", selection: $settingsViewModel.glucoseSafetyShutoff, items: settingsViewModel.glucoseSafetyShutoffValues, hasModifications: $hasModifications)
+                    DecimalPicker(title: "Suspend insulin below", selection: $settingsViewModel.glucoseShutoffThreshold, items: settingsViewModel.glucoseShutoffThresholdValues, hasModifications: $hasModifications)
                 }
                 
                 Section("Algorithm settings (advanced)") {

@@ -97,7 +97,7 @@ struct SafetyServiceTests {
         // our first dose that will run for 30 minutes
         await safetyService.record(at: startDate, decision: .tempBasal(unitsPerHour: 3.0), candidates: candidates, duration: 30.minutesToSeconds())
 
-        let firstTempBasal = await safetyService.tempBasal(at: startDate + 30.minutesToSeconds(), settings: settings.snapshot(), safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
+        let firstTempBasal = await safetyService.tempBasal(at: startDate + 30.minutesToSeconds(), settings: settings.snapshot(), reactiveSafeTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
 
         #expect(abs(firstTempBasal.tempBasal - 3.0) <= insulinAccuracy)
 
@@ -105,7 +105,7 @@ struct SafetyServiceTests {
 
         // at this point we have already delivered 2 units from ML, which is
         // our cap so the system should fall back to the safety tempBasal
-        let secondTempBasal = await safetyService.tempBasal(at: startDate + 60.minutesToSeconds(), settings: settings.snapshot(), safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
+        let secondTempBasal = await safetyService.tempBasal(at: startDate + 60.minutesToSeconds(), settings: settings.snapshot(), reactiveSafeTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
 
         #expect(abs(secondTempBasal.tempBasal - 1.0) <= insulinAccuracy)
     }
@@ -125,7 +125,7 @@ struct SafetyServiceTests {
         // add a micro bolus after 5 minutes
         await safetyService.record(at: startDate + 5.minutesToSeconds(), decision: .microBolus(units: 2.9), candidates: bolusCandidates, duration: 30.minutesToSeconds())
 
-        let secondTempBasal = await safetyService.tempBasal(at: startDate + 60.minutesToSeconds(), settings: settings.snapshot(), safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
+        let secondTempBasal = await safetyService.tempBasal(at: startDate + 60.minutesToSeconds(), settings: settings.snapshot(), reactiveSafeTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
 
         #expect(abs(secondTempBasal.tempBasal - 1.0) <= insulinAccuracy)
     }
@@ -179,7 +179,7 @@ struct SafetyServiceTests {
         await settings.update(pumpBasalRateUnitsPerHour: 2.0 / 3)
         let startDate = Date.f("2018-07-15 03:34:29 +0000")
 
-        let firstTempBasal = await safetyService.tempBasal(at: startDate, settings: settings.snapshot(), safetyTempBasalUnitsPerHour: 4.0, machineLearningTempBasalUnitsPerHour: 0.0, duration: 30.minutesToSeconds())
+        let firstTempBasal = await safetyService.tempBasal(at: startDate, settings: settings.snapshot(), reactiveSafeTempBasalUnitsPerHour: 4.0, machineLearningTempBasalUnitsPerHour: 0.0, duration: 30.minutesToSeconds())
 
         #expect(abs(firstTempBasal.tempBasal - 0.0) <= insulinAccuracy)
 
@@ -189,7 +189,7 @@ struct SafetyServiceTests {
 
         // at this point we have a deficit of 2 units from ML, which is
         // our cap so the system should fall back to the safety tempBasal
-        let secondTempBasal = await safetyService.tempBasal(at: startDate + 30.minutesToSeconds(), settings: settings.snapshot(), safetyTempBasalUnitsPerHour: 4.0, machineLearningTempBasalUnitsPerHour: 0.0, duration: 30.minutesToSeconds())
+        let secondTempBasal = await safetyService.tempBasal(at: startDate + 30.minutesToSeconds(), settings: settings.snapshot(), reactiveSafeTempBasalUnitsPerHour: 4.0, machineLearningTempBasalUnitsPerHour: 0.0, duration: 30.minutesToSeconds())
 
         #expect(abs(secondTempBasal.tempBasal - 4.0) <= insulinAccuracy)
     }
@@ -212,7 +212,7 @@ struct SafetyServiceTests {
 
         // With historicalMlInsulin=0, requesting ml=3.0 vs safety=1.0 over 30 min
         // (delta = 1.0 U) sits well inside the 2.0 U / 3-hour budget — should pass through unchanged.
-        let result = await safetyService.tempBasal(at: startDate + 5.minutesToSeconds(), settings: settings.snapshot(), safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
+        let result = await safetyService.tempBasal(at: startDate + 5.minutesToSeconds(), settings: settings.snapshot(), reactiveSafeTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
 
         #expect(abs(result.tempBasal - 3.0) <= insulinAccuracy)
     }
@@ -234,7 +234,7 @@ struct SafetyServiceTests {
 
         // ML wants 3.0, safety wants 1.0. Budget exhausted, so the upper clamp
         // forces deltaUnits → 0 and the result lands at safety.
-        let result = await safetyService.tempBasal(at: startDate + 10.minutesToSeconds(), settings: settings.snapshot(), safetyTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
+        let result = await safetyService.tempBasal(at: startDate + 10.minutesToSeconds(), settings: settings.snapshot(), reactiveSafeTempBasalUnitsPerHour: 1.0, machineLearningTempBasalUnitsPerHour: 3.0, duration: 30.minutesToSeconds())
 
         #expect(abs(result.tempBasal - 1.0) <= insulinAccuracy)
     }

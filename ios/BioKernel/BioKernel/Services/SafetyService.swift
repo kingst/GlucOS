@@ -9,7 +9,7 @@ import Foundation
 import LoopKit
 
 public protocol SafetyService {
-    func tempBasal(at: Date, settings: CodableSettings, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval) async -> SafetyTempBasal
+    func tempBasal(at: Date, settings: CodableSettings, reactiveSafeTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval) async -> SafetyTempBasal
     func record(at: Date, decision: DosingDecision, candidates: DoseCandidates, duration: TimeInterval) async
 }
 
@@ -70,8 +70,8 @@ actor LocalSafetyService: SafetyService {
     
     // Note: we ignore actual insulin delivered and use the
     // programmed values for the safety service
-    func tempBasal(at: Date, settings: CodableSettings, safetyTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval) async ->  SafetyTempBasal {
-        
+    func tempBasal(at: Date, settings: CodableSettings, reactiveSafeTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval) async ->  SafetyTempBasal {
+
         let start = at - timeHorizon
         let events = safetyStates.filter { $0.at >= (start - duration) && $0.at < at }
 
@@ -80,26 +80,26 @@ actor LocalSafetyService: SafetyService {
         for (event, nextTime) in zip(events, nextTimes) {
             historicalMlInsulin += event.deltaUnitsDeliveredByMachineLearning(from: start, to: nextTime)
         }
-                
+
         // convert tempBasal rates to units of insulin, assuming it runs for the entire duration
         let mlTempBasalUnits = machineLearningTempBasalUnitsPerHour * duration / 1.hoursToSeconds()
-        let safetyTempBasalUnits = safetyTempBasalUnitsPerHour * duration / 1.hoursToSeconds()
-        
+        let reactiveSafeTempBasalUnits = reactiveSafeTempBasalUnitsPerHour * duration / 1.hoursToSeconds()
+
         // calculate our bounds based on the basal rate
         let safetyBounds = settings.maxBasalRate() * timeHorizon / 1.hoursToSeconds()
         let upperBoundInsulinUnits = safetyBounds
         let lowerBoundInsulinUnits = -safetyBounds
-        
+
         // make sure that the upperBound doesn't go below 0
         // and that the lowerBound doesn't go above 0
         let upperBound = max(upperBoundInsulinUnits - historicalMlInsulin, 0)
         let lowerBound = min(lowerBoundInsulinUnits - historicalMlInsulin, 0)
-        let deltaUnits = (mlTempBasalUnits - safetyTempBasalUnits).clamp(low: lowerBound, high: upperBound)
+        let deltaUnits = (mlTempBasalUnits - reactiveSafeTempBasalUnits).clamp(low: lowerBound, high: upperBound)
 
         // now convert units back to tempBasal and add it to our safety value
         let deltaTempBasal = deltaUnits * 1.hoursToSeconds() / duration
-        
-        return SafetyTempBasal(tempBasal: safetyTempBasalUnitsPerHour + deltaTempBasal, machineLearningInsulinLastThreeHours: historicalMlInsulin)
+
+        return SafetyTempBasal(tempBasal: reactiveSafeTempBasalUnitsPerHour + deltaTempBasal, machineLearningInsulinLastThreeHours: historicalMlInsulin)
     }
     
     func record(at: Date, decision: DosingDecision, candidates: DoseCandidates, duration: TimeInterval) async {

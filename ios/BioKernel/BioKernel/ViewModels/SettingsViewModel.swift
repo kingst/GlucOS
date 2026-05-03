@@ -50,7 +50,7 @@ public class SettingsViewModel: ObservableObject {
     let maxBasalRateValues = stride(from: 0.5, through: 30.0, by: 0.5).map { DecimalSetting(value: $0, units: basalRateUnits) }
     let maxBolusValues = stride(from: 0.0, through: 30.0, by: 1.0).map { DecimalSetting(value: $0, units: insulinUnits) }
     let glucoseTargetValues = stride(from: 80.0, through: 140.0, by: 5.0).map { DecimalSetting(value: $0, units: glucoseUnits) }
-    let glucoseSafetyShutoffValues = stride(from: 70.0, through: 130.0, by: 5.0).map { DecimalSetting(value: $0, units: glucoseUnits) }
+    let glucoseShutoffThresholdValues = stride(from: 70.0, through: 130.0, by: 5.0).map { DecimalSetting(value: $0, units: glucoseUnits) }
     let microBolusDoseFactorValues = stride(from: 0.25, through: 0.5, by: 0.05).map { DecimalSetting(value: $0, units: gainUnits) }
     let bolusValues = stride(from: 0.5, through: 20.0, by: 0.5).map { DecimalSetting(value: $0, units: insulinUnits) }
     let pidIntegratorValues = stride(from: 0.0, through: 0.085, by: 0.005).map {
@@ -82,7 +82,7 @@ public class SettingsViewModel: ObservableObject {
     @Published var insulinSensitivity: DecimalSetting
     @Published var maxBasalRate: DecimalSetting
     @Published var maxBolus: DecimalSetting
-    @Published var glucoseSafetyShutoff: DecimalSetting
+    @Published var glucoseShutoffThreshold: DecimalSetting
     @Published var glucoseTarget: DecimalSetting
     @Published var bolusAmountForLess: DecimalSetting
     @Published var bolusAmountForUsual: DecimalSetting
@@ -147,7 +147,7 @@ public class SettingsViewModel: ObservableObject {
         mlBasalSchedule = DecimalSettingSchedule(settings.learnedBasalRatesUnitsPerHour, units: SettingsViewModel.basalRateUnits)
         mlInsulinSensitivitySchedule = DecimalSettingSchedule(settings.learnedInsulinSensitivityInMgDlPerUnit, units: SettingsViewModel.insulinSensitivityUnits)
         maxBolus = DecimalSetting(value: settings.maxBolusUnits, units: SettingsViewModel.insulinUnits)
-        glucoseSafetyShutoff = DecimalSetting(value: settings.shutOffGlucoseInMgDl, units: SettingsViewModel.glucoseUnits)
+        glucoseShutoffThreshold = DecimalSetting(value: settings.shutOffGlucoseInMgDl, units: SettingsViewModel.glucoseUnits)
         glucoseTarget = DecimalSetting(value: settings.targetGlucoseInMgDl, units: SettingsViewModel.glucoseUnits)
         bolusAmountForLess = DecimalSetting(value: settings.getBolusAmountForLess(), units: SettingsViewModel.insulinUnits)
         bolusAmountForUsual = DecimalSetting(value: settings.getBolusAmountForUsual(), units: SettingsViewModel.insulinUnits)
@@ -175,7 +175,7 @@ public class SettingsViewModel: ObservableObject {
         mlBasalSchedule = DecimalSettingSchedule(settings.learnedBasalRatesUnitsPerHour, units: SettingsViewModel.basalRateUnits)
         mlInsulinSensitivitySchedule = DecimalSettingSchedule(settings.learnedInsulinSensitivityInMgDlPerUnit, units: SettingsViewModel.insulinSensitivityUnits)
         maxBolus = DecimalSetting(value: settings.maxBolusUnits, units: SettingsViewModel.insulinUnits)
-        glucoseSafetyShutoff = DecimalSetting(value: settings.shutOffGlucoseInMgDl, units: SettingsViewModel.glucoseUnits)
+        glucoseShutoffThreshold = DecimalSetting(value: settings.shutOffGlucoseInMgDl, units: SettingsViewModel.glucoseUnits)
         glucoseTarget = DecimalSetting(value: settings.targetGlucoseInMgDl, units: SettingsViewModel.glucoseUnits)
         bolusAmountForLess = DecimalSetting(value: settings.getBolusAmountForLess(), units: SettingsViewModel.insulinUnits)
         bolusAmountForUsual = DecimalSetting(value: settings.getBolusAmountForUsual(), units: SettingsViewModel.insulinUnits)
@@ -189,7 +189,7 @@ public class SettingsViewModel: ObservableObject {
     func snapshot() -> CodableSettings {
         let learnedBasalRate = LearnedSettingsSchedule.from(schedule: mlBasalSchedule)
         let learnedInsulinSensitivity = LearnedSettingsSchedule.from(schedule: mlInsulinSensitivitySchedule)
-        return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: pumpBasalRate.value, insulinSensitivityInMgDlPerUnit: insulinSensitivity.value, maxBasalRateUnitsPerHour: maxBasalRate.value, maxBolusUnits: maxBolus.value, shutOffGlucoseInMgDl: glucoseSafetyShutoff.value, targetGlucoseInMgDl: glucoseTarget.value, closedLoopEnabled: closedLoopEnabled, useMachineLearningClosedLoop: useMachineLearningClosedLoop, useMicroBolus: useMicroBolus, microBolusDoseFactor: microBolusDoseFactor.value, learnedBasalRateUnitsPerHour: learnedBasalRate, learnedInsulinSensitivityInMgDlPerUnit: learnedInsulinSensitivity, bolusAmountForLess: bolusAmountForLess.value, bolusAmountForUsual: bolusAmountForUsual.value, bolusAmountForMore: bolusAmountForMore.value, pidIntegratorGain: pidIntegratorGain.value, pidDerivativeGain: pidDerivativeGain.value, useBiologicalInvariant: useBiologicalInvariant, machineLearningGain: machineLearningGain.value)
+        return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: pumpBasalRate.value, insulinSensitivityInMgDlPerUnit: insulinSensitivity.value, maxBasalRateUnitsPerHour: maxBasalRate.value, maxBolusUnits: maxBolus.value, shutOffGlucoseInMgDl: glucoseShutoffThreshold.value, targetGlucoseInMgDl: glucoseTarget.value, closedLoopEnabled: closedLoopEnabled, useMachineLearningClosedLoop: useMachineLearningClosedLoop, useMicroBolus: useMicroBolus, microBolusDoseFactor: microBolusDoseFactor.value, learnedBasalRateUnitsPerHour: learnedBasalRate, learnedInsulinSensitivityInMgDlPerUnit: learnedInsulinSensitivity, bolusAmountForLess: bolusAmountForLess.value, bolusAmountForUsual: bolusAmountForUsual.value, bolusAmountForMore: bolusAmountForMore.value, pidIntegratorGain: pidIntegratorGain.value, pidDerivativeGain: pidDerivativeGain.value, useBiologicalInvariant: useBiologicalInvariant, machineLearningGain: machineLearningGain.value)
     }
 }
 

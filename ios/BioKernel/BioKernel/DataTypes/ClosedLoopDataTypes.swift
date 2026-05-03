@@ -334,7 +334,7 @@ struct DosingPipeline {
         let mlDuration = Date().timeIntervalSince(mlStart)
 
         let safetyStart = Date()
-        let safetyTempBasalResult = await safety.tempBasal(at: at, settings: settings, safetyTempBasalUnitsPerHour: physiologicalTempBasal, machineLearningTempBasalUnitsPerHour: mlTempBasal, duration: settings.correctionDurationInSeconds)
+        let safetyTempBasalResult = await safety.tempBasal(at: at, settings: settings, reactiveSafeTempBasalUnitsPerHour: physiologicalTempBasal, machineLearningTempBasalUnitsPerHour: mlTempBasal, duration: settings.correctionDurationInSeconds)
         let safetyTempBasal = guardrails.clamp(safetyTempBasalResult.tempBasal)
         let safetyDuration = Date().timeIntervalSince(safetyStart)
 
