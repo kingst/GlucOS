@@ -28,6 +28,8 @@
 		3B4052302B6DA87A004D232D /* AddedGlucoseModel.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 3B40522F2B6DA87A004D232D /* AddedGlucoseModel.mlpackage */; };
 		3B40DE672D243C6C0032328F /* MicroBolusAmountTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B40DE662D243C6C0032328F /* MicroBolusAmountTest.swift */; };
 		3B40DE692D24453F0032328F /* LoopFunctionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B40DE682D24453F0032328F /* LoopFunctionTests.swift */; };
+		3B4740632FA7B0BE00352C3E /* DataExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B4740622FA7B0BE00352C3E /* DataExportView.swift */; };
+		3B4740652FA7B0CD00352C3E /* SettingsHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B4740642FA7B0CD00352C3E /* SettingsHomeView.swift */; };
 		3B4CFE1C2C223B8900BDB1CB /* CGMBLEKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B4CFE132C2230D800BDB1CB /* CGMBLEKit.framework */; };
 		3B4CFE1D2C223B8900BDB1CB /* CGMBLEKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3B4CFE132C2230D800BDB1CB /* CGMBLEKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3B4CFE1E2C223B9300BDB1CB /* CGMBLEKitUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B4CFE162C2230DF00BDB1CB /* CGMBLEKitUI.framework */; };
@@ -243,6 +245,8 @@
 		3B40522F2B6DA87A004D232D /* AddedGlucoseModel.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = AddedGlucoseModel.mlpackage; sourceTree = "<group>"; };
 		3B40DE662D243C6C0032328F /* MicroBolusAmountTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicroBolusAmountTest.swift; sourceTree = "<group>"; };
 		3B40DE682D24453F0032328F /* LoopFunctionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopFunctionTests.swift; sourceTree = "<group>"; };
+		3B4740622FA7B0BE00352C3E /* DataExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataExportView.swift; sourceTree = "<group>"; };
+		3B4740642FA7B0CD00352C3E /* SettingsHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsHomeView.swift; sourceTree = "<group>"; };
 		3B4CFE132C2230D800BDB1CB /* CGMBLEKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CGMBLEKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B4CFE162C2230DF00BDB1CB /* CGMBLEKitUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CGMBLEKitUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B5076382F92F77400E5D3A6 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
@@ -590,6 +594,7 @@
 				3B36F67C2B311C0800008F4A /* AppColors.swift */,
 				3B7F08612B31590D002930A4 /* BolusProgressView.swift */,
 				3BBC7C7C2B15679700410123 /* BolusView.swift */,
+				3B4740622FA7B0BE00352C3E /* DataExportView.swift */,
 				3B6063B12B54BDB7009D9CBC /* DecimalPicker.swift */,
 				3B8906542E50EA9500F32799 /* DiagnosticChartScrollView.swift */,
 				3BF1F1E32E4F1D3D00AF36AD /* DiagnosticDataView.swift */,
@@ -606,6 +611,7 @@
 				3B36F67A2B311BCE00008F4A /* NavigationModifier.swift */,
 				3BF1F1E72E4F1D3D00AF36AD /* PIDView.swift */,
 				3BAD0C4B2E521ECA00B1F8CF /* PumpHistoryView.swift */,
+				3B4740642FA7B0CD00352C3E /* SettingsHomeView.swift */,
 				3B6063B32B54BDFA009D9CBC /* SettingsView.swift */,
 			);
 			path = Views;
@@ -861,10 +867,12 @@
 				3C4911F12AF4D0630070D3B4 /* ManagerExtensions.swift in Sources */,
 				3B0044762F956C7B0051AFA7 /* AppObservableState.swift in Sources */,
 				3B5076392F92F77400E5D3A6 /* PushNotificationService.swift in Sources */,
+				3B4740652FA7B0CD00352C3E /* SettingsHomeView.swift in Sources */,
 				3C4911F32AF4D77E0070D3B4 /* Colors.swift in Sources */,
 				3BD3FFA92F9C311B0056F151 /* HealthKitSettingsView.swift in Sources */,
 				3B0044802F956D0000000001 /* AppComposition.swift in Sources */,
 				3B0044822F956D0000000003 /* AppContextNotifier.swift in Sources */,
+				3B4740632FA7B0BE00352C3E /* DataExportView.swift in Sources */,
 				3BA00A552D23157C0002B051 /* SettingsDataTypes.swift in Sources */,
 				3BF1F1E22E4F1A4100AF36AD /* ClosedLoopChartData.swift in Sources */,
 				3C4F79442AFB17D500786EB5 /* InsulinStorage.swift in Sources */,

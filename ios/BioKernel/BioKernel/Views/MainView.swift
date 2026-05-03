@@ -17,7 +17,7 @@ struct MainView: View {
     @EnvironmentObject var appState: AppObservableState
     @EnvironmentObject var glucoseAlertsViewModel: GlucoseAlertsViewModel
     @Environment(\.composition) var composition: AppComposition?
-    @State var navigateToSettings = false
+    @State var navigateToSettingsHome = false
     @State var navigateToAddCgm = false
     @State var navigateToCgmSettings = false
     @State var navigateToAddPump = false
@@ -25,7 +25,6 @@ struct MainView: View {
     @State var navigateToBolus = false
     @State var navigateToSettingsFromUrl = false
     @State var navigateToGlucoseAlerts = false
-    @State var navigateToHealthKitSettings = false
     @State var settingsFromUrl: CodableSettings? = nil
     @State var selectedHours = 4
     @State var showChartSettingsSheet = false
@@ -115,17 +114,8 @@ struct MainView: View {
                                 Image(systemName: "bell.slash.fill").tint(.white)
                             }
                         }
-                        Menu {
-                            Button {
-                                navigateToSettings = true
-                            } label: {
-                                Label("Therapy settings", systemImage: "slider.horizontal.3")
-                            }
-                            Button {
-                                navigateToHealthKitSettings = true
-                            } label: {
-                                Label("HealthKit", systemImage: "heart.fill")
-                            }
+                        Button {
+                            navigateToSettingsHome = true
                         } label: {
                             Image(systemName: "gearshape.fill")
                                 .tint(.white)
@@ -133,11 +123,8 @@ struct MainView: View {
                     }
                 }
             }
-            .navigationDestination(isPresented: $navigateToSettings) {
-                if let composition {
-                    SettingsView(settingsFromUrl: nil, settingsViewModel: makeSettingsViewModel(composition: composition))
-                        .modifier(NavigationModifier())
-                }
+            .navigationDestination(isPresented: $navigateToSettingsHome) {
+                SettingsHomeView()
             }
             .navigationDestination(isPresented: $navigateToSettingsFromUrl) {
                 if let composition {
@@ -170,9 +157,6 @@ struct MainView: View {
             }
             .navigationDestination(isPresented: $navigateToGlucoseAlerts) {
                 GlucoseAlertsView()
-            }
-            .navigationDestination(isPresented: $navigateToHealthKitSettings) {
-                HealthKitSettingsView()
             }
             .sheet(isPresented: $showChartSettingsSheet) {
                 if let composition {
