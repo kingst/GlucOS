@@ -69,7 +69,10 @@ actor AIDosing: MachineLearning {
         let min = dataFrame.map({ $0.glucose }).min() ?? 75
         guard min >= 70 else { await log("low in dataFrame, bail"); return nil }
 
-        return glucosDynamicISF(glucose: glucoseInMgDl, targetGlucose: targetGlucoseInMgDl, pidTempBasal: pidTempBasal)
+        guard let tempBasal = glucosDynamicISF(glucose: glucoseInMgDl, targetGlucose: targetGlucoseInMgDl, pidTempBasal: pidTempBasal) else {
+            return nil
+        }
+        return tempBasal.clamp(low: 0, high: settings.maxBasalRate())
     }
 
     /// Simplified version of dynamicISF from Trio. Since dynamicISF isn't based on anything
