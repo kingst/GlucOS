@@ -76,6 +76,7 @@ final class AppComposition {
         let observableState = AppObservableState()
         let healthKitStorage = LocalHealthKitStorage(storedObjectFactory: storedObjectFactory)
         let targetGlucoseService = LocalTargetGlucoseService()
+        let machineLearning = AIDosing()
         let pushNotificationService = LocalPushNotificationService()
 
         // Tier 1 — only Tier 0 deps
@@ -98,7 +99,6 @@ final class AppComposition {
             watchComms: { watchCommsBox.resolve() },
             settingsStorage: { settingsStorage }
         )
-        let machineLearning = AIDosing(insulinStorage: insulinStorage)
 
         // Tier 2 — physiology depends on storages
         let physiologicalModels = LocalPhysiologicalModels(
