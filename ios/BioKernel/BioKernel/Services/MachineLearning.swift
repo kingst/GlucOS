@@ -72,7 +72,7 @@ actor AIDosing: MachineLearning {
         guard let tempBasal = glucosDynamicISF(glucose: glucoseInMgDl, targetGlucose: targetGlucoseInMgDl, pidTempBasal: pidTempBasal) else {
             return nil
         }
-        return tempBasal.clamp(low: 0, high: settings.maxBasalRate())
+        return tempBasal
     }
 
     /// Simplified version of dynamicISF from Trio. Since dynamicISF isn't based on anything
