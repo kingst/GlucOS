@@ -17,6 +17,10 @@ class GlucoseAlertManager {
     }
     
     // Called by StateViewModel when context updates
+    //
+    // Note: this haptic alert fires on any in-range -> out-of-range transition
+    // during a workout, regardless of the phone's glucose alerts enabled
+    // setting (isPredictedGlucoseInRange only reflects the thresholds).
     func handleStateUpdate(oldState: BioKernelState?, newState: BioKernelState) {
         guard let oldState = oldState,
               oldState.isPredictedGlucoseInRange && !newState.isPredictedGlucoseInRange,

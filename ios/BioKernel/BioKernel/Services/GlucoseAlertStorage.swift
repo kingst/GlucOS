@@ -208,7 +208,13 @@ class PredictiveGlucoseAlertStorage: GlucoseAlertStorage {
         let nextState = glucoseAlertSettings.nextState(predictedGlucose: predictedGlucose)
         
         let alertString = nextState == .inRange ? nil : createAlertString(predictedGlucose: predictedGlucose)
-        let _ = updateNotification(at: now, currentState: currentState, nextState: nextState, alertString: alertString)
+        if glucoseAlertSettings.enabled {
+            let _ = updateNotification(at: now, currentState: currentState, nextState: nextState, alertString: alertString)
+        } else {
+            // alerts are disabled: don't deliver notifications, but keep tracking
+            // alertState so the state machine is current if the user re-enables
+            clearCurrentNotification()
+        }
 
         let newSettings = glucoseAlertSettings.updated(alertState: nextState, alertString: alertString)
         update(alertSettings: newSettings)
@@ -221,6 +227,9 @@ class PredictiveGlucoseAlertStorage: GlucoseAlertStorage {
     }
     
     func update(enabled: Bool) {
+        if !enabled {
+            clearCurrentNotification()
+        }
         update(alertSettings: glucoseAlertSettings.updated(enabled: enabled))
     }
     func update(highLevelMgDl: Double) {
