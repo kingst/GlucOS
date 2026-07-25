@@ -83,6 +83,14 @@
 		3B96F2A32D08CD6B00ABBA16 /* SessionDelegator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B96F28D2D08CD6B00ABBA16 /* SessionDelegator.swift */; };
 		3B96F2A72D08CD6B00ABBA16 /* SessionCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B96F28C2D08CD6B00ABBA16 /* SessionCommands.swift */; };
 		3B96F2AC2D0904EE00ABBA16 /* WatchCommsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B96F2AB2D0904EE00ABBA16 /* WatchCommsService.swift */; };
+		3B9C96E030151A770088F33E /* RileyLinkBLEKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B9C96DD30151A770088F33E /* RileyLinkBLEKit.framework */; };
+		3B9C96E130151A770088F33E /* RileyLinkBLEKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3B9C96DD30151A770088F33E /* RileyLinkBLEKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		3B9C96E230151A770088F33E /* RileyLinkKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B9C96DE30151A770088F33E /* RileyLinkKit.framework */; };
+		3B9C96E330151A770088F33E /* RileyLinkKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3B9C96DE30151A770088F33E /* RileyLinkKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		3B9C96E430151A770088F33E /* RileyLinkKitUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B9C96DF30151A770088F33E /* RileyLinkKitUI.framework */; };
+		3B9C96E530151A770088F33E /* RileyLinkKitUI.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3B9C96DF30151A770088F33E /* RileyLinkKitUI.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		3B9C96E730151A870088F33E /* OmnipodKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B9C96E630151A870088F33E /* OmnipodKit.framework */; };
+		3B9C96E830151A870088F33E /* OmnipodKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3B9C96E630151A870088F33E /* OmnipodKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3BA00A532D22D6210002B051 /* ClosedLoopDataTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BA00A522D22D6210002B051 /* ClosedLoopDataTypes.swift */; };
 		3BA00A552D23157C0002B051 /* SettingsDataTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BA00A542D23157C0002B051 /* SettingsDataTypes.swift */; };
 		3BA00A572D231CA00002B051 /* ClosedLoopSafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BA00A562D231CA00002B051 /* ClosedLoopSafetyTests.swift */; };
@@ -114,8 +122,6 @@
 		3BF1F1E92E4F1D3D00AF36AD /* InsulinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF1F1E52E4F1D3D00AF36AD /* InsulinView.swift */; };
 		3BF1F1EA2E4F1D3D00AF36AD /* DiagnosticDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF1F1E32E4F1D3D00AF36AD /* DiagnosticDataView.swift */; };
 		3BF1F1EB2E4F1D3D00AF36AD /* PIDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF1F1E72E4F1D3D00AF36AD /* PIDView.swift */; };
-		3C07C88F2AF9625A008F604C /* OmniBLE.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C07C88E2AF9625A008F604C /* OmniBLE.framework */; };
-		3C07C8902AF9625A008F604C /* OmniBLE.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3C07C88E2AF9625A008F604C /* OmniBLE.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3C07C89B2AF969F2008F604C /* AddPumpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C07C89A2AF969F1008F604C /* AddPumpView.swift */; };
 		3C07C8A02AF986EF008F604C /* PumpManagerViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C07C89F2AF986EF008F604C /* PumpManagerViews.swift */; };
 		3C07C8A22AF9C2AD008F604C /* DoseProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C07C8A12AF9C2AD008F604C /* DoseProgress.swift */; };
@@ -187,13 +193,16 @@
 				3C62EF692B218502001A4EF3 /* G7SensorKitUI.framework in Embed Frameworks */,
 				3B4CFE232C223DD900BDB1CB /* ShareClientUI.framework in Embed Frameworks */,
 				3B709AB02AF49370004E5885 /* LoopKitUI.framework in Embed Frameworks */,
-				3C07C8902AF9625A008F604C /* OmniBLE.framework in Embed Frameworks */,
+				3B9C96E330151A770088F33E /* RileyLinkKit.framework in Embed Frameworks */,
+				3B9C96E530151A770088F33E /* RileyLinkKitUI.framework in Embed Frameworks */,
 				3C62EF662B218313001A4EF3 /* G7SensorKit.framework in Embed Frameworks */,
 				3B4CFE212C223DD200BDB1CB /* ShareClient.framework in Embed Frameworks */,
 				3B709AB32AF49377004E5885 /* MockKit.framework in Embed Frameworks */,
 				3C21A5AE2B16755D00AC6D51 /* SwiftCharts in Embed Frameworks */,
+				3B9C96E130151A770088F33E /* RileyLinkBLEKit.framework in Embed Frameworks */,
 				3B4CFE1D2C223B8900BDB1CB /* CGMBLEKit.framework in Embed Frameworks */,
 				3BBC7C772B15620200410123 /* LoopTestingKit.framework in Embed Frameworks */,
+				3B9C96E830151A870088F33E /* OmnipodKit.framework in Embed Frameworks */,
 				3B709AB62AF4937B004E5885 /* MockKitUI.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
@@ -285,6 +294,10 @@
 		3B96F28C2D08CD6B00ABBA16 /* SessionCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCommands.swift; sourceTree = "<group>"; };
 		3B96F28D2D08CD6B00ABBA16 /* SessionDelegator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDelegator.swift; sourceTree = "<group>"; };
 		3B96F2AB2D0904EE00ABBA16 /* WatchCommsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchCommsService.swift; sourceTree = "<group>"; };
+		3B9C96DD30151A770088F33E /* RileyLinkBLEKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = RileyLinkBLEKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		3B9C96DE30151A770088F33E /* RileyLinkKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = RileyLinkKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		3B9C96DF30151A770088F33E /* RileyLinkKitUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = RileyLinkKitUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		3B9C96E630151A870088F33E /* OmnipodKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = OmnipodKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3BA00A522D22D6210002B051 /* ClosedLoopDataTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClosedLoopDataTypes.swift; sourceTree = "<group>"; };
 		3BA00A542D23157C0002B051 /* SettingsDataTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDataTypes.swift; sourceTree = "<group>"; };
 		3BA00A562D231CA00002B051 /* ClosedLoopSafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClosedLoopSafetyTests.swift; sourceTree = "<group>"; };
@@ -312,7 +325,6 @@
 		3BF1F1E52E4F1D3D00AF36AD /* InsulinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsulinView.swift; sourceTree = "<group>"; };
 		3BF1F1E62E4F1D3D00AF36AD /* MLView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLView.swift; sourceTree = "<group>"; };
 		3BF1F1E72E4F1D3D00AF36AD /* PIDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PIDView.swift; sourceTree = "<group>"; };
-		3C07C88E2AF9625A008F604C /* OmniBLE.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = OmniBLE.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3C07C8972AF964E4008F604C /* MKRingProgressView.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = MKRingProgressView.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3C07C89A2AF969F1008F604C /* AddPumpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AddPumpView.swift; path = BioKernel/Views/AddPumpView.swift; sourceTree = SOURCE_ROOT; };
 		3C07C89E2AF9837F008F604C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -372,13 +384,16 @@
 				3B709AB22AF49377004E5885 /* MockKit.framework in Frameworks */,
 				3B4CFE222C223DD900BDB1CB /* ShareClientUI.framework in Frameworks */,
 				3C62EF682B218502001A4EF3 /* G7SensorKitUI.framework in Frameworks */,
+				3B9C96E230151A770088F33E /* RileyLinkKit.framework in Frameworks */,
+				3B9C96E430151A770088F33E /* RileyLinkKitUI.framework in Frameworks */,
 				3B4CFE1E2C223B9300BDB1CB /* CGMBLEKitUI.framework in Frameworks */,
-				3C07C88F2AF9625A008F604C /* OmniBLE.framework in Frameworks */,
 				3B4CFE202C223DD200BDB1CB /* ShareClient.framework in Frameworks */,
 				3C62EF652B218313001A4EF3 /* G7SensorKit.framework in Frameworks */,
 				3B4CFE1C2C223B8900BDB1CB /* CGMBLEKit.framework in Frameworks */,
+				3B9C96E030151A770088F33E /* RileyLinkBLEKit.framework in Frameworks */,
 				3C21A5AD2B16753800AC6D51 /* SwiftCharts in Frameworks */,
 				3BBC7C762B15620200410123 /* LoopTestingKit.framework in Frameworks */,
+				3B9C96E730151A870088F33E /* OmnipodKit.framework in Frameworks */,
 				3B709AB52AF4937B004E5885 /* MockKitUI.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -482,6 +497,10 @@
 		3B709AA92AF49366004E5885 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				3B9C96E630151A870088F33E /* OmnipodKit.framework */,
+				3B9C96DD30151A770088F33E /* RileyLinkBLEKit.framework */,
+				3B9C96DE30151A770088F33E /* RileyLinkKit.framework */,
+				3B9C96DF30151A770088F33E /* RileyLinkKitUI.framework */,
 				3B4CFE162C2230DF00BDB1CB /* CGMBLEKitUI.framework */,
 				3B4CFE132C2230D800BDB1CB /* CGMBLEKit.framework */,
 				3C62EF672B218502001A4EF3 /* G7SensorKitUI.framework */,
@@ -490,7 +509,6 @@
 				3B7C6D942B083A4C0030DFA7 /* ShareClientUI.framework */,
 				3B7C6D912B083A440030DFA7 /* ShareClient.framework */,
 				3C07C8972AF964E4008F604C /* MKRingProgressView.framework */,
-				3C07C88E2AF9625A008F604C /* OmniBLE.framework */,
 				3B709AB42AF4937B004E5885 /* MockKitUI.framework */,
 				3B709AB12AF49377004E5885 /* MockKit.framework */,
 				3B709AAE2AF49370004E5885 /* LoopKitUI.framework */,

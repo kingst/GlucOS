@@ -8,7 +8,7 @@
 import Testing
 import Foundation
 import LoopKit
-import OmniBLE
+import OmnipodKit
 
 @testable import BioKernel
 
@@ -26,16 +26,33 @@ struct ClosedLoopTests {
         #expect(abs(iob - 0.8589151141064484) <= iobAccuracy)
     }
 
-    // copied from the OmniBLE code
+    // copied from the OmnipodKit code
     func roundToSupportedBasalRate(unitsPerHour: Double) -> Double {
         // We do support rounding a 0 U/hr rate to 0
-        return OmniBLEPumpManager.onboardingSupportedBasalRates.last(where: { $0 <= unitsPerHour }) ?? 0
+        return OmniPumpManager.onboardingSupportedBasalRates.last(where: { $0 <= unitsPerHour }) ?? 0
     }
 
     @Test func basalRateRounding() throws {
         #expect(abs(roundToSupportedBasalRate(unitsPerHour: 0.31) - 0.3) <= iobAccuracy)
         #expect(abs(roundToSupportedBasalRate(unitsPerHour: 0.3491) - 0.3) <= iobAccuracy)
         #expect(abs(roundToSupportedBasalRate(unitsPerHour: 0.351) - 0.35) <= iobAccuracy)
+    }
+
+    // We reimplement OmnipodKit's internal ReservoirLevel.percentage, so pin it to the values that
+    // implementation produces. A drift here silently changes what the app reports as remaining.
+    @Test func reservoirPercentRemaining() throws {
+        let percentRemaining = LocalDeviceDataManager.reservoirPercentRemaining(unitsRemaining:)
+
+        // At or below the 50U threshold the pod reports an exact reading, scaled against 100U.
+        #expect(abs(percentRemaining(0) - 0) <= iobAccuracy)
+        #expect(abs(percentRemaining(10) - 0.1) <= iobAccuracy)
+        #expect(abs(percentRemaining(50) - 0.5) <= iobAccuracy)
+
+        // Above it the pod only reports "more than 50", which counts as full.
+        #expect(abs(percentRemaining(50.1) - 1) <= iobAccuracy)
+        #expect(abs(percentRemaining(200) - 1) <= iobAccuracy)
+
+        #expect(abs(percentRemaining(-1) - 0) <= iobAccuracy)
     }
 
     @Test func doseLogic() async {
