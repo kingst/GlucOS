@@ -25,7 +25,6 @@ public final class AppObservableState: ObservableObject {
     @Published public var activeAlert: LoopKit.Alert? = nil
     @Published public var glucoseChartData: [GlucoseChartPoint] = []
     @Published public var filteredGlucoseChartData: [FilteredGlucose] = []
-    @Published public var doseProgress: DoseProgress = DoseProgress()
 
     public init() { }
 

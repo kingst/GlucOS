@@ -47,6 +47,7 @@ actor LoopRunner: ClosedLoopService {
     private let safetyService: SafetyService
     private let settingsStorage: () -> SettingsStorage
     private let observableState: AppObservableState
+    private let doseProgress: DoseProgress
     private let pipeline: DosingPipeline
 
     init(
@@ -59,6 +60,7 @@ actor LoopRunner: ClosedLoopService {
         safetyService: SafetyService,
         settingsStorage: @escaping () -> SettingsStorage,
         observableState: AppObservableState,
+        doseProgress: DoseProgress,
         startBackgroundTask: Bool = true
     ) {
         self.storage = storedObjectFactory.create(fileName: "closed_loop_results.json")
@@ -67,6 +69,7 @@ actor LoopRunner: ClosedLoopService {
         self.safetyService = safetyService
         self.settingsStorage = settingsStorage
         self.observableState = observableState
+        self.doseProgress = doseProgress
         self.pipeline = DosingPipeline(
             physiological: physiologicalModels,
             machineLearning: machineLearning,
@@ -185,7 +188,7 @@ actor LoopRunner: ClosedLoopService {
 
         if case .microBolus(let rawUnits) = outputs.decision {
             let units = pumpManager.roundToSupportedBolusVolume(units: rawUnits)
-            if let pumpError = await pumpManager.enactBolus(units: units, activationType: .automatic, observableState: observableState) {
+            if let pumpError = await pumpManager.enactBolus(units: units, activationType: .automatic, doseProgress: doseProgress) {
                 print("Pump error: \(String(describing: pumpError))")
                 return .pumpError(at: at, settings: settings, cgmPumpMetadata: cgmPumpMetadata, snapshot: snapshot)
             }

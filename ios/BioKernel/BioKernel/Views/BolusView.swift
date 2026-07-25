@@ -57,7 +57,7 @@ struct BolusView: View {
                     case .some(_):
                         bolusError = "Not authenticated"
                     case .none:
-                        if let error = await pumpManager.enactBolus(units: unitsRounded, activationType: .manualNoRecommendation, observableState: composition.observableState) {
+                        if let error = await pumpManager.enactBolus(units: unitsRounded, activationType: .manualNoRecommendation, doseProgress: composition.doseProgress) {
                             bolusError = error.localizedDescription
                             return
                         } else {

@@ -8,13 +8,13 @@
 import SwiftUI
 
 struct MainViewAlertView: View {
-    @EnvironmentObject var appState: AppObservableState
+    @EnvironmentObject var doseProgress: DoseProgress
     @EnvironmentObject var glucoseAlertsViewModel: GlucoseAlertsViewModel
     @Environment(\.composition) var composition: AppComposition?
     var body: some View {
         VStack {
-            if !appState.doseProgress.isComplete {
-                BolusProgressView(doseProgress: appState.doseProgress)
+            if !doseProgress.isComplete {
+                BolusProgressView(doseProgress: doseProgress)
             } else if let alertString = glucoseAlertsViewModel.alertString {
                 MainViewGlucoseAlertView(alertString: alertString)
             } else {
@@ -26,7 +26,7 @@ struct MainViewAlertView: View {
             guard let composition else { return }
             if let pumpManager = composition.deviceDataManager.pumpManager, let bolusProgressReporter = pumpManager.createBolusProgressReporter(reportingOn: DispatchQueue.main) {
                 let totalUnits =  await composition.insulinStorage.activeBolus(at: Date())?.programmedUnits ?? bolusProgressReporter.progress.deliveredUnits / bolusProgressReporter.progress.percentComplete
-                appState.doseProgress.update(totalUnits: totalUnits, doseProgressReporter: bolusProgressReporter)
+                doseProgress.update(totalUnits: totalUnits, doseProgressReporter: bolusProgressReporter)
             }
         }
     }
