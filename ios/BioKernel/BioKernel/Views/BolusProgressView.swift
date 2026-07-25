@@ -15,11 +15,14 @@ struct BolusProgressView: View {
             Text("Delivered \(String(format: "%0.2f", doseProgress.deliveredUnits)) of \(String(format: "%0.2f", doseProgress.totalUnits)) units")
             Button {
                 composition?.deviceDataManager.pumpManager?.cancelBolus() { result in
-                    switch result {
-                    case .success:
-                        doseProgress.cancel()
-                    case .failure(let error):
-                        doseProgress.error = error.localizedDescription
+                    // LoopKit makes no promise about which queue this lands on
+                    Task { @MainActor in
+                        switch result {
+                        case .success:
+                            doseProgress.cancel()
+                        case .failure(let error):
+                            doseProgress.error = error.localizedDescription
+                        }
                     }
                 }
             } label: {

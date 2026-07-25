@@ -37,6 +37,7 @@ struct BioKernelApp: App {
                     .toolbarColorScheme(.dark, for: .navigationBar)
                     .environment(\.composition, composition)
                     .environmentObject(composition.observableState)
+                    .environmentObject(composition.doseProgress)
                     .environmentObject(composition.glucoseAlertsService.viewModel())
             }
         }

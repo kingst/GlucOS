@@ -49,6 +49,7 @@ final class AppComposition {
 
     // UI-observable shared state
     let observableState: AppObservableState
+    let doseProgress: DoseProgress
 
     init() {
         // The app may be woken by CGM Bluetooth before first unlock (e.g. after
@@ -74,6 +75,7 @@ final class AppComposition {
         let http = JsonHttp()
         let bluetoothProvider = BluetoothStateManager()
         let observableState = AppObservableState()
+        let doseProgress = DoseProgress()
         let healthKitStorage = LocalHealthKitStorage(storedObjectFactory: storedObjectFactory)
         let targetGlucoseService = LocalTargetGlucoseService()
         let machineLearning = AIDosing()
@@ -134,7 +136,8 @@ final class AppComposition {
             machineLearning: machineLearning,
             safetyService: safetyService,
             settingsStorage: { settingsStorage },
-            observableState: observableState
+            observableState: observableState,
+            doseProgress: doseProgress
         )
         closedLoopBox.set(closedLoopService)
 
@@ -159,6 +162,7 @@ final class AppComposition {
         self.http = http
         self.bluetoothProvider = bluetoothProvider
         self.observableState = observableState
+        self.doseProgress = doseProgress
         self.healthKitStorage = healthKitStorage
         self.targetGlucoseService = targetGlucoseService
         self.machineLearning = machineLearning

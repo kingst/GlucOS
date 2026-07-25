@@ -28,6 +28,7 @@ func makeClosedLoopService(
         safetyService: safetyService,
         settingsStorage: { settings },
         observableState: AppObservableState(),
+        doseProgress: DoseProgress(),
         startBackgroundTask: false
     )
 }
