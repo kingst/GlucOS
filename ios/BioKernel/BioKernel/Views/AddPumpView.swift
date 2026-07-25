@@ -10,8 +10,16 @@ import SwiftUI
 import LoopKit
 import LoopKitUI
 
+
+private struct PumpSetup: Identifiable {
+    let identifier: String
+    let result: Swift.Result<SetupUIResult<PumpManagerViewController, PumpManagerUI>, Error>
+
+    var id: String { identifier }
+}
+
 struct AddPumpView: View {
-    @State var descriptor: PumpManagerDescriptor?
+    @State private var pumpSetup: PumpSetup?
 
     @Environment(\.dismiss) var dismiss
     @Environment(\.composition) var composition: AppComposition?
@@ -21,7 +29,11 @@ struct AddPumpView: View {
         List {
             ForEach(pumpDescriptors, id: \.identifier) { pumpDescriptor in
                 Button {
-                    descriptor = pumpDescriptor
+                    guard let composition else { return }
+                    pumpSetup = PumpSetup(
+                        identifier: pumpDescriptor.identifier,
+                        result: composition.deviceDataManager.setupPumpManagerUI(withIdentifier: pumpDescriptor.identifier)
+                    )
                 } label: {
                     Text(pumpDescriptor.localizedTitle)
                 }
@@ -29,19 +41,14 @@ struct AddPumpView: View {
         }
         .modifier(NavigationModifier())
         .navigationTitle("Add pump")
-        .sheet(item: $descriptor, onDismiss: didDismiss) { detail in
-            if let composition {
-                switch composition.deviceDataManager.setupPumpManagerUI(withIdentifier: detail.identifier) {
-                case .failure(let error):
-                    Text("failed to setup pump manager: \(String(describing: error))")
-                case .success(let success):
-                    switch success {
-                    case .userInteractionRequired(let setupViewController):
-                        PumpSetupView(setupViewController: setupViewController)
-                    case .createdAndOnboarded(let pumpManagerUI):
-                        PumpManagerView(pumpManagerUI: pumpManagerUI)
-                    }
-                }
+        .sheet(item: $pumpSetup, onDismiss: didDismiss) { setup in
+            switch setup.result {
+            case .failure(let error):
+                Text("failed to setup pump manager: \(String(describing: error))")
+            case .success(.userInteractionRequired(let setupViewController)):
+                PumpSetupView(setupViewController: setupViewController)
+            case .success(.createdAndOnboarded(let pumpManagerUI)):
+                PumpManagerView(pumpManagerUI: pumpManagerUI)
             }
         }
     }
