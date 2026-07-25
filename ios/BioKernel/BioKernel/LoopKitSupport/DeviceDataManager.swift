@@ -9,7 +9,7 @@
 import LoopKitUI
 import MockKit
 import MockKitUI
-import OmniBLE
+import OmnipodKit
 
 import Combine
 import SwiftUI
@@ -67,18 +67,20 @@ public protocol DeviceDataManager: AnyObject {
     func cgmPumpMetadata() async -> CgmPumpMetadata
 }
 
-let omniBLEManagerIdentifier: String = "Omnipod-Dash"
-let omniBLELocalizedTitle = "Omnipod DASH"
+/// "Omni". OmnipodKit registers one manager covering every pod type, so there is a single entry in
+/// the picker; which pod you have is settled during pairing rather than by choosing here.
+let omnipodManagerIdentifier: String = OmniPumpManager.pluginIdentifier
+let omnipodLocalizedTitle = "All Omnipod Types"
 let staticPumpManagersByIdentifier: [String: PumpManagerUI.Type] = [
     MockPumpManager.pluginIdentifier : MockPumpManager.self,
-    omniBLEManagerIdentifier: OmniBLEPumpManager.self
+    omnipodManagerIdentifier: OmniPumpManager.self
 ]
 
 var availableStaticPumpManagers: [PumpManagerDescriptor] {
     return [PumpManagerDescriptor(identifier: MockPumpManager.pluginIdentifier,
                                   localizedTitle: MockPumpManager.localizedTitle),
-            PumpManagerDescriptor(identifier: omniBLEManagerIdentifier,
-                                  localizedTitle: omniBLELocalizedTitle)]
+            PumpManagerDescriptor(identifier: omnipodManagerIdentifier,
+                                  localizedTitle: omnipodLocalizedTitle)]
 }
 
 @MainActor
@@ -174,14 +176,29 @@ class LocalDeviceDataManager: DeviceDataManager {
     func cgmPumpMetadata() async -> CgmPumpMetadata {
         let cgmStartedAt = (cgmManager as? G7CGMManager)?.sensorActivatedAt
         let cgmExpiresAt = (cgmManager as? G7CGMManager)?.sensorExpiresAt
-        let pumpStartedAt = (pumpManager as? OmniBLEPumpManager)?.podActivatedAt
-        let pumpExpiresAt = (pumpManager as? OmniBLEPumpManager)?.podExpiresAt
-        let pumpPercentRemaining = (pumpManager as? OmniBLEPumpManager)?.reservoirLevel?.percentage
+        // OmnipodKit's podActivatedAt/podExpiresAt/reservoirLevel conveniences are internal to that
+        // framework, so read the pod state directly the way Trio does.
+        let podState = (pumpManager as? OmniPumpManager)?.state.podState
+        let pumpStartedAt = podState?.activatedAt
+        let pumpExpiresAt = podState?.expiresAt
+        let pumpPercentRemaining = podState?.lastInsulinMeasurements?.reservoirLevel
+            .map(Self.reservoirPercentRemaining(unitsRemaining:))
         let supportedBasalRates = pumpManager?.supportedBasalRates ?? []
         let supportedBolusVolumes = pumpManager?.supportedBolusVolumes ?? []
         return CgmPumpMetadata(cgmStartedAt: cgmStartedAt, cgmExpiresAt: cgmExpiresAt, pumpStartedAt: pumpStartedAt, pumpExpiresAt: pumpExpiresAt, pumpResevoirPercentRemaining: pumpPercentRemaining, supportedBasalRates: supportedBasalRates, supportedBolusVolumes: supportedBolusVolumes)
     }
-    
+
+    /// Pods only report an exact reservoir reading once they drop below 50U; above that they just
+    /// report "more than 50". This mirrors `ReservoirLevel.percentage` in OmnipodKit (and OmniBLE
+    /// before it), which is internal to the framework, so that the fraction we publish here keeps
+    /// the meaning it has always had. Note the jump from 0.5 to 1.0 at the threshold: that
+    /// discontinuity is inherited, not introduced here.
+    static func reservoirPercentRemaining(unitsRemaining: Double) -> Double {
+        let maximumReservoirReading = 50.0 // Pod.maximumReservoirReading, also internal
+        guard unitsRemaining <= maximumReservoirReading else { return 1 }
+        return min(1, max(0, unitsRemaining / 100))
+    }
+
     // MARK: - CGM
 
     var cgmManager: CGMManager? {
@@ -278,7 +295,21 @@ class LocalDeviceDataManager: DeviceDataManager {
     struct UnknownCGMManagerIdentifierError: Error {}
 
     public func pumpManagerTypeByIdentifier(_ identifier: String) -> PumpManagerUI.Type? {
-        return staticPumpManagersByIdentifier[identifier]
+        if let pumpManagerType = staticPumpManagersByIdentifier[identifier] {
+            return pumpManagerType
+        }
+
+        /// Installs from before the OmniBLE -> OmnipodKit migration persisted a `managerIdentifier`
+        /// of "Omnipod-Dash" (OmniBLE) or "Omnipod" (OmniKit), neither of which is registered any
+        /// more. OmnipodKit's single "Omni" manager knows how to read those older raw states, so
+        /// hand any unrecognized "Omni"-prefixed identifier to it. Without this the pump silently
+        /// fails to restore on launch and the loop stops dosing with no error surfaced. Mirrors the
+        /// same fallback in Trio's DeviceDataManager.
+        if identifier.hasPrefix(omnipodManagerIdentifier) {
+            return staticPumpManagersByIdentifier[omnipodManagerIdentifier]
+        }
+
+        return nil
     }
 
     public func cgmManagerTypeByIdentifier(_ identifier: String) -> CGMManagerUI.Type? {
