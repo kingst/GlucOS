@@ -80,9 +80,14 @@ struct StoredJsonObject: StoredObject {
         do {
             let encoder = JSONEncoder()
             encoder.dateEncodingStrategy = .secondsSince1970
-            if debugEnabled {
-                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            }
+            // Deliberately not `.prettyPrinted` in debug builds, which is what
+            // this used to do. Pretty-printing roughly doubles every file this
+            // type writes, and these are re-encoded in full on every append —
+            // which for the loop log meant a ~6 MB decode on the launch path in
+            // any DEBUG or simulator build, and a watchdog kill
+            // (`BioKernel-2026-08-15-224405.ips`). That log has moved to SQLite;
+            // the rest have not, so the multiplier is worth removing on its own.
+            // Nothing reads these files by eye that `jq` cannot format.
             let data = try encoder.encode(object)
             try data.write(to: storageURL, options: [.atomic, .noFileProtection])
         } catch _ as EncodingError {

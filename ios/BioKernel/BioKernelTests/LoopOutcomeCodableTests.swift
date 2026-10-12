@@ -3,8 +3,18 @@
 //  BioKernelTests
 //
 //  Round-trip tests for LoopOutcome's custom Codable implementation.
-//  Verifies the persisted JSON has no synthesized "_0" keys and that
-//  encoding then decoding produces an identical wire representation.
+//  Verifies the JSON has no synthesized "_0" keys and that encoding then
+//  decoding produces an identical wire representation.
+//
+//  There is no longer an on-disk consumer of this format. `ClosedLoopResult` is
+//  the in-memory pipeline result and the store persists `LoopRecord`, a
+//  projection of it, in columns. The conformance is kept deliberately —
+//  dev/backlog/loop-record-store-grdb.md §9 — because the full result is still
+//  the audit payload, still in hand at the end of every loop, and the sink that
+//  eventually consumes it (a replay log, a settings-version table) will want it
+//  to encode correctly. So these tests keep guarding a shape whose next reader
+//  has not been written yet, which is a weaker reason than they had before and
+//  worth knowing when they fail.
 //
 
 import Testing

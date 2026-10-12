@@ -97,6 +97,8 @@ public class SettingsViewModel: ObservableObject {
 
     private let settingsStorage: SettingsStorage
     private let deviceDataManager: DeviceDataManager
+    /// Only for `recordScheduledBasalProgram` — see `persistUpdatedSettings`.
+    private let insulinStorage: InsulinStorage
 
     func save() async throws {
         let error = await FaceId.authenticate()
@@ -130,41 +132,37 @@ public class SettingsViewModel: ObservableObject {
         if let basalError = await pumpManager.syncBasalRateSchedule(items: [schedule]) {
             throw "Could not update basal rate: \(basalError.localizedDescription)"
         }
-        
+
+        // Write point 1 of dev/backlog/scheduled-basal-history.md §4, and it is
+        // deliberately *here* — after the sync succeeded, not next to the
+        // `writeToDisk` above. The FIXME on that line is the whole reason this
+        // exists: the setting is persisted before the pod is told, so a failed sync
+        // leaves the two divergent with nothing recording the divergence. Anything
+        // sourcing the rate history from the setting records the wrong number in
+        // exactly the case that matters (§1.1).
+        //
+        // Note this fires on every save whether or not the rate changed, which is
+        // §3.3's periodic re-assertion — and it is also how a fresh store gets its
+        // first record without waiting for a pod change (§7.2).
+        await insulinStorage.recordScheduledBasalProgram(
+            rateUnitsPerHour: pumpBasalRate.value,
+            at: Date()
+        )
+
         if let limitsError = await pumpManager.syncDeliveryLimits(limits: DeliveryLimits(maximumBasalRate: maxBasal, maximumBolus: maxBolus)) {
             throw "Could not update delivery limits \(limitsError.localizedDescription)"
         }
     }
 
-    func update(using settings: CodableSettings) {
-        closedLoopEnabled = settings.closedLoopEnabled
-        useMachineLearningClosedLoop = settings.useMachineLearningClosedLoop
-        useMicroBolus = settings.isMicroBolusEnabled()
-        microBolusDoseFactor = DecimalSetting(value: settings.getMicroBolusDoseFactor(), units: SettingsViewModel.gainUnits)
-        pumpBasalRate = DecimalSetting(value: settings.pumpBasalRateUnitsPerHour, units: SettingsViewModel.basalRateUnits)
-        insulinSensitivity = DecimalSetting(value: settings.insulinSensitivityInMgDlPerUnit, units: SettingsViewModel.insulinSensitivityUnits)
-        maxBasalRate = DecimalSetting(value: settings.maxBasalRateUnitsPerHour, units: SettingsViewModel.basalRateUnits)
-        mlBasalSchedule = DecimalSettingSchedule(settings.learnedBasalRatesUnitsPerHour, units: SettingsViewModel.basalRateUnits)
-        mlInsulinSensitivitySchedule = DecimalSettingSchedule(settings.learnedInsulinSensitivityInMgDlPerUnit, units: SettingsViewModel.insulinSensitivityUnits)
-        maxBolus = DecimalSetting(value: settings.maxBolusUnits, units: SettingsViewModel.insulinUnits)
-        glucoseShutoffThreshold = DecimalSetting(value: settings.shutOffGlucoseInMgDl, units: SettingsViewModel.glucoseUnits)
-        glucoseTarget = DecimalSetting(value: settings.targetGlucoseInMgDl, units: SettingsViewModel.glucoseUnits)
-        bolusAmountForLess = DecimalSetting(value: settings.getBolusAmountForLess(), units: SettingsViewModel.insulinUnits)
-        bolusAmountForUsual = DecimalSetting(value: settings.getBolusAmountForUsual(), units: SettingsViewModel.insulinUnits)
-        bolusAmountForMore = DecimalSetting(value: settings.getBolusAmountForMore(), units: SettingsViewModel.insulinUnits)
-        pidIntegratorGain = DecimalSetting(value: settings.getPidIntegratorGain(), units: SettingsViewModel.gainUnits)
-        pidDerivativeGain = DecimalSetting(value: settings.getPidDerivativeGain(), units: SettingsViewModel.gainUnits)
-        useBiologicalInvariant = settings.isBiologicalInvariantEnabled()
-        machineLearningGain = DecimalSetting(value: settings.getMachineLearningGain(), units: SettingsViewModel.gainUnits)
-    }
-
     init(
         settings: CodableSettings,
         settingsStorage: SettingsStorage,
-        deviceDataManager: DeviceDataManager
+        deviceDataManager: DeviceDataManager,
+        insulinStorage: InsulinStorage
     ) {
         self.settingsStorage = settingsStorage
         self.deviceDataManager = deviceDataManager
+        self.insulinStorage = insulinStorage
         closedLoopEnabled = settings.closedLoopEnabled
         useMachineLearningClosedLoop = settings.useMachineLearningClosedLoop
         useMicroBolus = settings.isMicroBolusEnabled()

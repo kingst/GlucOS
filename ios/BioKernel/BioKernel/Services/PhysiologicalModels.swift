@@ -47,9 +47,11 @@ public protocol PhysiologicalModels {
 }
 
 /// Live PID controller state that survives app restart. The same numbers are
-/// also captured per-loop inside `PIDTempBasalResult` (in `closed_loop_results.json`)
-/// for diagnostics, but this file is the source of truth the controller resumes
-/// from. `savedAt` drives the staleness check in `LocalPhysiologicalModels`: if
+/// also captured per-loop inside `PIDTempBasalResult`, and from there into the
+/// loop record store's `pid_*` columns, but that is for diagnostics — this file
+/// is the source of truth the controller resumes from, which is why
+/// `lastGlucose` and `lastGlucoseAt` are not among the columns the store keeps.
+/// `savedAt` drives the staleness check in `LocalPhysiologicalModels`: if
 /// the next `tempBasal` runs `staleStateThreshold` or more after `savedAt`, the
 /// integrator and filter are reset to defaults rather than resumed from a stale
 /// snapshot.
@@ -95,11 +97,37 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
     }
 
     func predictGlucoseIn15Minutes(from now: Date) async -> Double? {
-        let glucoseFull = await glucoseStorage.readingsBetween(startDate: now - 30.minutesToSeconds(), endDate: now).sorted { $0.date < $1.date }
-        
+        let readings = await glucoseStorage.readingsBetween(startDate: now - Self.predictionLookback, endDate: now)
+        return Self.predictGlucoseIn15Minutes(from: now, readings: readings)
+    }
+
+    /// How far back the fit looks.
+    static let predictionLookback = 30.0.minutesToSeconds()
+
+    /// The prediction itself, over readings the caller has already fetched.
+    ///
+    /// Split out from the storage read so the same arithmetic can be replayed
+    /// at a past instant — `MealDosing`'s run-to-run analysis asks "was a low
+    /// predicted during this window", and answering it per CGM tick through the
+    /// storage-reading overload would be one 30-minute query per tick. Readings
+    /// outside the lookback are filtered here rather than assumed away, so a
+    /// caller can hand over a whole window's worth once and ask about every
+    /// instant in it.
+    ///
+    /// Pure, and the only implementation: the live alert path above runs
+    /// through here too, so a replayed prediction cannot drift from the one
+    /// that fires the alert.
+    static func predictGlucoseIn15Minutes(from now: Date, readings: [NewGlucoseSample]) -> Double? {
+        // Both ends inclusive, matching `readingsBetween` — the window this
+        // replaces was a storage query, and a boundary reading has to land in
+        // the fit on the replay path exactly as it does on the live one.
+        let glucoseFull = readings
+            .filter { $0.date >= now - predictionLookback && $0.date <= now }
+            .sorted { $0.date < $1.date }
+
         // we need at least 2 data points to make a prediction
         guard glucoseFull.count >= 2 else { return nil }
-        
+
         // grab up to 5 of the most recent readings
         let glucose = {
             if glucoseFull.count > 5 {
@@ -108,10 +136,10 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
                 return glucoseFull
             }
         }()
-        
+
         let x = glucose.map { $0.date.timeIntervalSince(now) }
         let y = glucose.map { $0.quantity.doubleValue(for: .milligramsPerDeciliter) }
-        
+
         guard let (slope, intercept) = MLUtilities.leastSquaresFit(x: x, y: y) else { return nil }
         let prediction = 15.minutesToSeconds() * slope + intercept
         return prediction

@@ -31,6 +31,10 @@ struct ClosedLoopChartData: Identifiable {
 }
 
 // The protocol / delegate for the ClosedLoopService
+//
+// Carries a `LoopRecord` rather than a `ClosedLoopResult`: the chart layer only
+// ever read the projected subset, and a stored row no longer reconstructs a
+// full result. See dev/backlog/loop-record-store-grdb.md §6.3.
 protocol ClosedLoopChartDataUpdate: AnyObject {
-    func update(result: ClosedLoopResult)
+    func update(record: LoopRecord)
 }

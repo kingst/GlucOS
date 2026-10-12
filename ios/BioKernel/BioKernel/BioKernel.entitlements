@@ -6,7 +6,24 @@
 	<string>development</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>applinks:betes.ai?mode=developer</string>
+		<!-- The meal announcement handoff from ClueClue, and the only
+		     universal link GlucOS handles. Its
+		     apple-app-site-association is served by ClueClue's own App
+		     Engine instance (server/clueclue/applinks.py) and claims
+		     only /meal, so that path is the whole of what iOS can
+		     deliver here.
+
+		     No ?mode=developer qualifier. That mode makes the device
+		     bypass Apple's CDN and fetch the association straight from
+		     typezero.ai, which sounds like the safer thing to want but
+		     only takes effect on a device where Settings > Developer >
+		     Associated Domains Development is on — off, and the domain
+		     is simply never validated. The simulator always fetches
+		     directly and so ignores the qualifier either way, which is
+		     how a link that worked there failed on a phone. The CDN
+		     serves the right file today, so the plain form works on
+		     any device with nothing to toggle first. -->
+		<string>applinks:typezero.ai</string>
 	</array>
 	<key>com.apple.developer.healthkit</key>
 	<true/>

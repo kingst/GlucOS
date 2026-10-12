@@ -89,6 +89,15 @@ public protocol GlucoseAlertStorage {
     func update(notificationsPermissions: NotificationPermissions)
     func onNewGlucoseValue() async
     func isInRange(glucose: Double) -> Bool
+    /// The user's own low alert level.
+    ///
+    /// Exposed because meal dosing reads back the same threshold rather than
+    /// picking one of its own: run-to-run adaptation asks "was a low predicted
+    /// after this meal", and the only defensible answer to that is the
+    /// prediction that would have notified the user at the time. A second
+    /// constant here would mean the algorithm learning from lows the user never
+    /// saw, or ignoring ones they did.
+    func lowAlertLevelMgDl() -> Double
 }
 
 @MainActor
@@ -126,6 +135,10 @@ class PredictiveGlucoseAlertStorage: GlucoseAlertStorage {
     
     func isInRange(glucose: Double) -> Bool {
         return glucoseAlertSettings.highLevelMgDl >= glucose && glucose >= glucoseAlertSettings.lowLevelMgDl
+    }
+
+    func lowAlertLevelMgDl() -> Double {
+        return glucoseAlertSettings.lowLevelMgDl
     }
     
     func clearCurrentNotification() {

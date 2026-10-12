@@ -8,28 +8,68 @@
 import LoopKit
 import LoopKitUI
 
+extension PumpMetadata {
+    /// Snapshots what the pump and insulin are right now.
+    ///
+    /// `InsulinStorage` has no pump handle, so this is the one place these
+    /// facts are available; they ride along with each batch of pump events and
+    /// get stamped onto every published record.
+    init(pumpManager: PumpManager) {
+        // Omnipod reports 0.05 U. A pump that reports nothing usable falls back
+        // to the same value rather than to zero, which would make a reader's
+        // discretization divide by zero.
+        let smallestDeliveryUnit = pumpManager.supportedBolusVolumes
+            .filter { $0 > 0 }
+            .min() ?? Self.smallestDeliveryUnitDefault
+
+        self.init(
+            pluginIdentifier: pumpManager.pluginIdentifier,
+            smallestDeliveryUnit: smallestDeliveryUnit,
+            insulinType: AiInsulinType(pumpManager.status.insulinType ?? .humalog)
+        )
+    }
+}
+
 // MARK: - PumpManagerDelegate
 class MosPumpManagerDelegate: PumpManagerDelegate {
     let insulinStorage: InsulinStorage
     let alertStorage: AlertStorage
     let observableState: AppObservableState
+    /// Only for the pod-activation write point in `didOnboardPumpManager` — the
+    /// schedule GlucOS hands the pod at activation is built from this setting
+    /// (`DeviceDataManager.setupPumpManagerUI`), so it is what the pod acknowledged.
+    let settingsStorage: @MainActor () -> SettingsStorage
     weak var deviceDataManager: DeviceDataManager?
 
-    init(insulinStorage: InsulinStorage, alertStorage: AlertStorage, observableState: AppObservableState) {
+    init(
+        insulinStorage: InsulinStorage,
+        alertStorage: AlertStorage,
+        observableState: AppObservableState,
+        settingsStorage: @MainActor @escaping () -> SettingsStorage
+    ) {
         self.insulinStorage = insulinStorage
         self.alertStorage = alertStorage
         self.observableState = observableState
+        self.settingsStorage = settingsStorage
     }
 
     func pumpManager(_ pumpManager: any LoopKit.PumpManager, hasNewPumpEvents events: [LoopKit.NewPumpEvent], lastReconciliation: Date?, replacePendingEvents: Bool, completion: @escaping ((any Error)?) -> Void) {
 
-        log.default("PumpManager:%{public}@ hasNewPumpEvents (lastReconciliation = %{public}@)", String(describing: type(of: pumpManager)), String(describing: lastReconciliation))
+        log.default("PumpManager:%{public}@ hasNewPumpEvents (lastReconciliation = %{public}@, replacePendingEvents = %{public}@)", String(describing: type(of: pumpManager)), String(describing: lastReconciliation), String(describing: replacePendingEvents))
 
-        let insulinType = pumpManager.status.insulinType ?? .humalog
+        let pump = PumpMetadata(pumpManager: pumpManager)
         let insulinStorage = self.insulinStorage
         let observableState = self.observableState
         dispatchQueue.async {
-            let error = await insulinStorage.addPumpEvents(events, lastReconciliation: lastReconciliation, insulinType: insulinType)
+            // `replacePendingEvents` used to stop here. It is the driver telling
+            // us this batch is its complete current set of pending doses, and it
+            // is per call: `OmniPumpManager.store(doses:)` passes true because a
+            // dose report is a full re-assertion, while the pod-change
+            // pseudo-event passes false because it asserts nothing about pending
+            // doses. Forwarding it is what lets the record store revoke an
+            // orphaned mutable dose without deleting every in-flight dose the
+            // moment a pod change fires.
+            let error = await insulinStorage.addPumpEvents(events, lastReconciliation: lastReconciliation, replacePendingEvents: replacePendingEvents, pump: pump)
             if let error = error {
                 self.log.error("Failed to addPumpEvents to InsulinStorage: %{public}@", String(describing: error))
             }
@@ -200,6 +240,24 @@ extension MosPumpManagerDelegate: PumpManagerOnboardingDelegate {
     func pumpManagerOnboarding(didOnboardPumpManager pumpManager: PumpManagerUI) {
         precondition(pumpManager.isOnboarded)
         log.default("Pump manager with identifier '%{public}@' onboarded", pumpManager.pluginIdentifier)
+
+        // Write point 2 of dev/backlog/scheduled-basal-history.md §4. Activation
+        // programs the pod with the schedule GlucOS supplied via
+        // `PumpManagerSetupSettings`, so the rate is known — and per §2 the
+        // activation mints a *bare* resume with no preceding suspend, because
+        // `setBasalSchedule`'s internal cancel is guarded on
+        // `setupProgress == .completed`.
+        //
+        // The pod's resume is minted during the activation session, which can be
+        // reported to us before this callback runs. That ordering is why
+        // `enqueueScheduledBasalProgram` reconciles as well as enqueues: whichever
+        // of the two arrives second is the one that completes the pairing.
+        let insulinStorage = self.insulinStorage
+        let settingsStorage = self.settingsStorage
+        Task {
+            let rate = await MainActor.run { settingsStorage().snapshot().pumpBasalRateUnitsPerHour }
+            await insulinStorage.recordScheduledBasalProgram(rateUnitsPerHour: rate, at: Date())
+        }
 
         // FIXME: I would love analysis that shows when to use Task vs dispatchQueue.async
         // We're using Task here because the refreshCgmAndPumpDataFromUI call is complex

@@ -4,13 +4,13 @@
 //
 //  Created by Sam King on 11/20/23.
 //
-//  Overall we want to test:
-//    - A standard set of Pump Events
-//      - A set of immutable events with temp basal currently running
-//      - A set of immutable events with a bolus currently running
-//    - Cases where we have to fill in the standard basal rate
-//      - A basal event in the past
-//      - A basal event currently running
+//  `LocalInsulinStorage`'s plumbing: what reaches the pump driver, and what the
+//  app does when the record store cannot answer.
+//
+//  The insulin arithmetic these tests used to cover moved out with the JSON log.
+//  Inference, reconciliation, quantization, and the clamp are
+//  `InsulinRecordTimelineTests`; ingest, retention, and the state queries are
+//  `InsulinRecordStoreTests`.
 
 import Testing
 import Foundation
@@ -19,144 +19,215 @@ import LoopKit
 @testable import BioKernel
 
 struct InsulinStorageTests {
-    let iobAccuracy = 0.00000000001
-    // generated offline manually
-    let lyumjevAtOneUnitPerHourForOneHour = 0.90988675478661
+    // What the actor does when the record store is the only history there is.
+    //
+    // The arithmetic is `InsulinRecordTimelineTests`' and `InsulinRecordStoreTests`'
+    // subject, not this file's. What is left here is the plumbing: whether a write
+    // failure reaches the driver, and whether a read failure stops the loop instead
+    // of quietly answering zero.
 
-    @MainActor private func makeStorage() -> LocalInsulinStorage {
+    @MainActor private func makeStorage(
+        recordStore: InsulinRecordStore?
+    ) -> LocalInsulinStorage {
         let settings = MockSettingsStorage()
         return LocalInsulinStorage(
-            storedObjectFactory: MockStoredObject.self,
             healthKitStorage: MockHealthKitStore(),
             watchComms: { MockWatchComms() },
-            settingsStorage: { settings }
+            settingsStorage: { settings },
+            recordStore: recordStore
         )
     }
 
-    @Test func basalAtEnd() async throws {
-        let startDate = Date.f("2018-07-15 03:34:29 +0000")
-
-        let dose = DoseEntry(type: .tempBasal, startDate: startDate, endDate: startDate + 30.minutesToSeconds(), value: 1.0, unit: .unitsPerHour, deliveredUnits: 0.5, insulinType: .lyumjev, isMutable: false)
-
-        let at = startDate + 60.minutesToSeconds()
-        let storage = await makeStorage()
-        let iobBasal = await storage.inferBasalDoses(doses: [dose], at: at).map({ $0.insulinOnBoard(at: at) }).reduce(0, +)
-        let iobTempBasal = dose.insulinOnBoard(at: at)
-        let iob = iobBasal + iobTempBasal
-
-        #expect(abs(iob - lyumjevAtOneUnitPerHourForOneHour) <= iobAccuracy)
+    private func bolus(at: Date, units: Double) -> NewPumpEvent {
+        let dose = DoseEntry(
+            type: .bolus,
+            startDate: at,
+            endDate: at,
+            value: units,
+            unit: .units,
+            deliveredUnits: units,
+            syncIdentifier: "bolus \(units) \(at.timeIntervalSince1970)",
+            insulinType: .lyumjev,
+            isMutable: false
+        )
+        return NewPumpEvent(date: at, dose: dose, raw: Data(UUID().uuidString.utf8), title: "bolus", type: .bolus)
     }
 
-    @Test func basalInMiddle() async throws {
-        let startDate = Date.f("2018-07-15 03:34:29 +0000")
+    /// A failed ingest has to reach `OmniPumpManager` so it re-delivers rather than
+    /// clearing `state.unstoredDoses` (§8). There is no second copy of the batch.
+    @Test func anIngestFailureFailsTheBatch() async throws {
+        let at = Self.now
+        let store = FailableInsulinRecordStore(wrapping: try GRDBInsulinRecordStore(inMemoryCreatedAt: at - 1.0.daysToSeconds()))
+        let storage = await makeStorage(recordStore: store)
+        store.failIngest = true
 
-        let dose = DoseEntry(type: .tempBasal, startDate: startDate, endDate: startDate + 30.minutesToSeconds(), value: 1.0, unit: .unitsPerHour, deliveredUnits: 0.5, insulinType: .lyumjev, isMutable: false)
-        let dose2 = DoseEntry(type: .tempBasal, startDate: startDate + 45.minutesToSeconds(), endDate: startDate + 60.minutesToSeconds(), value: 1.0, unit: .unitsPerHour, deliveredUnits: 0.25, insulinType: .lyumjev, isMutable: false)
+        let error = await storage.addPumpEvents(
+            [bolus(at: at, units: 1.0)],
+            lastReconciliation: at,
+            replacePendingEvents: true,
+            pump: Self.omnipodLyumjev
+        )
 
-        let at = startDate + 60.minutesToSeconds()
-        let storage = await makeStorage()
-        let iobBasal = await storage.inferBasalDoses(doses: [dose, dose2], at: at).map({ $0.insulinOnBoard(at: at) }).reduce(0, +)
-        let iobTempBasal = dose.insulinOnBoard(at: at) + dose2.insulinOnBoard(at: at)
-        let iob = iobBasal + iobTempBasal
-
-        #expect(abs(iob - lyumjevAtOneUnitPerHourForOneHour) <= iobAccuracy)
+        #expect(error != nil)
     }
 
-    @Test func newPumpEvents() async throws {
-        let startDate = Date.f("2023-11-19 23:13:05 +0000")
-        let at = Date.f("2023-11-20 01:00:30 +0000")
-        let pumpEvents = ReplayLogs.immutableReplayLogs()
-        var iob = 0.0
-        for event in pumpEvents {
-            let dose = try #require(event.dose)
-            iob += dose.insulinOnBoard(at: at)
-        }
+    /// And a successful one does not.
+    @Test func aSuccessfulIngestDoesNotFailTheBatch() async throws {
+        let at = Self.now
+        let store = try GRDBInsulinRecordStore(inMemoryCreatedAt: at - 1.0.daysToSeconds())
+        let storage = await makeStorage(recordStore: store)
 
-        // make sure to account for the implicit basal at the beginning
-        let implicitBasal = DoseEntry(type: .basal, startDate: startDate, endDate: Date.f("2023-11-19 23:23:31 +0000"), value: 1.0, unit: .unitsPerHour, insulinType: .lyumjev, isMutable: false)
-        iob += implicitBasal.insulinOnBoard(at: at)
+        let error = await storage.addPumpEvents(
+            [bolus(at: at, units: 1.0)],
+            lastReconciliation: at,
+            replacePendingEvents: true,
+            pump: Self.omnipodLyumjev
+        )
 
-        let storage = await makeStorage()
-        let totalIob = await storage.insulinOnBoard(events: pumpEvents, at: at)
-
-        #expect(abs(iob - totalIob) <= iobAccuracy)
+        #expect(error == nil)
+        #expect(await storage.insulinOnBoard(at: at + 5.minutesToSeconds()) > 0)
     }
 
-    @Test func mutableAfterImmutable() async throws {
-        let events: [NewPumpEvent] = ReplayLogs.replayLogs(forResource: "filter_bug", ofType: "json")
-        let lastDose = try #require(events.last?.dose)
-        let at = lastDose.endDate
+    /// **The load-bearing test for the deletion of the JSON log.**
+    ///
+    /// With no second opinion to fall back on, a store that cannot be read makes
+    /// every `-> Double` read answer zero — and zero IOB is the failure §8 warns
+    /// about, because the loop reads low and doses *more*. What prevents that is
+    /// `lastPumpSync` reporting nil, which trips `ClosedLoopService`'s freshness
+    /// guard before any IOB number is consulted. If this ever passes while
+    /// `lastPumpSync` returns a date, the loop will dose off a zero.
+    @Test func aFailedStoreReadReportsNoPumpSyncSoTheLoopSkips() async throws {
+        let at = Self.now
+        let store = FailableInsulinRecordStore(wrapping: try GRDBInsulinRecordStore(inMemoryCreatedAt: at - 1.0.daysToSeconds()))
+        let storage = await makeStorage(recordStore: store)
+        _ = await storage.addPumpEvents(
+            [bolus(at: at - 5.minutesToSeconds(), units: 2.0)],
+            lastReconciliation: at,
+            replacePendingEvents: true,
+            pump: Self.omnipodLyumjev
+        )
+        #expect(await storage.insulinOnBoard(at: at) > 0)
+        #expect(await storage.lastPumpSync() != nil)
 
-        let storage = await makeStorage()
-        await storage.setPumpRecordsBasalProfileStartEvents(false)
-        let iob = await storage.insulinOnBoard(events: events, at: at)
+        store.failReads = true
 
-        #expect(abs(iob) <= iobAccuracy)
+        #expect(await storage.lastPumpSync() == nil)
+        #expect(await storage.insulinOnBoard(at: at) == 0)
     }
 
-    @Test func insulinDelivered() async throws {
-        let startDate = Date.f("2023-11-19 23:13:05 +0000")
-        let endDate = Date.f("2023-11-20 00:30:42 +0000")
-        let pumpEvents = ReplayLogs.immutableReplayLogs()
+    /// The same, for a database that never opened at all. `AppComposition` leaves
+    /// `recordStore` nil there, and it is the case a signing or migration
+    /// regression actually produces.
+    @Test func noRecordStoreReportsNoPumpSyncSoTheLoopSkips() async throws {
+        let storage = await makeStorage(recordStore: nil)
 
-        // manually calculated from the logs
-        // make sure to account for the implicit basal at the beginning
-        let implicitBasal = DoseEntry(type: .basal, startDate: startDate, endDate: Date.f("2023-11-19 23:23:31 +0000"), value: 1.0, unit: .unitsPerHour, insulinType: .lyumjev, isMutable: false)
-        let implicitBasalUnits = implicitBasal.deliveredUnits ?? implicitBasal.programmedUnits
-        let insulinDelivered = 0.45 + 0.35 + 1.25 + 0.45 + implicitBasalUnits
-
-        let storage = await makeStorage()
-        let calculatedInsulinDelivered = await storage.insulinDelivered(events: pumpEvents, startDate: startDate, endDate: endDate)
-
-        #expect(abs(insulinDelivered - calculatedInsulinDelivered) <= iobAccuracy)
+        #expect(await storage.lastPumpSync() == nil)
+        #expect(await storage.insulinOnBoard(at: Self.now) == 0)
+        #expect(await storage.recentPumpEvents(since: Self.now - 1.0.daysToSeconds()).isEmpty)
     }
 
-    @Test func insulinDeliveredPartialBasal() async throws {
-        let startDate = Date.f("2023-11-19 23:13:05 +0000")
-        // remove the last 1 minute from the tempBasal that ends at 00:30:42
-        let endDate = Date.f("2023-11-20 00:29:42 +0000")
-        let pumpEvents = ReplayLogs.immutableReplayLogs()
+    /// Decision 11's other half. The JSON log was trimmed to 24 hours and so could
+    /// not answer for a window older than that however it was asked; the store can,
+    /// and the caller's `since` now means what it says.
+    @Test func recentPumpEventsReachesPastTwentyFourHours() async throws {
+        let at = Self.now
+        let store = try GRDBInsulinRecordStore(inMemoryCreatedAt: at - 10.0.daysToSeconds())
+        let storage = await makeStorage(recordStore: store)
 
-        // manually calculated from the logs
-        // make sure to account for the implicit basal at the beginning
-        let implicitBasal = DoseEntry(type: .basal, startDate: startDate, endDate: Date.f("2023-11-19 23:23:31 +0000"), value: 1.0, unit: .unitsPerHour, insulinType: .lyumjev, isMutable: false)
-        let implicitBasalUnits = implicitBasal.deliveredUnits ?? implicitBasal.programmedUnits
+        let old = at - 48.hoursToSeconds()
+        _ = await storage.addPumpEvents([bolus(at: old, units: 1.0)], lastReconciliation: old, replacePendingEvents: false, pump: Self.omnipodLyumjev)
+        _ = await storage.addPumpEvents([bolus(at: at, units: 2.0)], lastReconciliation: at, replacePendingEvents: false, pump: Self.omnipodLyumjev)
 
-        // because of the way we quantize insulin delivery
-        // we'll still get the full amount of the last basal
-        //let lastBasal = 0.45 * (1404.0 - 60.0) / 1404.0
-        let lastBasal = 0.45
-        let insulinDelivered = 0.45 + 0.35 + 1.25 + lastBasal + implicitBasalUnits
-
-        let storage = await makeStorage()
-        let calculatedInsulinDelivered = await storage.insulinDelivered(events: pumpEvents, startDate: startDate, endDate: endDate)
-
-        #expect(abs(insulinDelivered - calculatedInsulinDelivered) <= iobAccuracy)
+        let events = await storage.recentPumpEvents(since: at - 72.hoursToSeconds())
+        #expect(events.contains { $0.dose?.programmedUnits == 1.0 })
+        #expect(events.contains { $0.dose?.programmedUnits == 2.0 })
     }
 
-    func omnipodIoBCalculation(storage: LocalInsulinStorage, doses: [DoseEntry], at: Date) async -> (Double, Double) {
-        let iob = doses.map({ $0.insulinOnBoard(at: at) }).reduce(0, +)
-        let basalDoses = await storage.inferBasalDoses(doses: doses, at: at)
-        let basalIob = basalDoses.map({ $0.insulinOnBoard(at: at) }).reduce(0, +)
+    /// A fixed instant, because retention and the clamp are both relative to
+    /// `createdAt` and a test that drifts with the wall clock is a test that
+    /// fails on a slow morning.
+    static let now = Date.f("2026-08-10 16:00:00 +0000")
 
-        return (iob, basalIob)
+    /// What the parallel run actually ran on, so the pulse size these tests
+    /// quantize against is the one the observed results came from.
+    static let omnipodLyumjev = PumpMetadata(
+        pluginIdentifier: "Omni",
+        smallestDeliveryUnit: 0.05,
+        insulinType: .lyumjev
+    )
+}
+
+/// A record store that can be told to fail, wrapping a real one so every method
+/// that is not under test behaves normally.
+///
+/// Phase 2's two new behaviors are both "what happens when the store is
+/// unavailable", and neither can be reached with a store that works.
+final class FailableInsulinRecordStore: InsulinRecordStore, @unchecked Sendable {
+    private let wrapped: GRDBInsulinRecordStore
+    var failIngest = false
+    var failReads = false
+
+    init(wrapping wrapped: GRDBInsulinRecordStore) {
+        self.wrapped = wrapped
     }
 
-    @Test func ioBAfterSuspend() async throws {
-        let doses = ReplayLogs.iobBugLogs()
-        let atSuspend = Date(timeIntervalSince1970: 1714517892.726407)
-        let atResume = Date(timeIntervalSince1970: 1714531049.1750169)
-        let storage = await makeStorage()
-        await storage.setPumpRecordsBasalProfileStartEvents(false)
+    func ingest(_ batch: PumpEventBatch) async throws -> PumpEventIngestResult {
+        if failIngest { throw InsulinRecordStoreError.writeFailed("injected") }
+        return try await wrapped.ingest(batch)
+    }
 
-        let iobSuspend = await omnipodIoBCalculation(storage: storage, doses: doses, at: atSuspend)
-        let iobResume = await omnipodIoBCalculation(storage: storage, doses: doses, at: atResume)
+    func timeline(windowStart: Date, at: Date, includeRevoked: Bool) async throws -> PumpDoseTimeline {
+        if failReads { throw InsulinRecordStoreError.readFailed("injected") }
+        return try await wrapped.timeline(windowStart: windowStart, at: at, includeRevoked: includeRevoked)
+    }
 
-        // make sure that iob is going down while the pump is suspended
-        #expect(iobSuspend.0 > iobResume.0)
+    func enqueueScheduledBasalProgram(rateUnitsPerHour: Double, at: Date) async throws {
+        try await wrapped.enqueueScheduledBasalProgram(rateUnitsPerHour: rateUnitsPerHour, at: at)
+    }
 
-        // make sure that there isn't any basal insulin inferred while
-        // the pump is suspended
-        #expect(iobResume.1 < .ulpOfOne)
+    func scheduledBasalDiagnostics(at: Date) async throws -> ScheduledBasalDiagnostics {
+        return try await wrapped.scheduledBasalDiagnostics(at: at)
+    }
+
+    func isSuspended(at: Date) async throws -> Bool {
+        if failReads { throw InsulinRecordStoreError.readFailed("injected") }
+        return try await wrapped.isSuspended(at: at)
+    }
+
+    func pumpAlarm(at: Date) async throws -> PumpAlarmType? {
+        if failReads { throw InsulinRecordStoreError.readFailed("injected") }
+        return try await wrapped.pumpAlarm(at: at)
+    }
+
+    func currentInsulinType(at: Date) async throws -> InsulinType? {
+        if failReads { throw InsulinRecordStoreError.readFailed("injected") }
+        return try await wrapped.currentInsulinType(at: at)
+    }
+
+    func activeBolus(at: Date) async throws -> DoseEntry? {
+        if failReads { throw InsulinRecordStoreError.readFailed("injected") }
+        return try await wrapped.activeBolus(at: at)
+    }
+
+    func lastReconciliation() async throws -> Date? {
+        if failReads { throw InsulinRecordStoreError.readFailed("injected") }
+        return try await wrapped.lastReconciliation()
+    }
+
+    func historyCompleteSince() async throws -> Date {
+        return try await wrapped.historyCompleteSince()
+    }
+
+    func records(from: Date, to: Date, includeRevoked: Bool) async throws -> [PumpEventRecord] {
+        if failReads { throw InsulinRecordStoreError.readFailed("injected") }
+        return try await wrapped.records(from: from, to: to, includeRevoked: includeRevoked)
+    }
+
+    func staleMutableDoses(at: Date) async throws -> [StaleMutableDose] {
+        return try await wrapped.staleMutableDoses(at: at)
+    }
+
+    func exportSnapshotURL() async -> URL? {
+        return await wrapped.exportSnapshotURL()
     }
 }

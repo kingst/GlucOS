@@ -8,14 +8,15 @@
 import SwiftUI
 
 struct SettingsView: View {
-    var settingsFromUrl: CodableSettings?
     @StateObject var settingsViewModel: SettingsViewModel
     @Environment(\.dismiss) var dismiss
     @State var hasModifications = false
     @State var errorString: String?
 
-    init(settingsFromUrl: CodableSettings?, settingsViewModel: @autoclosure @escaping () -> SettingsViewModel) {
-        self.settingsFromUrl = settingsFromUrl
+    /// The autoclosure is what keeps this an `init` rather than a synthesized
+    /// one: `StateObject` has to be handed a value it builds at most once, and
+    /// the caller's expression reads the settings snapshot.
+    init(settingsViewModel: @autoclosure @escaping () -> SettingsViewModel) {
         self._settingsViewModel = StateObject(wrappedValue: settingsViewModel())
     }
     
@@ -108,14 +109,6 @@ struct SettingsView: View {
                 .disabled(!hasModifications)
             }
 
-        }
-        .onAppear {
-            guard let settingsFromUrl = settingsFromUrl else {
-                return
-            }
-
-            settingsViewModel.update(using: settingsFromUrl)
-            hasModifications = true
         }
     }
 }

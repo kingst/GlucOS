@@ -66,7 +66,7 @@ struct ClosedLoopSafetyTests {
         #expect(!loopResult, "Loop should not complete with stale CGM data")
 
         // Verify result indicates stale data
-        let result = await closedLoop.latestClosedLoopResult()
+        let result = await closedLoop.latestLoopRecord()
         #expect(result?.outcome.skipReason == .glucoseReadingStale)
     }
 

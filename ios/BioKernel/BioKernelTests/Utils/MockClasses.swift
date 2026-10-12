@@ -125,10 +125,68 @@ class MockSafetyService: SafetyService {
     func tempBasal(at: Date, settings: CodableSettings, reactiveSafeTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval) async -> BioKernel.SafetyTempBasal {
         return SafetyTempBasal(tempBasal: 0, machineLearningInsulinLastThreeHours: 0)
     }
+}
 
-    func record(at: Date, decision: DosingDecision, candidates: DoseCandidates, duration: TimeInterval) async {
+/// A `LoopRecordStore` that can be made to fail on demand.
+///
+/// The real store is a `GRDBLoopRecordStore` over an in-memory database, which
+/// is what most tests should use. This one exists for the paths where "what
+/// happens when the store is broken" *is* the behavior under test — the safety
+/// ledger failing closed, and the AI marker not being published for a tick that
+/// was never recorded.
+actor MockLoopRecordStore: LoopRecordStore {
+    var failWrites: Bool
+    var failReads: Bool
+    private(set) var written: [(record: LoopRecord, safetyState: SafetyState?)] = []
+    /// Counted so a test can assert that a code path touched the store not at
+    /// all, which is the whole of what `LoopRunner.init` is supposed to do.
+    private(set) var readCount = 0
 
+    init(failWrites: Bool = false, failReads: Bool = false) {
+        self.failWrites = failWrites
+        self.failReads = failReads
     }
+
+    func record(_ record: LoopRecord, safetyState: SafetyState?, at: Date) async throws {
+        guard !failWrites else { throw LoopRecordStoreError.writeFailed("injected") }
+        written.append((record, safetyState))
+    }
+
+    func lastMicroBolus() async throws -> Date? {
+        readCount += 1
+        guard !failReads else { throw LoopRecordStoreError.readFailed("injected") }
+        return written.compactMap { entry -> Date? in
+            guard case .dosed(let snapshot) = entry.record.outcome else { return nil }
+            guard case .microBolus = snapshot.decision else { return nil }
+            return entry.record.at
+        }.max()
+    }
+
+    func safetyStates(from: Date, to: Date) async throws -> [SafetyState] {
+        readCount += 1
+        guard !failReads else { throw LoopRecordStoreError.readFailed("injected") }
+        return written.compactMap { $0.safetyState }.filter { $0.at >= from && $0.at < to }
+    }
+
+    func records(since: Date) async throws -> [LoopRecord] {
+        readCount += 1
+        guard !failReads else { throw LoopRecordStoreError.readFailed("injected") }
+        return written.map { $0.record }.filter { $0.at >= since }
+    }
+
+    func filteredGlucose(since: Date) async throws -> [FilteredGlucose] {
+        readCount += 1
+        guard !failReads else { throw LoopRecordStoreError.readFailed("injected") }
+        return []
+    }
+
+    func latestRecord() async throws -> LoopRecord? {
+        readCount += 1
+        guard !failReads else { throw LoopRecordStoreError.readFailed("injected") }
+        return written.last?.record
+    }
+
+    func exportSnapshotURL() async -> URL? { return nil }
 }
 
 class MockPhysiologicalModels: PhysiologicalModels {
@@ -174,10 +232,22 @@ class MockTargetGlucose: TargetGlucoseService {
     }
 }
 
+extension PumpMetadata {
+    /// What `PumpMetadata(pumpManager:)` produces for the pump these tests
+    /// stand in for.
+    static let lyumjevOnOmnipod = PumpMetadata(
+        pluginIdentifier: "OmnipodDash",
+        smallestDeliveryUnit: 0.05,
+        insulinType: .lyumjev
+    )
+}
+
 class MockInsulinStorage: InsulinStorage {
-    func registerForPumpEntryUpdates(delegate: any BioKernel.PumpEventUpdate) async -> [LoopKit.NewPumpEvent] { return [] }
+    func registerForPumpEntryUpdates(delegate: any BioKernel.PumpEventUpdate) async { }
+    func recentPumpEvents(since: Date) async -> [LoopKit.NewPumpEvent] { return [] }
+    func pumpEvents(from: Date, to: Date) async -> [LoopKit.NewPumpEvent] { return [] }
     // stub out these functions with default values
-    func addPumpEvents(_ events: [LoopKit.NewPumpEvent], lastReconciliation: Date?, insulinType: LoopKit.InsulinType) async -> Error? { nil }
+    func addPumpEvents(_ events: [LoopKit.NewPumpEvent], lastReconciliation: Date?, replacePendingEvents: Bool, pump: BioKernel.PumpMetadata) async -> Error? { nil }
     func insulinOnBoard(at: Date) async -> Double { 0.0 }
     func insulinDelivered(startDate: Date, endDate: Date) async -> Double { return 0.0 }
     func pumpAlarm() async -> LoopKit.PumpAlarmType? { nil }
@@ -186,8 +256,13 @@ class MockInsulinStorage: InsulinStorage {
     func lastPumpSync() async -> Date? { mockLastPumpSync }
     func activeBolus(at: Date) async -> LoopKit.DoseEntry? { nil }
     func insulinDeliveredFromAutomaticTempBasal(startDate: Date, endDate: Date) async -> Double { return 0.0 }
-    
+    func recordScheduledBasalProgram(rateUnitsPerHour: Double, at: Date) async {
+        recordedScheduledBasalPrograms.append((rateUnitsPerHour, at))
+    }
     var mockLastPumpSync: Date? = nil
+    /// Recorded rather than dropped, so a test can assert that a *failed*
+    /// `syncBasalRateSchedule` enqueues nothing — the §1.1 case.
+    var recordedScheduledBasalPrograms: [(rateUnitsPerHour: Double, at: Date)] = []
 }
 
 class MockInsulinStorageConstantAutomaticTempBasal: MockInsulinStorage {

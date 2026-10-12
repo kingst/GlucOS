@@ -13,9 +13,15 @@ import LoopKitUI
 
 let addButtonRadius = 30.0
 
+/// A meal handoff, resolved. Held as one value so the view can't render a meal
+/// paired with another meal's reference window.
+struct MealAnnouncementTarget {
+    let meal: StoredMeal
+    let reference: StoredMeal?
+}
+
 struct MainView: View {
     @EnvironmentObject var appState: AppObservableState
-    @EnvironmentObject var glucoseAlertsViewModel: GlucoseAlertsViewModel
     @Environment(\.composition) var composition: AppComposition?
     @State var navigateToSettingsHome = false
     @State var navigateToAddCgm = false
@@ -23,9 +29,9 @@ struct MainView: View {
     @State var navigateToAddPump = false
     @State var navigateToPumpSettings = false
     @State var navigateToBolus = false
-    @State var navigateToSettingsFromUrl = false
-    @State var navigateToGlucoseAlerts = false
-    @State var settingsFromUrl: CodableSettings? = nil
+    @State var navigateToMeals = false
+    @State var navigateToMealAnnouncement = false
+    @State var mealFromUrl: MealAnnouncementTarget? = nil
     @State var selectedHours = 4
     @State var showChartSettingsSheet = false
     
@@ -106,13 +112,9 @@ struct MainView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack {
                         Button {
-                            navigateToGlucoseAlerts = true
+                            navigateToMeals = true
                         } label: {
-                            if glucoseAlertsViewModel.enabled {
-                                Image(systemName: "bell.fill").tint(.white)
-                            } else {
-                                Image(systemName: "bell.slash.fill").tint(.white)
-                            }
+                            Image(systemName: "fork.knife").tint(.white)
                         }
                         Button {
                             navigateToSettingsHome = true
@@ -125,12 +127,6 @@ struct MainView: View {
             }
             .navigationDestination(isPresented: $navigateToSettingsHome) {
                 SettingsHomeView()
-            }
-            .navigationDestination(isPresented: $navigateToSettingsFromUrl) {
-                if let composition {
-                    SettingsView(settingsFromUrl: settingsFromUrl, settingsViewModel: makeSettingsViewModel(composition: composition))
-                        .modifier(NavigationModifier())
-                }
             }
             .navigationDestination(isPresented: $navigateToAddCgm) {
                 AddCGMView()
@@ -155,8 +151,39 @@ struct MainView: View {
             .navigationDestination(isPresented: $navigateToBolus) {
                 BolusView()
             }
-            .navigationDestination(isPresented: $navigateToGlucoseAlerts) {
-                GlucoseAlertsView()
+            .navigationDestination(isPresented: $navigateToMeals) {
+                if let composition {
+                    MealsView(mealStorage: composition.mealStorage)
+                }
+            }
+            .navigationDestination(isPresented: $navigateToMealAnnouncement) {
+                if let composition, let mealFromUrl {
+                    MealAnnouncementView(
+                        meal: mealFromUrl.meal,
+                        referenceMeal: mealFromUrl.reference,
+                        composition: composition
+                    )
+                    // Identity is the meal, not the slot in the stack.
+                    //
+                    // A second handoff can arrive while this screen is still
+                    // pushed: the user leaves for the AI app without dosing —
+                    // `MealAnnouncementView` only dismisses after a delivered
+                    // bolus — announces another meal there, and its link comes
+                    // straight back here. `navigateToMealAnnouncement` is
+                    // already true at that point, so the presentation doesn't
+                    // change, and `MealAnnouncementView` seeds both of its
+                    // `@StateObject`s from `meal` in `init` — an autoclosure
+                    // SwiftUI only runs when it creates storage for a *new*
+                    // view identity. Without this the screen keeps rendering
+                    // the previous meal, which is a dose recommendation for
+                    // food the user isn't eating.
+                    //
+                    // `StoredMeal.id` is the `bundleIdentifier`/`mealId` pair,
+                    // so a different meal is a different view with fresh view
+                    // models, and re-opening the same meal's link is still a
+                    // no-op rather than a reload.
+                    .id(mealFromUrl.meal.id)
+                }
             }
             .sheet(isPresented: $showChartSettingsSheet) {
                 if let composition {
@@ -167,31 +194,45 @@ struct MainView: View {
                 }
             }
             .onOpenURL { url in
-                // we should check to make sure this is for settings
-                guard let json = url.lastPathComponent.replacingOccurrences(of: "+", with: " ").removingPercentEncoding, let data = json.data(using: .utf8) else { return }
-                
-                let decoder = JSONDecoder()
-                decoder.dateDecodingStrategy = .secondsSince1970
-                
-                do {
-                    let settings = try decoder.decode(CodableSettings.self, from: data)
-                    
-                    settingsFromUrl = settings
-                    navigateToSettingsFromUrl = true
-                } catch {
-                    print(error)
-                }
+                // A meal handoff from an AI app, and the only universal link
+                // GlucOS handles. `applinks:typezero.ai` is the app's one
+                // associated domain and its association file claims only
+                // `/meal`, so a URL that doesn't parse as one should not have
+                // been delivered here at all — the right response is to ignore
+                // it, not to guess at what else it might have meant.
+                //
+                // Guessing is what the retired settings-import link did: it
+                // decoded whatever the last path component held as
+                // `CodableSettings` and pre-filled the therapy settings form
+                // with it. That form is max basal rate, ISF and glucose
+                // targets, one Save tap from live dosing.
+                guard let target = MealAnnouncementLink.parse(url) else { return }
+                openMealAnnouncement(target)
             }
         }
     }
 
-    private func makeSettingsViewModel(composition: AppComposition) -> SettingsViewModel {
-        SettingsViewModel(
-            settings: composition.settingsStorage.snapshot(),
-            settingsStorage: composition.settingsStorage,
-            deviceDataManager: composition.deviceDataManager
-        )
+    /// Resolve a meal handoff and navigate to it.
+    ///
+    /// Ingests before looking the meal up. The AI app appends its announcement
+    /// and opens this link immediately, so the row is almost never in the store
+    /// yet — the next scheduled ingest is up to a loop tick away, and waiting
+    /// for it would make the handoff fail for five minutes at a time. Ingestion
+    /// is idempotent, so doing it here costs nothing but the read.
+    private func openMealAnnouncement(_ target: (bundleIdentifier: String, mealId: String)) {
+        guard let composition else { return }
+        Task {
+            await composition.mealStorage.ingest(at: Date())
+            guard let meal = await composition.mealStorage.meal(
+                bundleIdentifier: target.bundleIdentifier,
+                mealId: target.mealId
+            ), !meal.isCancelled else { return }
+            let reference = await composition.mealStorage.referenceMeal(for: meal)
+            mealFromUrl = MealAnnouncementTarget(meal: meal, reference: reference)
+            navigateToMealAnnouncement = true
+        }
     }
+
 }
 
 #Preview {

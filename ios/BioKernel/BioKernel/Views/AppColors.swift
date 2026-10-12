@@ -15,6 +15,7 @@ struct AppColors {
     static let orange = Color(hex: 0xFFA502)
     static let red = Color(hex: 0xFF6348)
     static let green = Color(hex: 0x7BED9F)
+    static let deepIndigo = Color(hex: 0x4A5699)
 }
 
 // https://stackoverflow.com/a/56894458

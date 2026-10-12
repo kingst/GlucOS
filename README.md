@@ -1,4 +1,4 @@
-# GlucOS <img src="images/biohacker.png" width="48" align="top">
+# GlucOS <img src="images/biohacker.png" width="48" align="top"> 
 
 <div align="center">
   

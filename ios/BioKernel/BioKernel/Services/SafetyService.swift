@@ -8,9 +8,13 @@
 import Foundation
 import LoopKit
 
+/// Read-only. Writing the ledger used to live here, which meant it happened
+/// inside `runLoop` while the loop result was written after `runLoop` returned —
+/// two separate atomic file writes describing one tick, with no transaction
+/// between them. Both now go to `LoopRecordStore.record` together. See
+/// dev/backlog/loop-record-store-grdb.md §1.3 and §5.1.
 public protocol SafetyService {
     func tempBasal(at: Date, settings: CodableSettings, reactiveSafeTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval) async -> SafetyTempBasal
-    func record(at: Date, decision: DosingDecision, candidates: DoseCandidates, duration: TimeInterval) async
 }
 
 public struct SafetyTempBasal {
@@ -36,6 +40,36 @@ public struct SafetyState: Codable {
         case suspended
     }
 
+    /// Spelled out because the initializer below suppresses the implicit
+    /// memberwise one, and the store's row decoder needs this shape to rebuild a
+    /// state it has already shredded into columns.
+    init(at: Date, duration: TimeInterval, kind: Kind) {
+        self.at = at
+        self.duration = duration
+        self.kind = kind
+    }
+
+    /// Projects a decision onto the matching `Kind`, dropping the unused form's
+    /// candidates.
+    ///
+    /// This was `LocalSafetyService.record`'s first half. It is a pure mapping
+    /// with no state and no I/O, so it belongs on the type rather than on the
+    /// service — and moving it here is what lets `runLoop` build the state it
+    /// *would* have recorded and hand it to the store, instead of writing it
+    /// mid-loop through a side channel.
+    init(at: Date, decision: DosingDecision, candidates: DoseCandidates, duration: TimeInterval) {
+        let kind: Kind
+        switch decision {
+        case .tempBasal(let unitsPerHour):
+            kind = .tempBasal(programmed: unitsPerHour, physiological: candidates.physiologicalTempBasal)
+        case .microBolus(let units):
+            kind = .microBolus(programmed: units, physiological: candidates.physiologicalMicroBolus)
+        case .suspendForBiologicalInvariant:
+            kind = .suspended
+        }
+        self.init(at: at, duration: duration, kind: kind)
+    }
+
     func deltaUnitsDeliveredByMachineLearning(from: Date, to: Date) -> Double {
         switch kind {
         case .tempBasal(let programmed, let physiological):
@@ -57,23 +91,67 @@ public struct SafetyState: Codable {
 }
 
 actor LocalSafetyService: SafetyService {
-    let timeHorizon: TimeInterval = 3.hoursToSeconds()
+    let timeHorizon: TimeInterval = LoopRecordStorePolicy.safetyTimeHorizon
 
-    var safetyStates: [SafetyState]
-    private let storage: StoredObject
+    /// nil when the store could not be opened. Every read below then takes the
+    /// conservative branch — see `fallback`.
+    private let recordStore: LoopRecordStore?
+    private let log = DiagnosticLog(category: "SafetyService")
 
-    init(storedObjectFactory: StoredObject.Type) {
-        let storage = storedObjectFactory.create(fileName: "safety_states.json")
-        self.storage = storage
-        self.safetyStates = (try? storage.read()) ?? []
+    init(recordStore: LoopRecordStore?) {
+        self.recordStore = recordStore
     }
-    
+
     // Note: we ignore actual insulin delivered and use the
     // programmed values for the safety service
     func tempBasal(at: Date, settings: CodableSettings, reactiveSafeTempBasalUnitsPerHour: Double, machineLearningTempBasalUnitsPerHour: Double, duration: TimeInterval) async ->  SafetyTempBasal {
 
         let start = at - timeHorizon
-        let events = safetyStates.filter { $0.at >= (start - duration) && $0.at < at }
+
+        // The rule this file exists to enforce: **a ledger read that cannot be
+        // answered returns the reactive-safe temp basal, never an empty tally.**
+        //
+        // `historicalMlInsulin` is subtracted from the budget below, so an empty
+        // ledger does not read as "unknown" — it reads as *no ML insulin has
+        // been delivered*, which grants the maximum deviation. The old
+        // `(try? storage.read()) ?? []` produced exactly that on any decode
+        // failure, silently. `SafetyServiceTests` pins all three ways of getting
+        // here.
+        //
+        // A zero deviation hands `DoseSelector` the physiological PID's number
+        // whether or not `useMachineLearningClosedLoop` is set. That is the same
+        // conservative branch the divide-by-zero guard below already takes, so
+        // this reuses an existing behavior rather than inventing one. The
+        // reported tally of 0 is display-only and is a lie in the "we don't
+        // know" case, which is worth a log line and not worth a new optional in
+        // the return type.
+        let fallback = SafetyTempBasal(
+            tempBasal: reactiveSafeTempBasalUnitsPerHour,
+            machineLearningInsulinLastThreeHours: 0
+        )
+
+        guard let recordStore else {
+            log.error("no loop record store; refusing the ML budget and using the reactive-safe temp basal")
+            return fallback
+        }
+
+        let events: [SafetyState]
+        do {
+            events = try await recordStore.safetyStates(from: start - duration, to: at)
+        } catch LoopRecordStoreError.historyIncomplete(let detail) {
+            // Expected, and temporary: the window reaches back further than the
+            // store has existed. Happens after the cutover from
+            // `safety_states.json`, after a reinstall, and after a restore from a
+            // backup that predates the database. Stops on its own once the store
+            // covers the whole span the tally reads — `timeHorizon + duration`
+            // after creation, since the query reaches back a correction duration
+            // past the horizon to catch a temp basal that began before it.
+            log.default("safety ledger incomplete, refusing the ML budget: %{public}@", detail)
+            return fallback
+        } catch {
+            log.error("safety ledger unreadable, refusing the ML budget: %{public}@", String(describing: error))
+            return fallback
+        }
 
         let nextTimes = events.dropFirst().map { $0.at } + [at]
         var historicalMlInsulin = 0.0
@@ -105,27 +183,5 @@ actor LocalSafetyService: SafetyService {
         let deltaTempBasal = deltaUnits * 1.hoursToSeconds() / duration
 
         return SafetyTempBasal(tempBasal: reactiveSafeTempBasalUnitsPerHour + deltaTempBasal, machineLearningInsulinLastThreeHours: historicalMlInsulin)
-    }
-    
-    func record(at: Date, decision: DosingDecision, candidates: DoseCandidates, duration: TimeInterval) async {
-        let kind: SafetyState.Kind
-        switch decision {
-        case .tempBasal(let unitsPerHour):
-            kind = .tempBasal(programmed: unitsPerHour, physiological: candidates.physiologicalTempBasal)
-        case .microBolus(let units):
-            kind = .microBolus(programmed: units, physiological: candidates.physiologicalMicroBolus)
-        case .suspendForBiologicalInvariant:
-            kind = .suspended
-        }
-
-        safetyStates.append(SafetyState(at: at, duration: duration, kind: kind))
-
-        // Only keep 24 hours worth of data
-        safetyStates = safetyStates.sorted { $0.at < $1.at }
-        if let mostRecent = safetyStates.last {
-            safetyStates = safetyStates.filter { $0.at >= (mostRecent.at - 24.hoursToSeconds()) }
-        }
-
-        try? storage.write(safetyStates)
     }
 }

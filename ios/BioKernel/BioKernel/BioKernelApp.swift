@@ -12,6 +12,7 @@ import WatchConnectivity
 @main
 struct BioKernelApp: App {
     @UIApplicationDelegateAdaptor(MyAppDelegate.self) var appDelegate
+    @Environment(\.scenePhase) private var scenePhase
     let composition: AppComposition?
 
     init() {
@@ -39,8 +40,37 @@ struct BioKernelApp: App {
                     .environmentObject(composition.observableState)
                     .environmentObject(composition.doseProgress)
                     .environmentObject(composition.glucoseAlertsService.viewModel())
+                    // Launch. `onChange` below only fires on a *change*, and
+                    // the first `.active` can be in place before the observer
+                    // attaches, so a cold start needs its own call.
+                    .task { await ingestMealAnnouncements() }
             }
         }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            Task { await ingestMealAnnouncements() }
+        }
+    }
+
+    /// Copy any meal announcements AI apps have published into our store.
+    ///
+    /// Also done at the top of every loop tick, which is where the *deadline*
+    /// is met — the interface files retain two days, so ingestion is the only
+    /// thing standing between an announcement and being lost. This is about
+    /// *freshness* instead, and it exists because the loop is not a schedule we
+    /// can lean on for it: `DeviceDataManager.checkPumpDataAndLoop` returns
+    /// early with no pump manager and throttles to one run per 4.2 minutes, so
+    /// on a phone with no pump paired the loop path ingests nothing at all, and
+    /// even with one the Meals view could sit minutes behind the file.
+    ///
+    /// Deliberately **not** debounced. A redundant ingest is two small file
+    /// reads and a pass of no-op upserts, while a debounce would break the
+    /// handoff: an AI app appends an announcement and opens our universal link
+    /// immediately, and `MainView` ingests before resolving it. Skipping that
+    /// call because another had just run is how the link fails to find its meal.
+    private func ingestMealAnnouncements() async {
+        guard let composition else { return }
+        await composition.mealStorage.ingest(at: Date())
     }
 }
 

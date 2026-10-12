@@ -129,7 +129,12 @@ class LocalDeviceDataManager: DeviceDataManager {
         self.observableState = observableState
         self.closedLoopServiceProvider = closedLoopService
         let cgmDelegate = MosCgmManagerDelegate()
-        let pumpDelegate = MosPumpManagerDelegate(insulinStorage: insulinStorage, alertStorage: alertStorage, observableState: observableState)
+        let pumpDelegate = MosPumpManagerDelegate(
+            insulinStorage: insulinStorage,
+            alertStorage: alertStorage,
+            observableState: observableState,
+            settingsStorage: { settingsStorage }
+        )
         self.cgmManagerDelegate = cgmDelegate
         self.pumpManagerDelegate = pumpDelegate
         cgmDelegate.deviceDataManager = self
@@ -409,7 +414,7 @@ class LocalDeviceDataManager: DeviceDataManager {
         }
 
         Task {
-            let lastRun = await closedLoopService.latestClosedLoopResult()
+            let lastRun = await closedLoopService.latestLoopRecord()
             DispatchQueue.main.async { [weak self] in
                 self?.observableState.lastClosedLoopRun = lastRun
             }

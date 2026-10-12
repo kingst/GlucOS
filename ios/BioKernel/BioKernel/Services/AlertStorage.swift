@@ -1,10 +1,22 @@
 //
-//  AlarmStorage.swift
+//  AlertStorage.swift
 //  BioKernel
 //
 //  Created by Sam King on 11/12/23.
 //
-//  Note: I haven't figured out how to test this well yet, so who knows if it's correct
+//  The app-facing alert seam, and LoopKit's `PersistedAlertStore` in everything
+//  but name — `DeviceDataManager+Pump` forwards each delegate callback straight
+//  through to it.
+//
+//  Storage itself lives in `AlertRecordStore`; this type holds no alerts. It
+//  owns two things the store deliberately does not: the decision about how the
+//  app degrades when there is no store, and the conversion from `throws` to the
+//  `Result` shape LoopKit's completion handlers want.
+//
+//  Nothing here reads `alerts.json` any more, and nothing imported it — see
+//  `GRDBAlertRecordStore`'s v1 migration for why starting empty was the right
+//  cutover for this store in particular.
+//
 
 import Foundation
 import LoopKit
@@ -16,123 +28,120 @@ protocol AlertStorage {
     func lookupAllUnretracted(managerIdentifier: String) async -> Result<[LoopKit.PersistedAlert], Error>
     func lookupAllUnacknowledgedUnretracted(managerIdentifier: String) async -> Result<[LoopKit.PersistedAlert], Error>
     func recordRetractedAlert(_ alert: LoopKit.Alert, at date: Date) async
-    
+
     func activeAlert() async -> LoopKit.Alert?
 }
 
-// this struct is just a copy of PersistedAlert that we made Codable
-public struct LocalPersistedAlert: Codable {
-    public let alert: Alert
-    public let issuedDate: Date
-    public let retractedDate: Date?
-    public let acknowledgedDate: Date?
-    public init(alert: Alert, issuedDate: Date, retractedDate: Date?, acknowledgedDate: Date?) {
-        self.alert = alert
-        self.issuedDate = issuedDate
-        self.retractedDate = retractedDate
-        self.acknowledgedDate = acknowledgedDate
-    }
-    
-    func toPersistedAlert() -> PersistedAlert {
-        return PersistedAlert(alert: self.alert, issuedDate: self.issuedDate, retractedDate: self.retractedDate, acknowledgedDate: self.acknowledgedDate)
-    }
-}
-
 actor LocalAlertStorage: AlertStorage {
-    var alerts: [LocalPersistedAlert] = []
-    var hasDoneInitialReadFromDisk = false
+    private let recordStore: AlertRecordStore?
+    private let log = DiagnosticLog(category: "AlertStorage")
 
-    let storage: StoredObject
+    init(recordStore: AlertRecordStore?) {
+        self.recordStore = recordStore
+    }
 
-    init(storedObjectFactory: StoredObject.Type) {
-        self.storage = storedObjectFactory.create(fileName: "alerts.json")
-    }
-    
-    private func readFromDisk() async {
-        guard !hasDoneInitialReadFromDisk else { return }
-        alerts = (try? storage.read()) ?? []
-        hasDoneInitialReadFromDisk = true
-    }
-    
-    private func syncDataToDisk() {
-        // just swallow these errors for now, eventually we can log these events and rebuild them from
-        // the network event logger
-        
-        // FIXME: do some sort of pruining (low priority given the infrequency of alerts)
-        try? storage.write(alerts)
-    }
-    
+    // MARK: - Writes
+    //
+    // These three have no error channel — LoopKit's `AlertIssuer` and
+    // `PersistedAlertStore` declare them as fire-and-forget — so a failure can
+    // only be logged. That is the same contract the JSON path had, which
+    // swallowed its write errors by design; the difference is that it is now
+    // said out loud.
+
     func issueAlert(_ alert: LoopKit.Alert) async {
-        await readFromDisk()
-        let persistedAlert = LocalPersistedAlert(alert: alert, issuedDate: Date(), retractedDate: nil, acknowledgedDate: nil)
-        alerts.append(persistedAlert)
-        syncDataToDisk()
+        guard let recordStore else {
+            log.error("no alert record store: dropping an issued alert")
+            return
+        }
+        do {
+            try await recordStore.issue(alert, at: Date())
+        } catch {
+            log.error("could not store an issued alert: %{public}@", String(describing: error))
+        }
     }
-    
+
     func retractAlert(identifier: LoopKit.Alert.Identifier) async {
-        await readFromDisk()
-        
-        alerts = alerts.map { alert in
-            if alert.alert.identifier == identifier {
-                return LocalPersistedAlert(alert: alert.alert, issuedDate: alert.issuedDate, retractedDate: Date(), acknowledgedDate: alert.acknowledgedDate)
-            } else {
-                return alert
-            }
+        guard let recordStore else {
+            log.error("no alert record store: dropping a retraction")
+            return
         }
-        
-        syncDataToDisk()
-    }
-    
-    func doesIssuedAlertExist(identifier: LoopKit.Alert.Identifier) async -> Result<Bool, Error> {
-        await readFromDisk()
-        let filteredAlerts = alerts.filter { $0.alert.identifier == identifier }
-        return .success(filteredAlerts.count > 0)
-    }
-    
-    func lookupAllUnretracted(managerIdentifier: String) async -> Result<[LoopKit.PersistedAlert], Error> {
-        await readFromDisk()
-        
-        let unretractedAlerts = alerts.compactMap { alert in
-            if alert.alert.identifier.managerIdentifier == managerIdentifier && alert.retractedDate == nil {
-                return alert.toPersistedAlert()
-            }
-            
-            return nil
+        do {
+            try await recordStore.retract(identifier: identifier, at: Date())
+        } catch {
+            log.error("could not retract an alert: %{public}@", String(describing: error))
         }
-        
-        return .success(unretractedAlerts)
     }
-    
-    func lookupAllUnacknowledgedUnretracted(managerIdentifier: String) async -> Result<[LoopKit.PersistedAlert], Error> {
-        await readFromDisk()
-        
-        let unacknowledgedUnretractedAlerts = alerts.compactMap { alert in
-            if alert.alert.identifier.managerIdentifier == managerIdentifier && alert.retractedDate == nil && alert.acknowledgedDate == nil {
-                return alert.toPersistedAlert()
-            }
-            
-            return nil
-        }
-        
-        return .success(unacknowledgedUnretractedAlerts)
-    }
-    
+
     func recordRetractedAlert(_ alert: LoopKit.Alert, at date: Date) async {
-        await readFromDisk()
-        
-        let persistedAlert = LocalPersistedAlert(alert: alert, issuedDate: date, retractedDate: date, acknowledgedDate: nil)
-        alerts.append(persistedAlert)
-        
-        syncDataToDisk()
+        guard let recordStore else {
+            log.error("no alert record store: dropping an already-retracted alert")
+            return
+        }
+        do {
+            try await recordStore.recordRetracted(alert, at: date)
+        } catch {
+            log.error("could not store an already-retracted alert: %{public}@", String(describing: error))
+        }
     }
-    
+
+    // MARK: - Reads
+    //
+    // These do have an error channel, so a failure is reported rather than
+    // dressed up as an empty result. A caller told "no outstanding alerts" by a
+    // store that is actually broken would stop re-issuing them; a caller told
+    // the read failed can decide for itself. Nothing in the vendored pump and
+    // CGM kits calls these today, which is what makes reporting honestly the
+    // cheap option rather than a risky one.
+
+    func doesIssuedAlertExist(identifier: LoopKit.Alert.Identifier) async -> Result<Bool, Error> {
+        guard let recordStore else {
+            return .failure(AlertRecordStoreError.readFailed("no alert record store"))
+        }
+        do {
+            return .success(try await recordStore.issuedAlertExists(identifier: identifier))
+        } catch {
+            log.error("could not look up an alert: %{public}@", String(describing: error))
+            return .failure(error)
+        }
+    }
+
+    func lookupAllUnretracted(managerIdentifier: String) async -> Result<[LoopKit.PersistedAlert], Error> {
+        guard let recordStore else {
+            return .failure(AlertRecordStoreError.readFailed("no alert record store"))
+        }
+        do {
+            return .success(try await recordStore.unretracted(managerIdentifier: managerIdentifier))
+        } catch {
+            log.error("could not look up unretracted alerts: %{public}@", String(describing: error))
+            return .failure(error)
+        }
+    }
+
+    func lookupAllUnacknowledgedUnretracted(managerIdentifier: String) async -> Result<[LoopKit.PersistedAlert], Error> {
+        guard let recordStore else {
+            return .failure(AlertRecordStoreError.readFailed("no alert record store"))
+        }
+        do {
+            return .success(try await recordStore.unacknowledgedUnretracted(managerIdentifier: managerIdentifier))
+        } catch {
+            log.error("could not look up unacknowledged alerts: %{public}@", String(describing: error))
+            return .failure(error)
+        }
+    }
+
+    /// Drives `observableState.activeAlert`, which is a banner. nil is what "no
+    /// banner" looks like, so a failed read degrades to nil rather than to a
+    /// `Result` the caller has no way to render.
     func activeAlert() async -> LoopKit.Alert? {
-        await readFromDisk()
-        
-        let unacknowledgedUnretractedAlerts = alerts.filter { $0.retractedDate == nil && $0.acknowledgedDate == nil }
-        
-        // just return the most recent one for know but once we get more experience with alerts
-        // we can formulate some sort of priority
-        return unacknowledgedUnretractedAlerts.last?.alert
+        guard let recordStore else {
+            log.error("no alert record store: reporting no active alert")
+            return nil
+        }
+        do {
+            return try await recordStore.mostRecentActive()
+        } catch {
+            log.error("could not read the active alert: %{public}@", String(describing: error))
+            return nil
+        }
     }
 }
