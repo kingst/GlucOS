@@ -16,3 +16,6 @@
 [submodule "ios/RileyLinkKit"]
 	path = ios/RileyLinkKit
 	url = https://github.com/loopandlearn/RileyLinkKit
+[submodule "ios/LoopAlgorithm"]
+	path = ios/LoopAlgorithm
+	url = https://github.com/loopandlearn/LoopAlgorithm.git

@@ -11,6 +11,7 @@
 		3B0044802F956D0000000001 /* AppComposition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0044812F956D0000000002 /* AppComposition.swift */; };
 		3B0044822F956D0000000003 /* AppContextNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0044832F956D0000000004 /* AppContextNotifier.swift */; };
 		3B016DDA2FA64E720011F6EC /* LoopOutcomeCodableTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B016DD92FA64E720011F6EC /* LoopOutcomeCodableTests.swift */; };
+		3B12850F3088117500200973 /* LoopAlgorithm in Frameworks */ = {isa = PBXBuildFile; productRef = 3B12850E3088117500200973 /* LoopAlgorithm */; };
 		3B348D902B5D9ADB000A40E9 /* Double.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B348D8F2B5D9ADB000A40E9 /* Double.swift */; };
 		3B348D922B5D9AEE000A40E9 /* SafetyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B348D912B5D9AEE000A40E9 /* SafetyService.swift */; };
 		3B348DAE2B5DAFB0000A40E9 /* SafetyServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B348DAD2B5DAFB0000A40E9 /* SafetyServiceTests.swift */; };
@@ -458,6 +459,7 @@
 				3B709AAB2AF49366004E5885 /* LoopKit.framework in Frameworks */,
 				3B709AAF2AF49370004E5885 /* LoopKitUI.framework in Frameworks */,
 				3B709AB22AF49377004E5885 /* MockKit.framework in Frameworks */,
+				3B12850F3088117500200973 /* LoopAlgorithm in Frameworks */,
 				3B4CFE222C223DD900BDB1CB /* ShareClientUI.framework in Frameworks */,
 				3C62EF682B218502001A4EF3 /* G7SensorKitUI.framework in Frameworks */,
 				3B9C96E230151A770088F33E /* RileyLinkKit.framework in Frameworks */,
@@ -819,6 +821,7 @@
 			packageProductDependencies = (
 				3C21A5AC2B16753800AC6D51 /* SwiftCharts */,
 				3BED255D3021399B00F0903F /* GRDB */,
+				3B12850E3088117500200973 /* LoopAlgorithm */,
 			);
 			productName = BioKernel;
 			productReference = 3B709A772AF4929D004E5885 /* BioKernel.app */;
@@ -925,6 +928,7 @@
 			packageReferences = (
 				3C21A5AB2B16753800AC6D51 /* XCRemoteSwiftPackageReference "SwiftCharts" */,
 				3BED255C3021399B00F0903F /* XCRemoteSwiftPackageReference "GRDB" */,
+				3B12850D3088117500200973 /* XCLocalSwiftPackageReference "../LoopAlgorithm" */,
 			);
 			productRefGroup = 3B709A782AF4929D004E5885 /* Products */;
 			projectDirPath = "";
@@ -1604,6 +1608,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		3B12850D3088117500200973 /* XCLocalSwiftPackageReference "../LoopAlgorithm" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../LoopAlgorithm;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		3BED255C3021399B00F0903F /* XCRemoteSwiftPackageReference "GRDB" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -1624,6 +1635,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		3B12850E3088117500200973 /* LoopAlgorithm */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LoopAlgorithm;
+		};
 		3BED255D3021399B00F0903F /* GRDB */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3BED255C3021399B00F0903F /* XCRemoteSwiftPackageReference "GRDB" */;
