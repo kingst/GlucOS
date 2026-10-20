@@ -76,7 +76,6 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "3BE6DDCD2D08706D0032DD7F"
             BuildableName = "BioKernelWatch Watch App.app"
-            BlueprintName = "BioKernelWatch Watch App"
             ReferencedContainer = "container:BioKernel.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -110,7 +109,6 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "3B96F2512D08A2A800ABBA16"
             BuildableName = "LauncherWidgetExtension.appex"
-            BlueprintName = "LauncherWidgetExtension"
             ReferencedContainer = "container:BioKernel.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
