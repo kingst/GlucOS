@@ -99,6 +99,24 @@ protocol LoopRecordStore: Sendable {
     /// A consistent, shareable copy of the database, or nil when one could not
     /// be made. See `GRDBLoopRecordStore.exportSnapshotURL`.
     func exportSnapshotURL() async -> URL?
+
+    // MARK: Target overrides (dev/backlog/meal-soon.md §5.3)
+
+    /// Insert an open override, first closing any open one as `.cancelled` at
+    /// the same instant. One transaction, so there is never more than one open
+    /// row.
+    func startTargetOverride(kind: TargetOverrideKind, at: Date, expiresAt: Date, settingsTargetMgDl: Double) async throws -> TargetOverride
+
+    /// The newest row with a NULL `ended_at`, or nil.
+    func openTargetOverride() async throws -> TargetOverride?
+
+    /// Close a row. A no-op when it is already closed — first writer wins — so
+    /// the per-tick observer and the switch can race without either overwriting
+    /// the other's reason.
+    func endTargetOverride(id: Int64, at: Date, reason: TargetOverrideEndReason, bolusSyncIdentifier: String?) async throws
+
+    /// Rows started at or after `since`, oldest first. Diagnostics and tests.
+    func targetOverrides(since: Date) async throws -> [TargetOverride]
 }
 
 // MARK: - Policy constants

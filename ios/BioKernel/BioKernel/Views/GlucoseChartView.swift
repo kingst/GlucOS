@@ -34,6 +34,47 @@ struct GlucoseChartView: View {
         return selectedHours > 6 ? 2 : 1
     }
 
+    /// One point of the target line (dev/backlog/meal-soon.md §7.4).
+    ///
+    /// `series` is what keeps separate overrides separate: each contiguous run
+    /// of meal-soon ticks gets its own id, so two overrides an hour apart draw
+    /// as two segments and not one line joined across the gap.
+    private struct TargetPoint: Identifiable {
+        let at: Date
+        let targetMgDl: Double
+        let series: String
+        var id: Date { at }
+    }
+
+    /// The continuous line: every tick that recorded a target. Rows written
+    /// before schema v2 have none and are skipped.
+    private var targetPoints: [TargetPoint] {
+        return appState.filteredGlucoseChartData.compactMap { reading in
+            guard let target = reading.targetMgDl else { return nil }
+            return TargetPoint(at: reading.at, targetMgDl: target, series: "Target")
+        }
+    }
+
+    /// Only the ticks whose target came from the override, drawn on top of the
+    /// continuous line in the override colour.
+    private var mealSoonPoints: [TargetPoint] {
+        var points: [TargetPoint] = []
+        var run = 0
+        var inRun = false
+        for reading in appState.filteredGlucoseChartData {
+            guard let target = reading.targetMgDl, reading.targetSource == .mealSoon else {
+                inRun = false
+                continue
+            }
+            if !inRun {
+                run += 1
+                inRun = true
+            }
+            points.append(TargetPoint(at: reading.at, targetMgDl: target, series: "Meal soon \(run)"))
+        }
+        return points
+    }
+
     private func chart(geometry: GeometryProxy) -> some View {
         Chart {
             AreaMark(x: .value("Time", timeWindow.min),
@@ -46,6 +87,25 @@ struct GlucoseChartView: View {
                      yEnd: .value("Target range high", 140))
             .foregroundStyle(.green)
             .opacity(0.25)
+
+            // The target each tick dosed toward, as step lines under the glucose
+            // points: a change reads as a step and not a ramp. During an
+            // override both lines sit on the same values and the override
+            // colour wins; outside one only the base line shows.
+            ForEach(targetPoints) { point in
+                LineMark(x: .value("Time", point.at),
+                         y: .value("mg/dL", point.targetMgDl),
+                         series: .value("Run", point.series))
+                    .interpolationMethod(.stepEnd)
+                    .foregroundStyle(by: .value("Series", "Target"))
+            }
+            ForEach(mealSoonPoints) { point in
+                LineMark(x: .value("Time", point.at),
+                         y: .value("mg/dL", point.targetMgDl),
+                         series: .value("Run", point.series))
+                    .interpolationMethod(.stepEnd)
+                    .foregroundStyle(by: .value("Series", "Meal soon"))
+            }
 
             ForEach(appState.glucoseChartData, id: \.created) { reading in
                 PointMark(x: .value("Time", reading.created),
@@ -64,6 +124,13 @@ struct GlucoseChartView: View {
         .frame(width: geometry.size.width * CGFloat(24 / (selectedHours == 0 ? 4 : selectedHours)))
         .chartYScale(domain: 0...maxY)
         .chartXScale(domain: timeWindow.min...timeWindow.max)
+        .chartForegroundStyleScale([
+            "Target": Color.gray.opacity(0.6),
+            "Meal soon": AppColors.deepIndigo
+        ])
+        // Trailing, because the chart is wider than the screen and opens
+        // scrolled to its right edge; a leading legend would be off-screen.
+        .chartLegend(position: .bottom, alignment: .trailing)
         .chartXAxis {
             AxisMarks(values: .stride(by: .hour, count: strideInHours)) { value in
                 AxisValueLabel(format: .dateTime.hour())

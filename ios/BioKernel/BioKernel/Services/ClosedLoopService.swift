@@ -15,6 +15,19 @@ import LoopKit
 public struct FilteredGlucose {
     public let glucose: Double
     public let at: Date
+    /// The target this tick dosed toward, and why, so the main glucose chart can
+    /// draw the target as a step line off the same read that feeds the
+    /// filtered-glucose line (dev/backlog/meal-soon.md §7.4). Both nil on rows
+    /// written before schema v2.
+    public let targetMgDl: Double?
+    public let targetSource: TargetGlucoseSource?
+
+    public init(glucose: Double, at: Date, targetMgDl: Double? = nil, targetSource: TargetGlucoseSource? = nil) {
+        self.glucose = glucose
+        self.at = at
+        self.targetMgDl = targetMgDl
+        self.targetSource = targetSource
+    }
 }
 
 protocol ClosedLoopService {

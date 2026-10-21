@@ -60,6 +60,11 @@ actor GRDBLoopRecordStore: LoopRecordStore {
         var predictedAddedGlucoseMgDlPerHr: Double?
         var mlInsulinLastThreeHours: Double?
 
+        /// What this tick dosed toward, and why (dev/backlog/meal-soon.md §6).
+        /// NULL on rows written before v2, and on skipped rows.
+        var targetMgDl: Double?
+        var targetSource: String?
+
         var physiologicalTempBasal: Double?
         var mlTempBasal: Double?
         var physiologicalMicroBolus: Double?
@@ -113,6 +118,9 @@ actor GRDBLoopRecordStore: LoopRecordStore {
             self.basalRate = snapshot.basalRate
             self.predictedAddedGlucoseMgDlPerHr = snapshot.predictedAddedGlucoseInMgDlPerHour
             self.mlInsulinLastThreeHours = snapshot.machineLearningInsulinLastThreeHours
+
+            self.targetMgDl = snapshot.targetGlucoseInMgDl
+            self.targetSource = snapshot.targetSource?.rawValue
 
             self.physiologicalTempBasal = snapshot.candidates.physiologicalTempBasal
             self.mlTempBasal = snapshot.candidates.mlTempBasal
@@ -184,6 +192,11 @@ actor GRDBLoopRecordStore: LoopRecordStore {
                 basalRate: basalRate,
                 predictedAddedGlucoseInMgDlPerHour: predictedAddedGlucoseMgDlPerHr,
                 machineLearningInsulinLastThreeHours: mlInsulinLastThreeHours,
+                // Both optional in the domain type: a row written before v2 has
+                // NULL in each, and those rows must keep decoding or the chart
+                // goes blank for a day after the upgrade.
+                targetGlucoseInMgDl: targetMgDl,
+                targetSource: targetSource.flatMap { TargetGlucoseSource(rawValue: $0) },
                 decision: decision,
                 candidates: DoseCandidates(
                     physiologicalTempBasal: physiologicalTempBasal,
@@ -274,6 +287,46 @@ actor GRDBLoopRecordStore: LoopRecordStore {
                 return nil
             }
             return SafetyState(at: Date(timeIntervalSince1970: at), duration: duration, kind: resolved)
+        }
+    }
+
+    /// One `target_override` row. Live state while `endedAt` is NULL, a log
+    /// entry once it is set. See dev/backlog/meal-soon.md §5.
+    private struct TargetOverrideRow: Codable, FetchableRecord, PersistableRecord {
+        static let databaseTableName = "target_override"
+        static let databaseColumnEncodingStrategy = DatabaseColumnEncodingStrategy.convertToSnakeCase
+        static let databaseColumnDecodingStrategy = DatabaseColumnDecodingStrategy.convertFromSnakeCase
+
+        var id: Int64?
+        var kind: String
+        var startedAt: Double
+        var expiresAt: Double
+        var settingsTargetMgDl: Double
+        var endedAt: Double?
+        var endReason: String?
+        var endBolusSyncId: String?
+
+        /// nil when the row's kind or end reason is one this build does not
+        /// know, which is the same dropped-not-fatal rule `LoopResultRow` uses.
+        func toDomain() -> TargetOverride? {
+            guard let id, let kind = TargetOverrideKind(rawValue: kind) else { return nil }
+            let endReason: TargetOverrideEndReason?
+            if let endReasonRaw = self.endReason {
+                guard let parsed = TargetOverrideEndReason(rawValue: endReasonRaw) else { return nil }
+                endReason = parsed
+            } else {
+                endReason = nil
+            }
+            return TargetOverride(
+                id: id,
+                kind: kind,
+                startedAt: Date(timeIntervalSince1970: startedAt),
+                expiresAt: Date(timeIntervalSince1970: expiresAt),
+                settingsTargetMgDl: settingsTargetMgDl,
+                endedAt: endedAt.map { Date(timeIntervalSince1970: $0) },
+                endReason: endReason,
+                endBolusSyncIdentifier: endBolusSyncId
+            )
         }
     }
 
@@ -510,6 +563,40 @@ actor GRDBLoopRecordStore: LoopRecordStore {
                 """)
         }
 
+        migrator.registerMigration("v2-target-override") { db in
+            // dev/backlog/meal-soon.md §5.1 and §6. The target each tick dosed
+            // toward, promoted from audit-only to a column so the chart can
+            // draw it and the override table has ground truth to be checked
+            // against. NULL on every row written before this migration.
+            try db.execute(sql: "ALTER TABLE loop_result ADD COLUMN target_mg_dl DOUBLE")
+            try db.execute(sql: "ALTER TABLE loop_result ADD COLUMN target_source TEXT")  // 'settings' | 'mealSoon'
+
+            // The override: live state and log in one table. The open override
+            // is "the newest row with a NULL ended_at", one hit on the partial
+            // index below. `cancelled` covers both the switch being turned off
+            // and supersession by a new start.
+            try db.execute(sql: """
+                CREATE TABLE target_override (
+                  id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+                  kind                  TEXT NOT NULL,     -- 'mealSoon'
+                  started_at            DOUBLE NOT NULL,   -- epoch seconds
+                  expires_at            DOUBLE NOT NULL,   -- started_at + duration; stored so the
+                                                           -- duration is a fact of the row, not of
+                                                           -- whichever build reads it
+                  settings_target_mg_dl DOUBLE NOT NULL,   -- the user's target when it started
+                  ended_at              DOUBLE,            -- NULL while open
+                  end_reason            TEXT,              -- 'expired' | 'manualBolus' | 'cancelled';
+                                                           -- non-NULL iff ended_at is
+                  end_bolus_sync_id     TEXT               -- non-NULL iff end_reason = 'manualBolus'
+                )
+                """)
+
+            try db.execute(sql: """
+                CREATE INDEX idx_target_override_open
+                  ON target_override(started_at) WHERE ended_at IS NULL
+                """)
+        }
+
         return migrator
     }
 
@@ -542,10 +629,16 @@ actor GRDBLoopRecordStore: LoopRecordStore {
     ///
     /// `changesCount` reports rows the DELETE itself removed; SQLite does not
     /// count cascade deletes there, so this is a count of loop results.
+    ///
+    /// `target_override` is pruned by `started_at` in the same sweep. An open
+    /// row older than the horizon cannot exist, since expiry is by clock, so
+    /// the sweep needs no exemption (meal-soon.md §5.4).
     private static func runRetention(_ db: Database, at: Date) throws -> Int {
         let cutoff = at.timeIntervalSince1970 - LoopRecordStorePolicy.retention
         try db.execute(sql: "DELETE FROM loop_result WHERE at < ?", arguments: [cutoff])
-        return db.changesCount
+        let pruned = db.changesCount
+        try db.execute(sql: "DELETE FROM target_override WHERE started_at < ?", arguments: [cutoff])
+        return pruned
     }
 
     // MARK: - Reads: the dosing path
@@ -669,15 +762,19 @@ actor GRDBLoopRecordStore: LoopRecordStore {
     }
 
     func filteredGlucose(since: Date) async throws -> [FilteredGlucose] {
-        // Two columns rather than a projection of `records(since:)`. `pid_at IS
+        // Four columns rather than a projection of `records(since:)`. `pid_at IS
         // NOT NULL` is the same predicate as "this tick reached the pipeline",
         // which is what the array version expressed as `outcome.snapshot != nil`.
+        //
+        // The target rides along on the same read so the chart can draw it
+        // without a second series or a second query (meal-soon.md §7.4). Both
+        // target columns are NULL on rows written before v2.
         do {
             return try await dbQueue.read { db in
                 try Row.fetchAll(
                     db,
                     sql: """
-                        SELECT pid_at, pid_filtered_glucose FROM loop_result
+                        SELECT pid_at, pid_filtered_glucose, target_mg_dl, target_source FROM loop_result
                         WHERE at >= ? AND pid_at IS NOT NULL
                         ORDER BY pid_at
                         """,
@@ -685,12 +782,118 @@ actor GRDBLoopRecordStore: LoopRecordStore {
                 ).compactMap { row -> FilteredGlucose? in
                     guard let at: Double = row["pid_at"],
                           let glucose: Double = row["pid_filtered_glucose"] else { return nil }
-                    return FilteredGlucose(glucose: glucose, at: Date(timeIntervalSince1970: at))
+                    let targetMgDl: Double? = row["target_mg_dl"]
+                    let targetSourceRaw: String? = row["target_source"]
+                    return FilteredGlucose(
+                        glucose: glucose,
+                        at: Date(timeIntervalSince1970: at),
+                        targetMgDl: targetMgDl,
+                        targetSource: targetSourceRaw.flatMap { TargetGlucoseSource(rawValue: $0) }
+                    )
                 }
             }
         } catch {
             throw LoopRecordStoreError.readFailed("filteredGlucose(since:) failed: \(error)")
         }
+    }
+
+    // MARK: - Target overrides
+
+    func startTargetOverride(kind: TargetOverrideKind, at: Date, expiresAt: Date, settingsTargetMgDl: Double) async throws -> TargetOverride {
+        do {
+            let row = try await dbQueue.write { db -> TargetOverrideRow in
+                // One transaction: close whatever is open as `cancelled` at this
+                // same instant, then insert. There is never more than one open
+                // row, and supersession is visible in the log as a cancel.
+                try db.execute(
+                    sql: """
+                        UPDATE target_override
+                        SET ended_at = ?, end_reason = ?
+                        WHERE ended_at IS NULL
+                        """,
+                    arguments: [at.timeIntervalSince1970, TargetOverrideEndReason.cancelled.rawValue]
+                )
+                var row = TargetOverrideRow(
+                    id: nil,
+                    kind: kind.rawValue,
+                    startedAt: at.timeIntervalSince1970,
+                    expiresAt: expiresAt.timeIntervalSince1970,
+                    settingsTargetMgDl: settingsTargetMgDl,
+                    endedAt: nil,
+                    endReason: nil,
+                    endBolusSyncId: nil
+                )
+                try row.insert(db)
+                row.id = db.lastInsertedRowID
+                return row
+            }
+            guard let override = row.toDomain() else {
+                throw LoopRecordStoreError.writeFailed("the inserted target override did not decode")
+            }
+            return override
+        } catch let error as LoopRecordStoreError {
+            throw error
+        } catch {
+            throw LoopRecordStoreError.writeFailed("could not start a target override: \(error)")
+        }
+    }
+
+    func openTargetOverride() async throws -> TargetOverride? {
+        do {
+            return try await dbQueue.read { db in
+                try TargetOverrideRow.fetchOne(
+                    db,
+                    sql: """
+                        SELECT * FROM target_override
+                        WHERE ended_at IS NULL
+                        ORDER BY started_at DESC, id DESC
+                        LIMIT 1
+                        """
+                )?.toDomain()
+            }
+        } catch {
+            throw LoopRecordStoreError.readFailed("openTargetOverride failed: \(error)")
+        }
+    }
+
+    func endTargetOverride(id: Int64, at: Date, reason: TargetOverrideEndReason, bolusSyncIdentifier: String?) async throws {
+        do {
+            try await dbQueue.write { db in
+                // `ended_at IS NULL` in the predicate is what makes this
+                // first-writer-wins: the per-tick observer and the switch can
+                // race without either overwriting the other's reason.
+                try db.execute(
+                    sql: """
+                        UPDATE target_override
+                        SET ended_at = ?, end_reason = ?, end_bolus_sync_id = ?
+                        WHERE id = ? AND ended_at IS NULL
+                        """,
+                    arguments: [at.timeIntervalSince1970, reason.rawValue, bolusSyncIdentifier, id]
+                )
+            }
+        } catch {
+            throw LoopRecordStoreError.writeFailed("could not end target override \(id): \(error)")
+        }
+    }
+
+    func targetOverrides(since: Date) async throws -> [TargetOverride] {
+        let rows: [TargetOverrideRow]
+        do {
+            rows = try await dbQueue.read { db in
+                try TargetOverrideRow.fetchAll(
+                    db,
+                    sql: "SELECT * FROM target_override WHERE started_at >= ? ORDER BY started_at, id",
+                    arguments: [since.timeIntervalSince1970]
+                )
+            }
+        } catch {
+            throw LoopRecordStoreError.readFailed("targetOverrides(since:) failed: \(error)")
+        }
+        let overrides = rows.compactMap { $0.toDomain() }
+        if overrides.count != rows.count {
+            log.error("dropped %d undecodable target override row(s)", rows.count - overrides.count)
+        }
+        return overrides
     }
 
     private func decode(_ rows: [LoopResultRow]) -> [LoopRecord] {

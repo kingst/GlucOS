@@ -20,6 +20,9 @@ struct MainViewAlertView: View {
             } else {
                 EmptyView()
             }
+            // Below the summary and below any alert that is showing, never
+            // instead of one (dev/backlog/meal-soon.md §7.2).
+            MainViewMealSoonView()
         }
         .task {
             // FIXME: can we put this in the BolusProgressView? I don't think so, but it would be better there

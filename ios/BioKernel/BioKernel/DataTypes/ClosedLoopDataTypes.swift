@@ -252,6 +252,9 @@ public struct StageTimings: Codable {
 public struct PipelineOutputs: Codable {
     let predictedGlucoseInMgDl: Double
     let targetGlucoseInMgDl: Double
+    /// Where `targetGlucoseInMgDl` came from: the user's settings, or a
+    /// meal-soon override (dev/backlog/meal-soon.md §6).
+    let targetSource: TargetGlucoseSource
     let insulinSensitivity: Double
     let basalRate: Double
     let pidTempBasalResult: PIDTempBasalResult
@@ -260,6 +263,41 @@ public struct PipelineOutputs: Codable {
     let decision: DosingDecision
     let timings: StageTimings
     let predictedAddedGlucoseInMgDlPerHour: Double
+
+    enum CodingKeys: String, CodingKey {
+        case predictedGlucoseInMgDl
+        case targetGlucoseInMgDl
+        case targetSource
+        case insulinSensitivity
+        case basalRate
+        case pidTempBasalResult
+        case candidates
+        case machineLearningInsulinLastThreeHours
+        case decision
+        case timings
+        case predictedAddedGlucoseInMgDlPerHour
+    }
+}
+
+extension PipelineOutputs {
+    /// Hand-written only so `targetSource` can default: a replay fixture in
+    /// `BioKernelTests/Resources` that predates the field still has to load.
+    /// `encode(to:)` stays synthesized, and declaring this in an extension
+    /// keeps the memberwise initializer.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.predictedGlucoseInMgDl = try container.decode(Double.self, forKey: .predictedGlucoseInMgDl)
+        self.targetGlucoseInMgDl = try container.decode(Double.self, forKey: .targetGlucoseInMgDl)
+        self.targetSource = try container.decodeIfPresent(TargetGlucoseSource.self, forKey: .targetSource) ?? .settings
+        self.insulinSensitivity = try container.decode(Double.self, forKey: .insulinSensitivity)
+        self.basalRate = try container.decode(Double.self, forKey: .basalRate)
+        self.pidTempBasalResult = try container.decode(PIDTempBasalResult.self, forKey: .pidTempBasalResult)
+        self.candidates = try container.decode(DoseCandidates.self, forKey: .candidates)
+        self.machineLearningInsulinLastThreeHours = try container.decode(Double.self, forKey: .machineLearningInsulinLastThreeHours)
+        self.decision = try container.decode(DosingDecision.self, forKey: .decision)
+        self.timings = try container.decode(StageTimings.self, forKey: .timings)
+        self.predictedAddedGlucoseInMgDlPerHour = try container.decode(Double.self, forKey: .predictedAddedGlucoseInMgDlPerHour)
+    }
 }
 
 public struct LoopSnapshot: Codable {
@@ -314,7 +352,11 @@ struct DosingPipeline {
         let basalRate = settings.learnedBasalRate(at: at)
         let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
         let predictedGlucoseInMgDl = await physiological.predictGlucoseIn15Minutes(from: at) ?? glucoseInMgDl
-        let targetGlucoseInMgDl = await target.targetGlucoseInMgDl(at: at, settings: settings)
+        // The one read of the target per tick. The PID error, the ML dynamic-ISF
+        // scaling and the micro-bolus gate all take this one number, so a
+        // meal-soon override reaches all three by changing what this returns.
+        let targetGlucose = await target.targetGlucose(at: at, settings: settings)
+        let targetGlucoseInMgDl = targetGlucose.mgDl
 
         let guardrails = Guardrails(
             settings: settings,
@@ -368,6 +410,7 @@ struct DosingPipeline {
         return PipelineOutputs(
             predictedGlucoseInMgDl: predictedGlucoseInMgDl,
             targetGlucoseInMgDl: targetGlucoseInMgDl,
+            targetSource: targetGlucose.source,
             insulinSensitivity: insulinSensitivity,
             basalRate: basalRate,
             pidTempBasalResult: pidTempBasal,

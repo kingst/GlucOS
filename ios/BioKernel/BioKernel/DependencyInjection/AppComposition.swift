@@ -23,7 +23,6 @@ final class AppComposition {
     let settingsStorage: SettingsStorage
     let alertStorage: AlertStorage
     let safetyService: SafetyService
-    let targetGlucoseService: TargetGlucoseService
     let machineLearning: MachineLearning
     let pushNotificationService: PushNotificationService
 
@@ -44,6 +43,10 @@ final class AppComposition {
     /// `closed_loop_results.json` and `safety_states.json`. See
     /// dev/backlog/loop-record-store-grdb.md.
     let loopRecordStore: LoopRecordStore?
+    /// "What target, and why" for the pipeline: the settings target, or the
+    /// meal-soon override read out of `loopRecordStore` and ended by the pump's
+    /// bolus reports in `insulinStorage`. See dev/backlog/meal-soon.md.
+    let targetGlucoseService: TargetGlucoseService
 
     // Tier 4 — watch + alerts
     let watchComms: WatchComms
@@ -88,7 +91,6 @@ final class AppComposition {
         let observableState = AppObservableState()
         let doseProgress = DoseProgress()
         let healthKitStorage = LocalHealthKitStorage(storedObjectFactory: storedObjectFactory)
-        let targetGlucoseService = LocalTargetGlucoseService()
         let machineLearning = AIDosing()
         let pushNotificationService = LocalPushNotificationService()
 
@@ -155,6 +157,17 @@ final class AppComposition {
             settingsStorage: { settingsStorage },
             aiInterfaceStorage: aiInterfaceStorage,
             recordStore: insulinRecordStore
+        )
+
+        // The target the pipeline doses toward. Lives here rather than at Tier 0
+        // because the meal-soon override is a row in the loop record store and
+        // ends on a bolus the pump reports through insulin storage. Its only
+        // consumer is the loop at Tier 6, so there is no cycle and no box. It
+        // does no I/O at construction (dev/backlog/meal-soon.md §4.3–4.4).
+        let targetGlucoseService = LocalTargetGlucoseService(
+            recordStore: loopRecordStore,
+            insulinStorage: insulinStorage,
+            observableState: observableState
         )
 
         // Tier 2 — physiology depends on storages

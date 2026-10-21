@@ -46,6 +46,7 @@ struct LoopOutcomeCodableTests {
         let outputs = PipelineOutputs(
             predictedGlucoseInMgDl: 146.5,
             targetGlucoseInMgDl: 90,
+            targetSource: .settings,
             insulinSensitivity: 55,
             basalRate: 0.3,
             pidTempBasalResult: pid,
@@ -109,6 +110,25 @@ struct LoopOutcomeCodableTests {
         }
         #expect(s.inputs.glucoseInMgDl == snapshot.inputs.glucoseInMgDl)
         #expect(s.outputs.targetGlucoseInMgDl == snapshot.outputs.targetGlucoseInMgDl)
+    }
+
+    /// `targetSource` was added after the replay fixtures in `Resources` were
+    /// captured, so a payload without it has to decode as `.settings` rather
+    /// than fail (dev/backlog/meal-soon.md §6).
+    @Test func targetSourceDefaultsToSettingsWhenAbsent() throws {
+        let data = try JSONEncoder().encode(LoopOutcome.dosed(makeSnapshot()))
+        var json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var dosed = try #require(json["dosed"] as? [String: Any])
+        var outputs = try #require(dosed["outputs"] as? [String: Any])
+        #expect(outputs["targetSource"] as? String == "settings", "the field is encoded when present")
+        outputs.removeValue(forKey: "targetSource")
+        dosed["outputs"] = outputs
+        json["dosed"] = dosed
+
+        let stripped = try JSONSerialization.data(withJSONObject: json)
+        let decoded = try JSONDecoder().decode(LoopOutcome.self, from: stripped)
+        #expect(decoded.snapshot?.outputs.targetSource == .settings)
+        #expect(decoded.snapshot?.outputs.targetGlucoseInMgDl == 90)
     }
 
     @Test func pumpErrorRoundTrip() throws {
