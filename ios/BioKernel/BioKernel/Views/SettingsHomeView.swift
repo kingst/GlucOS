@@ -10,6 +10,7 @@ struct SettingsHomeView: View {
     /// Injected at the app root (`BioKernelApp`), so it reaches here through
     /// the same navigation stack the main view pushes from.
     @EnvironmentObject var glucoseAlertsViewModel: GlucoseAlertsViewModel
+    @EnvironmentObject var appState: AppObservableState
 
     var body: some View {
         Form {
@@ -56,6 +57,25 @@ struct SettingsHomeView: View {
                     DataExportView()
                 } label: {
                     Label("Data export", systemImage: "square.and.arrow.up")
+                }
+            }
+
+            // Timed overrides the app applies on its own. Its own section, so it
+            // is visibly separate from therapy settings: nothing in here is
+            // FaceID-gated and nothing in here touches `CodableSettings`
+            // (dev/backlog/meal-soon.md §7.1).
+            Section {
+                NavigationLink {
+                    SettingsAutomationView()
+                } label: {
+                    // Same pattern as the alerts row: the state is readable
+                    // without opening the screen.
+                    HStack {
+                        Label("Settings automation", systemImage: "wand.and.stars")
+                        Spacer()
+                        Text(appState.mealSoon?.isActive(at: Date()) == true ? "Meal soon" : "Off")
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }

@@ -187,6 +187,66 @@ actor MockLoopRecordStore: LoopRecordStore {
     }
 
     func exportSnapshotURL() async -> URL? { return nil }
+
+    // MARK: Target overrides
+
+    /// Every override ever started, oldest first, closed rows included. The
+    /// same shape as the table: an open row is the state, a closed row is the
+    /// log entry.
+    private(set) var overrides: [TargetOverride] = []
+
+    func setFailWrites(_ fail: Bool) { failWrites = fail }
+    func setFailReads(_ fail: Bool) { failReads = fail }
+
+    func startTargetOverride(kind: TargetOverrideKind, at: Date, expiresAt: Date, settingsTargetMgDl: Double) async throws -> TargetOverride {
+        guard !failWrites else { throw LoopRecordStoreError.writeFailed("injected") }
+        overrides = overrides.map { $0.endedAt == nil ? Self.closed($0, at: at, reason: .cancelled, bolusSyncIdentifier: nil) : $0 }
+        let override = TargetOverride(
+            id: Int64(overrides.count + 1),
+            kind: kind,
+            startedAt: at,
+            expiresAt: expiresAt,
+            settingsTargetMgDl: settingsTargetMgDl,
+            endedAt: nil,
+            endReason: nil,
+            endBolusSyncIdentifier: nil
+        )
+        overrides.append(override)
+        return override
+    }
+
+    func openTargetOverride() async throws -> TargetOverride? {
+        readCount += 1
+        guard !failReads else { throw LoopRecordStoreError.readFailed("injected") }
+        return overrides.filter { $0.endedAt == nil }.max { $0.startedAt < $1.startedAt }
+    }
+
+    func endTargetOverride(id: Int64, at: Date, reason: TargetOverrideEndReason, bolusSyncIdentifier: String?) async throws {
+        guard !failWrites else { throw LoopRecordStoreError.writeFailed("injected") }
+        overrides = overrides.map {
+            guard $0.id == id, $0.endedAt == nil else { return $0 }
+            return Self.closed($0, at: at, reason: reason, bolusSyncIdentifier: bolusSyncIdentifier)
+        }
+    }
+
+    func targetOverrides(since: Date) async throws -> [TargetOverride] {
+        readCount += 1
+        guard !failReads else { throw LoopRecordStoreError.readFailed("injected") }
+        return overrides.filter { $0.startedAt >= since }
+    }
+
+    private static func closed(_ override: TargetOverride, at: Date, reason: TargetOverrideEndReason, bolusSyncIdentifier: String?) -> TargetOverride {
+        return TargetOverride(
+            id: override.id,
+            kind: override.kind,
+            startedAt: override.startedAt,
+            expiresAt: override.expiresAt,
+            settingsTargetMgDl: override.settingsTargetMgDl,
+            endedAt: at,
+            endReason: reason,
+            endBolusSyncIdentifier: bolusSyncIdentifier
+        )
+    }
 }
 
 class MockPhysiologicalModels: PhysiologicalModels {
@@ -227,9 +287,27 @@ class MockWatchComms: WatchComms {
 }
 
 class MockTargetGlucose: TargetGlucoseService {
-    func targetGlucoseInMgDl(at: Date, settings: BioKernel.CodableSettings) async -> Double {
-        return settings.targetGlucoseInMgDl
+    /// What `targetGlucose` reports. `.mealSoon` applies `MealSoonPolicy.target`
+    /// to the settings target, so a pipeline test sees the real 15 mg/dl shift
+    /// and not just a different label.
+    var source: TargetGlucoseSource
+
+    init(source: TargetGlucoseSource = .settings) {
+        self.source = source
     }
+
+    func targetGlucose(at: Date, settings: BioKernel.CodableSettings) async -> TargetGlucose {
+        switch source {
+        case .settings:
+            return TargetGlucose(mgDl: settings.targetGlucoseInMgDl, source: .settings)
+        case .mealSoon:
+            return TargetGlucose(mgDl: MealSoonPolicy.target(settingsTargetMgDl: settings.targetGlucoseInMgDl), source: .mealSoon)
+        }
+    }
+
+    func startMealSoon(at: Date, settings: BioKernel.CodableSettings) async throws { }
+    func cancelMealSoon(at: Date) async { }
+    func activeMealSoon(at: Date) async -> TargetOverride? { return nil }
 }
 
 extension PumpMetadata {

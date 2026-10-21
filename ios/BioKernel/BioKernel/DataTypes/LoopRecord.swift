@@ -71,6 +71,11 @@ public struct LoopRecordSnapshot {
     public let basalRate: Double
     public let predictedAddedGlucoseInMgDlPerHour: Double
     public let machineLearningInsulinLastThreeHours: Double
+    /// What this tick dosed toward, and why. Optional because a row written
+    /// before schema v2 has NULL in both, and those rows must keep reading
+    /// back (dev/backlog/meal-soon.md §6).
+    public let targetGlucoseInMgDl: Double?
+    public let targetSource: TargetGlucoseSource?
     public let decision: DosingDecision
     public let candidates: DoseCandidates
 
@@ -131,6 +136,8 @@ extension LoopRecordSnapshot {
         self.basalRate = snapshot.outputs.basalRate
         self.predictedAddedGlucoseInMgDlPerHour = snapshot.outputs.predictedAddedGlucoseInMgDlPerHour
         self.machineLearningInsulinLastThreeHours = snapshot.outputs.machineLearningInsulinLastThreeHours
+        self.targetGlucoseInMgDl = snapshot.outputs.targetGlucoseInMgDl
+        self.targetSource = snapshot.outputs.targetSource
         self.decision = snapshot.outputs.decision
         self.candidates = snapshot.outputs.candidates
         self.pid = LoopRecordPID(snapshot.outputs.pidTempBasalResult)

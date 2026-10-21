@@ -62,6 +62,8 @@ enum LoopRecordFixtures {
         decision: DosingDecision = .tempBasal(unitsPerHour: 1.25),
         candidates: DoseCandidates = candidates(),
         pid: LoopRecordPID? = nil,
+        targetGlucoseInMgDl: Double? = 92.5,
+        targetSource: TargetGlucoseSource? = .settings,
         at: Date
     ) -> LoopRecordSnapshot {
         return LoopRecordSnapshot(
@@ -71,6 +73,8 @@ enum LoopRecordFixtures {
             basalRate: 0.85,
             predictedAddedGlucoseInMgDlPerHour: 18.25,
             machineLearningInsulinLastThreeHours: 0.625,
+            targetGlucoseInMgDl: targetGlucoseInMgDl,
+            targetSource: targetSource,
             decision: decision,
             candidates: candidates,
             pid: pid ?? Self.pid(at: at - 30)
@@ -81,11 +85,20 @@ enum LoopRecordFixtures {
         at: Date,
         decision: DosingDecision = .tempBasal(unitsPerHour: 1.25),
         candidates: DoseCandidates = candidates(),
-        pid: LoopRecordPID? = nil
+        pid: LoopRecordPID? = nil,
+        targetGlucoseInMgDl: Double? = 92.5,
+        targetSource: TargetGlucoseSource? = .settings
     ) -> LoopRecord {
         return LoopRecord(
             at: at,
-            outcome: .dosed(snapshot(decision: decision, candidates: candidates, pid: pid, at: at))
+            outcome: .dosed(snapshot(
+                decision: decision,
+                candidates: candidates,
+                pid: pid,
+                targetGlucoseInMgDl: targetGlucoseInMgDl,
+                targetSource: targetSource,
+                at: at
+            ))
         )
     }
 

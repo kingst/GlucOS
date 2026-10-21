@@ -9,6 +9,8 @@ import Testing
 import Foundation
 import LoopKit
 import OmnipodKit
+import MockKit
+import HealthKit
 
 @testable import BioKernel
 
@@ -178,6 +180,64 @@ struct ClosedLoopTests {
 
         #expect(abs(dose.tempBasal - 0.0) <= iobAccuracy)
         #expect(abs(dose.microBolus - 0.25) <= iobAccuracy)
+    }
+
+    // MARK: - Meal soon (dev/backlog/meal-soon.md §10)
+
+    /// The override reaches the pipeline through its one target read, so a stub
+    /// reporting `.mealSoon` is enough to check the whole path: the PID error
+    /// shifts by the drop, the outputs carry the source, and the stored row
+    /// carries both columns.
+    @Test func aMealSoonTargetShiftsThePidErrorAndIsRecorded() async throws {
+        let now = Date.f("2026-10-20 12:00:00 +0000")
+        let pumpManager = MockPumpManager()
+        let pumpManagerDelegate = MockPumpManagerDelegate()
+        pumpManager.pumpManagerDelegate = pumpManagerDelegate
+        let deviceManager = MockDeviceDataManager()
+        deviceManager.mockPumpManager = pumpManager
+
+        // A fresh runner per source, so each PID starts from the same state and
+        // the only difference between the two runs is the target.
+        func run(source: TargetGlucoseSource) async throws -> (outputs: PipelineOutputs, recorded: LoopRecordSnapshot) {
+            let settings = MockSettingsStorage()
+            let glucoseStorage = MockGlucoseStorage()
+            let insulinStorage = MockInsulinStorage()
+            await glucoseStorage.addGlucoseReading(quantity: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 150), date: now)
+            insulinStorage.mockLastPumpSync = now
+            let store = try GRDBLoopRecordStore(inMemoryCreatedAt: .distantPast)
+            let runner = makeClosedLoopService(
+                settings: settings,
+                glucoseStorage: glucoseStorage,
+                insulinStorage: insulinStorage,
+                targetGlucoseService: MockTargetGlucose(source: source),
+                recordStore: store
+            )
+
+            // `runLoop` returns the in-memory result; `loop` is what makes a
+            // tick durable.
+            let run = await runner.runLoop(at: now, pumpManager: pumpManager, cgmPumpMetadata: deviceManager.cgmPumpMetadata())
+            let outputs = try #require(run.result.outcome.snapshot?.outputs)
+            #expect(await runner.loop(at: now, pumpManager: pumpManager, cgmPumpMetadata: deviceManager.cgmPumpMetadata()))
+            let recorded = try #require(try await store.latestRecord()?.outcome.snapshot)
+            return (outputs, recorded)
+        }
+
+        let settingsRun = try await run(source: .settings)
+        let mealSoonRun = try await run(source: .mealSoon)
+
+        #expect(settingsRun.outputs.targetSource == .settings)
+        #expect(settingsRun.outputs.targetGlucoseInMgDl == 90)
+        #expect(mealSoonRun.outputs.targetSource == .mealSoon)
+        #expect(mealSoonRun.outputs.targetGlucoseInMgDl == 75)
+
+        // error = filtered glucose − target, so a lower target is a larger error.
+        let shift = mealSoonRun.outputs.pidTempBasalResult.error - settingsRun.outputs.pidTempBasalResult.error
+        #expect(abs(shift - MealSoonPolicy.dropMgDl) <= iobAccuracy)
+
+        #expect(settingsRun.recorded.targetGlucoseInMgDl == 90)
+        #expect(settingsRun.recorded.targetSource == .settings)
+        #expect(mealSoonRun.recorded.targetGlucoseInMgDl == 75)
+        #expect(mealSoonRun.recorded.targetSource == .mealSoon)
     }
 
     @Test func legacyInsulinSensitivityKeyDecodes() async throws {

@@ -298,6 +298,8 @@ struct LoopRecordStoreTests {
         #expect(actual.basalRate == expected.basalRate)
         #expect(actual.predictedAddedGlucoseInMgDlPerHour == expected.predictedAddedGlucoseInMgDlPerHour)
         #expect(actual.machineLearningInsulinLastThreeHours == expected.machineLearningInsulinLastThreeHours)
+        #expect(actual.targetGlucoseInMgDl == expected.targetGlucoseInMgDl)
+        #expect(actual.targetSource == expected.targetSource)
         #expect(actual.decision == expected.decision)
 
         #expect(actual.candidates.physiologicalTempBasal == expected.candidates.physiologicalTempBasal)
@@ -400,5 +402,178 @@ struct LoopRecordStoreTests {
 
         let records = try await store.records(since: since)
         #expect(records.map { $0.at } == [since, at], "inclusive on the left")
+    }
+
+    // MARK: - Schema v2: the target columns (dev/backlog/meal-soon.md §6)
+
+    /// Open a v1 database, migrate, read the old rows back: both target fields
+    /// nil, nothing dropped. The v1 shape is reached by unwinding the v2
+    /// migration from the test's own connection, the same move
+    /// `InsulinRecordStoreTests` makes for the scheduled-basal migration.
+    @Test func aV1DatabaseMigratesAndKeepsItsRows() async throws {
+        let (first, url) = try makeFileStore()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+        try await first.record(LoopRecordFixtures.dosed(at: at - 5.minutesToSeconds(), decision: .microBolus(units: 0.3)), safetyState: nil, at: at)
+        try await first.record(LoopRecordFixtures.skipped(at: at - 1.minutesToSeconds()), safetyState: nil, at: at)
+
+        let raw = try DatabaseQueue(path: url.path)
+        try await raw.write { db in
+            try db.execute(sql: "ALTER TABLE loop_result DROP COLUMN target_mg_dl")
+            try db.execute(sql: "ALTER TABLE loop_result DROP COLUMN target_source")
+            try db.execute(sql: "DROP TABLE target_override")
+            try db.execute(sql: "DELETE FROM grdb_migrations WHERE identifier = 'v2-target-override'")
+        }
+
+        let second = try GRDBLoopRecordStore(url: url, createdAt: at)
+        let records = try await second.records(since: .distantPast)
+        #expect(records.count == 2, "nothing dropped")
+
+        let snapshot = try #require(records[0].outcome.snapshot)
+        #expect(snapshot.targetGlucoseInMgDl == nil)
+        #expect(snapshot.targetSource == nil)
+        #expect(snapshot.decision == .microBolus(units: 0.3), "the rest of the row survived")
+        #expect(records[1].outcome.skipReason == .openLoop)
+        #expect(try await second.openTargetOverride() == nil)
+
+        let columns = try await raw.read { db in try db.columns(in: "loop_result").map { $0.name } }
+        #expect(columns.contains("target_mg_dl"))
+        #expect(columns.contains("target_source"))
+    }
+
+    @Test func theTargetColumnsRoundTrip() async throws {
+        let store = try makeStore()
+        try await store.record(
+            LoopRecordFixtures.dosed(at: at, targetGlucoseInMgDl: 77.5, targetSource: .mealSoon),
+            safetyState: nil,
+            at: at
+        )
+
+        let snapshot = try #require(try await store.records(since: .distantPast).first?.outcome.snapshot)
+        #expect(snapshot.targetGlucoseInMgDl == 77.5)
+        #expect(snapshot.targetSource == .mealSoon)
+    }
+
+    @Test func filteredGlucoseCarriesTheTarget() async throws {
+        let store = try makeStore()
+        let first = at - 10.minutesToSeconds()
+        let second = at - 5.minutesToSeconds()
+
+        try await store.record(
+            LoopRecordFixtures.dosed(at: first, pid: LoopRecordFixtures.pid(at: first), targetGlucoseInMgDl: 77.5, targetSource: .mealSoon),
+            safetyState: nil,
+            at: at
+        )
+        // What a row written before v2 reads back as: NULL in both columns.
+        try await store.record(
+            LoopRecordFixtures.dosed(at: second, pid: LoopRecordFixtures.pid(at: second), targetGlucoseInMgDl: nil, targetSource: nil),
+            safetyState: nil,
+            at: at
+        )
+
+        let points = try await store.filteredGlucose(since: .distantPast)
+        #expect(points.count == 2)
+        #expect(points[0].targetMgDl == 77.5)
+        #expect(points[0].targetSource == .mealSoon)
+        #expect(points[1].targetMgDl == nil)
+        #expect(points[1].targetSource == nil)
+        #expect(points.allSatisfy { abs($0.glucose - 141.5) <= accuracy }, "the filtered-glucose columns are unchanged")
+    }
+
+    // MARK: - Target overrides (dev/backlog/meal-soon.md §5)
+
+    private func start(_ store: GRDBLoopRecordStore, at: Date, settingsTarget: Double = 90) async throws -> TargetOverride {
+        return try await store.startTargetOverride(
+            kind: .mealSoon,
+            at: at,
+            expiresAt: at + 60.minutesToSeconds(),
+            settingsTargetMgDl: settingsTarget
+        )
+    }
+
+    @Test func startingAnOverrideClosesTheOpenOneAsCancelled() async throws {
+        let store = try makeStore()
+        let first = try await start(store, at: at)
+        #expect(first.endedAt == nil)
+        #expect(first.kind == .mealSoon)
+        #expect(first.expiresAt == at + 60.minutesToSeconds())
+        #expect(first.settingsTargetMgDl == 90)
+        #expect(try await store.openTargetOverride() == first)
+
+        let second = try await start(store, at: at + 10.minutesToSeconds(), settingsTarget: 95)
+        #expect(try await store.openTargetOverride() == second)
+
+        let rows = try await store.targetOverrides(since: .distantPast)
+        #expect(rows.count == 2)
+        #expect(rows[0].id == first.id)
+        #expect(rows[0].endedAt == at + 10.minutesToSeconds(), "closed at the same instant the second opened")
+        #expect(rows[0].endReason == .cancelled)
+        #expect(rows[0].endBolusSyncIdentifier == nil)
+        #expect(rows[1] == second)
+        #expect(rows.filter { $0.endedAt == nil }.count == 1, "never more than one open row")
+    }
+
+    @Test func openTargetOverrideReturnsTheNewestOpenRowAndIgnoresClosed() async throws {
+        let store = try makeStore()
+        #expect(try await store.openTargetOverride() == nil)
+
+        let first = try await start(store, at: at)
+        try await store.endTargetOverride(id: first.id, at: at + 5.minutesToSeconds(), reason: .expired, bolusSyncIdentifier: nil)
+        #expect(try await store.openTargetOverride() == nil, "a closed row is a log entry, not state")
+
+        let second = try await start(store, at: at + 2.hoursToSeconds())
+        #expect(try await store.openTargetOverride() == second)
+    }
+
+    @Test func endingAnOverrideIsFirstWriterWins() async throws {
+        let store = try makeStore()
+        let override = try await start(store, at: at)
+
+        try await store.endTargetOverride(id: override.id, at: at + 20.minutesToSeconds(), reason: .manualBolus, bolusSyncIdentifier: "bolus-1")
+        // The switch, racing the per-tick observer, loses.
+        try await store.endTargetOverride(id: override.id, at: at + 25.minutesToSeconds(), reason: .cancelled, bolusSyncIdentifier: nil)
+
+        let row = try #require(try await store.targetOverrides(since: .distantPast).first)
+        #expect(row.endedAt == at + 20.minutesToSeconds())
+        #expect(row.endReason == .manualBolus)
+        #expect(row.endBolusSyncIdentifier == "bolus-1")
+    }
+
+    @Test func targetOverridesAreWindowedByStartedAtOldestFirst() async throws {
+        let store = try makeStore()
+        _ = try await start(store, at: at - 3.hoursToSeconds())
+        _ = try await start(store, at: at - 1.hoursToSeconds())
+        _ = try await start(store, at: at)
+
+        let rows = try await store.targetOverrides(since: at - 1.hoursToSeconds())
+        #expect(rows.map { $0.startedAt } == [at - 1.hoursToSeconds(), at], "inclusive on the left")
+    }
+
+    @Test func retentionPrunesTargetOverridesByStartedAt() async throws {
+        let store = try makeStore()
+        let old = at
+        _ = try await start(store, at: old)
+
+        let insideEdge = old + LoopRecordStorePolicy.retention
+        _ = try await start(store, at: insideEdge)
+
+        // The sweep runs on every loop-result write.
+        try await store.record(LoopRecordFixtures.dosed(at: insideEdge), safetyState: nil, at: insideEdge)
+        #expect(try await store.targetOverrides(since: .distantPast).count == 2, "a row exactly on the horizon is kept")
+
+        try await store.record(LoopRecordFixtures.dosed(at: insideEdge + 1), safetyState: nil, at: insideEdge + 1)
+        let rows = try await store.targetOverrides(since: .distantPast)
+        #expect(rows.map { $0.startedAt } == [insideEdge])
+    }
+
+    @Test func theExportSnapshotContainsTargetOverride() async throws {
+        let (store, url) = try makeFileStore()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        _ = try await start(store, at: at)
+
+        let snapshot = try #require(await store.exportSnapshotURL())
+        let copy = try DatabaseQueue(path: snapshot.path)
+        let count = try await copy.read { db in try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM target_override") ?? 0 }
+        #expect(count == 1)
     }
 }
