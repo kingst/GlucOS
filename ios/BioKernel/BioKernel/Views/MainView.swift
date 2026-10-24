@@ -80,48 +80,58 @@ struct MainView: View {
             .modifier(NavigationModifier())
             .navigationTitle("BioKernel")
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    HStack {
-                        Button {
-                            if appState.cgmManager == nil {
-                                navigateToAddCgm = true
-                            } else {
-                                navigateToCgmSettings = true
-                            }
-                        } label: {
-                            Image("g7")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 40, height: 40)
+                // One item per button. iOS 26+ merges adjacent items in the
+                // same placement into a single Liquid Glass capsule, so a
+                // fixed spacer between them gives each its own glass button.
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        if appState.cgmManager == nil {
+                            navigateToAddCgm = true
+                        } else {
+                            navigateToCgmSettings = true
                         }
-                        Button {
-                            if appState.pumpManager == nil {
-                                navigateToAddPump = true
-                            } else {
-                                navigateToPumpSettings = true
-                            }
-                        } label: {
-                            Image("omnipod")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 40, height: 40)
-                        }
+                    } label: {
+                        Image(systemName: "sensor.tag.radiowaves.forward.fill")
+                            .tint(.white)
                     }
                 }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack {
-                        Button {
-                            navigateToMeals = true
-                        } label: {
-                            Image(systemName: "fork.knife").tint(.white)
+                if #available(iOS 26.0, *) {
+                    ToolbarSpacer(.fixed, placement: .topBarLeading)
+                }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        if appState.pumpManager == nil {
+                            navigateToAddPump = true
+                        } else {
+                            navigateToPumpSettings = true
                         }
-                        Button {
-                            navigateToSettingsHome = true
-                        } label: {
-                            Image(systemName: "gearshape.fill")
-                                .tint(.white)
-                        }
+                    } label: {
+                        // Template asset, so it tints white like the SF Symbol
+                        // buttons; sized to sit level with them.
+                        Image("pod-icon")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 32)
+                            .tint(.white)
+                    }
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        navigateToMeals = true
+                    } label: {
+                        Image(systemName: "fork.knife").tint(.white)
+                    }
+                }
+                if #available(iOS 26.0, *) {
+                    ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        navigateToSettingsHome = true
+                    } label: {
+                        Image(systemName: "gearshape.fill")
+                            .tint(.white)
                     }
                 }
             }
