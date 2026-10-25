@@ -12,6 +12,12 @@ struct SettingsHomeView: View {
     @EnvironmentObject var glucoseAlertsViewModel: GlucoseAlertsViewModel
     @EnvironmentObject var appState: AppObservableState
 
+    /// "Meal soon", "Exercise" or "Off": which timed override is in effect.
+    private var automationStatus: String {
+        guard let override = appState.targetOverride, override.isActive(at: Date()) else { return "Off" }
+        return override.kind.title
+    }
+
     var body: some View {
         Form {
             Section {
@@ -73,7 +79,7 @@ struct SettingsHomeView: View {
                     HStack {
                         Label("Settings automation", systemImage: "wand.and.stars")
                         Spacer()
-                        Text(appState.mealSoon?.isActive(at: Date()) == true ? "Meal soon" : "Off")
+                        Text(automationStatus)
                             .foregroundStyle(.secondary)
                     }
                 }

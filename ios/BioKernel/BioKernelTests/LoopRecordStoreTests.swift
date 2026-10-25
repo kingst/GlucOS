@@ -482,13 +482,32 @@ struct LoopRecordStoreTests {
 
     // MARK: - Target overrides (dev/backlog/meal-soon.md §5)
 
-    private func start(_ store: GRDBLoopRecordStore, at: Date, settingsTarget: Double = 90) async throws -> TargetOverride {
+    private func start(_ store: GRDBLoopRecordStore, at: Date, settingsTarget: Double = 90, kind: TargetOverrideKind = .mealSoon, duration: TimeInterval = 60.minutesToSeconds()) async throws -> TargetOverride {
         return try await store.startTargetOverride(
-            kind: .mealSoon,
+            kind: kind,
             at: at,
-            expiresAt: at + 60.minutesToSeconds(),
+            expiresAt: at + duration,
             settingsTargetMgDl: settingsTarget
         )
+    }
+
+    /// The `kind` column is what tells the two overrides apart; nothing else in
+    /// the row differs. Starting one kind closes the other, the same as
+    /// starting the same kind again (dev/backlog/exercise.md §3).
+    @Test func anExerciseRowRoundTripsItsKindAndSupersedesMealSoon() async throws {
+        let store = try makeStore()
+        let mealSoon = try await start(store, at: at)
+        let exercise = try await start(store, at: at + 10.minutesToSeconds(), kind: .exercise, duration: 2.hoursToSeconds())
+        #expect(exercise.kind == .exercise)
+        #expect(exercise.expiresAt == at + 10.minutesToSeconds() + 2.hoursToSeconds())
+        #expect(exercise.duration == 2.hoursToSeconds())
+        #expect(try await store.openTargetOverride() == exercise)
+
+        let rows = try await store.targetOverrides(since: .distantPast)
+        #expect(rows.map { $0.kind } == [.mealSoon, .exercise])
+        #expect(rows[0].id == mealSoon.id)
+        #expect(rows[0].endReason == .cancelled)
+        #expect(rows[0].endedAt == at + 10.minutesToSeconds())
     }
 
     @Test func startingAnOverrideClosesTheOpenOneAsCancelled() async throws {

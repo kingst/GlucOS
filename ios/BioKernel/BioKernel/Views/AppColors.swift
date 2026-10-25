@@ -16,6 +16,9 @@ struct AppColors {
     static let red = Color(hex: 0xFF6348)
     static let green = Color(hex: 0x7BED9F)
     static let deepIndigo = Color(hex: 0x4A5699)
+    /// The exercise override, on the banner and the chart. Dark enough for
+    /// white text; distinct from the indigo meal-soon banner and the yellow alert.
+    static let teal = Color(hex: 0x1D7874)
 }
 
 // https://stackoverflow.com/a/56894458

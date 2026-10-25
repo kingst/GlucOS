@@ -44,8 +44,9 @@ final class AppComposition {
     /// dev/backlog/loop-record-store-grdb.md.
     let loopRecordStore: LoopRecordStore?
     /// "What target, and why" for the pipeline: the settings target, or the
-    /// meal-soon override read out of `loopRecordStore` and ended by the pump's
-    /// bolus reports in `insulinStorage`. See dev/backlog/meal-soon.md.
+    /// meal-soon / exercise override read out of `loopRecordStore`, with meal
+    /// soon ended by the pump's bolus reports in `insulinStorage`. See
+    /// dev/backlog/meal-soon.md and dev/backlog/exercise.md.
     let targetGlucoseService: TargetGlucoseService
 
     // Tier 4 — watch + alerts

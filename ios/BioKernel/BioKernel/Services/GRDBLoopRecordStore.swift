@@ -569,16 +569,17 @@ actor GRDBLoopRecordStore: LoopRecordStore {
             // draw it and the override table has ground truth to be checked
             // against. NULL on every row written before this migration.
             try db.execute(sql: "ALTER TABLE loop_result ADD COLUMN target_mg_dl DOUBLE")
-            try db.execute(sql: "ALTER TABLE loop_result ADD COLUMN target_source TEXT")  // 'settings' | 'mealSoon'
+            try db.execute(sql: "ALTER TABLE loop_result ADD COLUMN target_source TEXT")  // 'settings' | 'mealSoon' | 'exercise'
 
             // The override: live state and log in one table. The open override
             // is "the newest row with a NULL ended_at", one hit on the partial
             // index below. `cancelled` covers both the switch being turned off
-            // and supersession by a new start.
+            // and supersession by a new start of either kind, which is what
+            // makes "the later setting wins" between meal soon and exercise.
             try db.execute(sql: """
                 CREATE TABLE target_override (
                   id                    INTEGER PRIMARY KEY AUTOINCREMENT,
-                  kind                  TEXT NOT NULL,     -- 'mealSoon'
+                  kind                  TEXT NOT NULL,     -- 'mealSoon' | 'exercise'
                   started_at            DOUBLE NOT NULL,   -- epoch seconds
                   expires_at            DOUBLE NOT NULL,   -- started_at + duration; stored so the
                                                            -- duration is a fact of the row, not of

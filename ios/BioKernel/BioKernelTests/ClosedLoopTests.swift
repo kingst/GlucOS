@@ -182,13 +182,13 @@ struct ClosedLoopTests {
         #expect(abs(dose.microBolus - 0.25) <= iobAccuracy)
     }
 
-    // MARK: - Meal soon (dev/backlog/meal-soon.md §10)
+    // MARK: - Target overrides (dev/backlog/meal-soon.md §10, exercise.md §6)
 
-    /// The override reaches the pipeline through its one target read, so a stub
-    /// reporting `.mealSoon` is enough to check the whole path: the PID error
-    /// shifts by the drop, the outputs carry the source, and the stored row
-    /// carries both columns.
-    @Test func aMealSoonTargetShiftsThePidErrorAndIsRecorded() async throws {
+    /// An override reaches the pipeline through its one target read, so a stub
+    /// reporting `.mealSoon` or `.exercise` is enough to check the whole path:
+    /// the PID error shifts by the drop or the raise, the outputs carry the
+    /// source, and the stored row carries both columns.
+    @Test func anOverrideTargetShiftsThePidErrorAndIsRecorded() async throws {
         let now = Date.f("2026-10-20 12:00:00 +0000")
         let pumpManager = MockPumpManager()
         let pumpManagerDelegate = MockPumpManagerDelegate()
@@ -238,6 +238,15 @@ struct ClosedLoopTests {
         #expect(settingsRun.recorded.targetSource == .settings)
         #expect(mealSoonRun.recorded.targetGlucoseInMgDl == 75)
         #expect(mealSoonRun.recorded.targetSource == .mealSoon)
+
+        // Exercise goes the other way: a higher target is a smaller error.
+        let exerciseRun = try await run(source: .exercise)
+        #expect(exerciseRun.outputs.targetSource == .exercise)
+        #expect(exerciseRun.outputs.targetGlucoseInMgDl == 140)
+        let raise = settingsRun.outputs.pidTempBasalResult.error - exerciseRun.outputs.pidTempBasalResult.error
+        #expect(abs(raise - ExercisePolicy.raiseMgDl) <= iobAccuracy)
+        #expect(exerciseRun.recorded.targetGlucoseInMgDl == 140)
+        #expect(exerciseRun.recorded.targetSource == .exercise)
     }
 
     @Test func legacyInsulinSensitivityKeyDecodes() async throws {
