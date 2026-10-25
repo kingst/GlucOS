@@ -37,40 +37,45 @@ struct GlucoseChartView: View {
     /// One point of the target line (dev/backlog/meal-soon.md §7.4).
     ///
     /// `series` is what keeps separate overrides separate: each contiguous run
-    /// of meal-soon ticks gets its own id, so two overrides an hour apart draw
-    /// as two segments and not one line joined across the gap.
+    /// of ticks from one override kind gets its own id, so two overrides an
+    /// hour apart — or a meal soon superseded by an exercise — draw as separate
+    /// segments and not one line joined across the gap. `legend` is the name
+    /// the colour scale and the legend key off.
     private struct TargetPoint: Identifiable {
         let at: Date
         let targetMgDl: Double
         let series: String
+        let legend: String
         var id: Date { at }
     }
+
+    private static let targetLegend = "Target"
 
     /// The continuous line: every tick that recorded a target. Rows written
     /// before schema v2 have none and are skipped.
     private var targetPoints: [TargetPoint] {
         return appState.filteredGlucoseChartData.compactMap { reading in
             guard let target = reading.targetMgDl else { return nil }
-            return TargetPoint(at: reading.at, targetMgDl: target, series: "Target")
+            return TargetPoint(at: reading.at, targetMgDl: target, series: Self.targetLegend, legend: Self.targetLegend)
         }
     }
 
-    /// Only the ticks whose target came from the override, drawn on top of the
-    /// continuous line in the override colour.
-    private var mealSoonPoints: [TargetPoint] {
+    /// Only the ticks whose target came from an override, drawn on top of the
+    /// continuous line in that kind's colour.
+    private var overridePoints: [TargetPoint] {
         var points: [TargetPoint] = []
         var run = 0
-        var inRun = false
+        var runKind: TargetOverrideKind? = nil
         for reading in appState.filteredGlucoseChartData {
-            guard let target = reading.targetMgDl, reading.targetSource == .mealSoon else {
-                inRun = false
+            guard let target = reading.targetMgDl, let kind = reading.targetSource?.overrideKind else {
+                runKind = nil
                 continue
             }
-            if !inRun {
+            if kind != runKind {
                 run += 1
-                inRun = true
+                runKind = kind
             }
-            points.append(TargetPoint(at: reading.at, targetMgDl: target, series: "Meal soon \(run)"))
+            points.append(TargetPoint(at: reading.at, targetMgDl: target, series: "\(kind.title) \(run)", legend: kind.title))
         }
         return points
     }
@@ -97,14 +102,14 @@ struct GlucoseChartView: View {
                          y: .value("mg/dL", point.targetMgDl),
                          series: .value("Run", point.series))
                     .interpolationMethod(.stepEnd)
-                    .foregroundStyle(by: .value("Series", "Target"))
+                    .foregroundStyle(by: .value("Series", point.legend))
             }
-            ForEach(mealSoonPoints) { point in
+            ForEach(overridePoints) { point in
                 LineMark(x: .value("Time", point.at),
                          y: .value("mg/dL", point.targetMgDl),
                          series: .value("Run", point.series))
                     .interpolationMethod(.stepEnd)
-                    .foregroundStyle(by: .value("Series", "Meal soon"))
+                    .foregroundStyle(by: .value("Series", point.legend))
             }
 
             ForEach(appState.glucoseChartData, id: \.created) { reading in
@@ -125,8 +130,9 @@ struct GlucoseChartView: View {
         .chartYScale(domain: 0...maxY)
         .chartXScale(domain: timeWindow.min...timeWindow.max)
         .chartForegroundStyleScale([
-            "Target": Color.gray.opacity(0.6),
-            "Meal soon": AppColors.deepIndigo
+            Self.targetLegend: Color.gray.opacity(0.6),
+            TargetOverrideKind.mealSoon.title: TargetOverrideKind.mealSoon.color,
+            TargetOverrideKind.exercise.title: TargetOverrideKind.exercise.color
         ])
         // Trailing, because the chart is wider than the screen and opens
         // scrolled to its right edge; a leading legend would be off-screen.

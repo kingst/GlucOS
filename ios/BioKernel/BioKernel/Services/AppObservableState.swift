@@ -25,12 +25,12 @@ public final class AppObservableState: ObservableObject {
     @Published public var activeAlert: LoopKit.Alert? = nil
     @Published public var glucoseChartData: [GlucoseChartPoint] = []
     @Published public var filteredGlucoseChartData: [FilteredGlucose] = []
-    /// The open meal-soon override, or nil. Written only by
-    /// `TargetGlucoseService`: on start, on cancel, and on every
-    /// `activeMealSoon` evaluation. nil until someone asks — never read at
+    /// The open target override (meal soon or exercise), or nil. Written only
+    /// by `TargetGlucoseService`: on start, on cancel, and on every
+    /// `activeOverride` evaluation. nil until someone asks — never read at
     /// construction (dev/backlog/meal-soon.md §7.3). Views test `isActive(at:)`
     /// on it rather than non-nil alone, so expiry clears them on the clock.
-    @Published public var mealSoon: TargetOverride? = nil
+    @Published public var targetOverride: TargetOverride? = nil
 
     public init() { }
 

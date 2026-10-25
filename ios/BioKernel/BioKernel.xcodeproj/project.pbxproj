@@ -148,7 +148,8 @@
 		3BDB5701000000000000FB /* LoopRecordFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BDB5701000000000000FA /* LoopRecordFixtures.swift */; };
 		3BAE5001000000000000000A /* TargetGlucoseServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000009 /* TargetGlucoseServiceTests.swift */; };
 		3BAE50010000000000000008 /* MealSoonPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000007 /* MealSoonPolicyTests.swift */; };
-		3BAE50010000000000000006 /* MainViewMealSoonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000005 /* MainViewMealSoonView.swift */; };
+		3BAE5001000000000000000C /* ExercisePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE5001000000000000000B /* ExercisePolicyTests.swift */; };
+		3BAE50010000000000000006 /* MainViewTargetOverrideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000005 /* MainViewTargetOverrideView.swift */; };
 		3BAE50010000000000000004 /* SettingsAutomationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000003 /* SettingsAutomationView.swift */; };
 		3BAE50010000000000000002 /* TargetOverride.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000001 /* TargetOverride.swift */; };
 		3BE629B52AFCC8B6001526D4 /* SettingsStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BE629B42AFCC8B6001526D4 /* SettingsStorage.swift */; };
@@ -397,7 +398,8 @@
 		3BDB5701000000000000F7 /* LoopRecordStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopRecordStoreTests.swift; sourceTree = "<group>"; };
 		3BAE50010000000000000009 /* TargetGlucoseServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetGlucoseServiceTests.swift; sourceTree = "<group>"; };
 		3BAE50010000000000000007 /* MealSoonPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealSoonPolicyTests.swift; sourceTree = "<group>"; };
-		3BAE50010000000000000005 /* MainViewMealSoonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewMealSoonView.swift; sourceTree = "<group>"; };
+		3BAE5001000000000000000B /* ExercisePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExercisePolicyTests.swift; sourceTree = "<group>"; };
+		3BAE50010000000000000005 /* MainViewTargetOverrideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewTargetOverrideView.swift; sourceTree = "<group>"; };
 		3BAE50010000000000000003 /* SettingsAutomationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAutomationView.swift; sourceTree = "<group>"; };
 		3BAE50010000000000000001 /* TargetOverride.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetOverride.swift; sourceTree = "<group>"; };
 		3BDB5701000000000000FA /* LoopRecordFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopRecordFixtures.swift; sourceTree = "<group>"; };
@@ -735,7 +737,7 @@
 				3B36F6782B311BAF00008F4A /* MainView.swift */,
 				3B3C9B132C46DEB800BB7CCF /* MainViewAlertView.swift */,
 				3B3C9B152C46E23300BB7CCF /* MainViewGlucoseAlertView.swift */,
-				3BAE50010000000000000005 /* MainViewMealSoonView.swift */,
+				3BAE50010000000000000005 /* MainViewTargetOverrideView.swift */,
 				3B36F67E2B311DC100008F4A /* MainViewSummaryView.swift */,
 				3BA1F0010000000000002011 /* MealAnnouncementView.swift */,
 				3BA1F001000000000000200F /* MealDetailView.swift */,
@@ -803,6 +805,7 @@
 				3BA1F0010000000000000C05 /* MealAnnouncementTests.swift */,
 				3BA1F0010000000000002015 /* MealDosingTests.swift */,
 				3BA1F0010000000000002017 /* MealRecordStoreTests.swift */,
+				3BAE5001000000000000000B /* ExercisePolicyTests.swift */,
 				3BAE50010000000000000007 /* MealSoonPolicyTests.swift */,
 				3B40DE662D243C6C0032328F /* MicroBolusAmountTest.swift */,
 				3B5361722FA6ABB500E98A24 /* PhysiologicalModelsTests.swift */,
@@ -1024,7 +1027,7 @@
 				3BDB570100000000000000A2 /* PumpEventRecord.swift in Sources */,
 				3BDB570100000000000000E2 /* ScheduledBasal.swift in Sources */,
 				3BDB5701000000000000F2 /* LoopRecord.swift in Sources */,
-				3BAE50010000000000000006 /* MainViewMealSoonView.swift in Sources */,
+				3BAE50010000000000000006 /* MainViewTargetOverrideView.swift in Sources */,
 				3BAE50010000000000000004 /* SettingsAutomationView.swift in Sources */,
 				3BAE50010000000000000002 /* TargetOverride.swift in Sources */,
 				3C7553DC2AFDA34D00FAD880 /* GlucoseStorage.swift in Sources */,
@@ -1150,6 +1153,7 @@
 				3BDB5701000000000000F8 /* LoopRecordStoreTests.swift in Sources */,
 				3BAE5001000000000000000A /* TargetGlucoseServiceTests.swift in Sources */,
 				3BAE50010000000000000008 /* MealSoonPolicyTests.swift in Sources */,
+				3BAE5001000000000000000C /* ExercisePolicyTests.swift in Sources */,
 				3CAAFC8C2B0D71AE00597055 /* ReplayLogs.swift in Sources */,
 				3B40DE692D24453F0032328F /* LoopFunctionTests.swift in Sources */,
 				3B7F08412B2DDE33002930A4 /* ClosedLoopTests.swift in Sources */,

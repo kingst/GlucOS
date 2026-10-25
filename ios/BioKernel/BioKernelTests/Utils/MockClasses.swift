@@ -287,9 +287,9 @@ class MockWatchComms: WatchComms {
 }
 
 class MockTargetGlucose: TargetGlucoseService {
-    /// What `targetGlucose` reports. `.mealSoon` applies `MealSoonPolicy.target`
-    /// to the settings target, so a pipeline test sees the real 15 mg/dl shift
-    /// and not just a different label.
+    /// What `targetGlucose` reports. `.mealSoon` and `.exercise` apply the real
+    /// policy to the settings target, so a pipeline test sees the real 15 mg/dl
+    /// drop or 50 mg/dl raise and not just a different label.
     var source: TargetGlucoseSource
 
     init(source: TargetGlucoseSource = .settings) {
@@ -302,12 +302,15 @@ class MockTargetGlucose: TargetGlucoseService {
             return TargetGlucose(mgDl: settings.targetGlucoseInMgDl, source: .settings)
         case .mealSoon:
             return TargetGlucose(mgDl: MealSoonPolicy.target(settingsTargetMgDl: settings.targetGlucoseInMgDl), source: .mealSoon)
+        case .exercise:
+            return TargetGlucose(mgDl: ExercisePolicy.target(settingsTargetMgDl: settings.targetGlucoseInMgDl), source: .exercise)
         }
     }
 
     func startMealSoon(at: Date, settings: BioKernel.CodableSettings) async throws { }
-    func cancelMealSoon(at: Date) async { }
-    func activeMealSoon(at: Date) async -> TargetOverride? { return nil }
+    func startExercise(at: Date, duration: TimeInterval, settings: BioKernel.CodableSettings) async throws { }
+    func cancelOverride(at: Date) async { }
+    func activeOverride(at: Date) async -> TargetOverride? { return nil }
 }
 
 extension PumpMetadata {
