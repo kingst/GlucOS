@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppIntents
 import G7SensorKit
 import WatchConnectivity
 
@@ -25,6 +26,14 @@ struct BioKernelApp: App {
             composition.backgroundService.registerBackgroundTask()
         }
         appDelegate.composition = self.composition
+
+        // For `CheckCgmConnectionIntent`. The system builds intents with a
+        // bare `init()`, and `UIApplication.shared.delegate` is SwiftUI's
+        // wrapper rather than `MyAppDelegate`, so this is the only way in.
+        // Registered even when nil: an unregistered `@Dependency` traps,
+        // a nil one lets the intent throw.
+        let intentComposition: AppComposition? = self.composition
+        AppDependencyManager.shared.add(dependency: intentComposition)
     }
     var body: some Scene {
         WindowGroup {

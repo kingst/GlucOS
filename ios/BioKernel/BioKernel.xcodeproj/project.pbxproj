@@ -116,11 +116,19 @@
 		3BA1F0010000000000002016 /* MealRecordStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BA1F0010000000000002017 /* MealRecordStoreTests.swift */; };
 		3BA1F0010000000000002018 /* MealStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BA1F0010000000000002019 /* MealStyle.swift */; };
 		3BAD0C4C2E521ECA00B1F8CF /* PumpHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAD0C4B2E521ECA00B1F8CF /* PumpHistoryView.swift */; };
+		3BAE50010000000000000002 /* TargetOverride.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000001 /* TargetOverride.swift */; };
+		3BAE50010000000000000004 /* SettingsAutomationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000003 /* SettingsAutomationView.swift */; };
+		3BAE50010000000000000006 /* MainViewTargetOverrideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000005 /* MainViewTargetOverrideView.swift */; };
+		3BAE50010000000000000008 /* MealSoonPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000007 /* MealSoonPolicyTests.swift */; };
+		3BAE5001000000000000000A /* TargetGlucoseServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000009 /* TargetGlucoseServiceTests.swift */; };
+		3BAE5001000000000000000C /* ExercisePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE5001000000000000000B /* ExercisePolicyTests.swift */; };
 		3BAECD202B28F270002B9062 /* HealthKitStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAECD1F2B28F270002B9062 /* HealthKitStorage.swift */; };
 		3BBC7C742B155C7F00410123 /* FaceId.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BBC7C732B155C7F00410123 /* FaceId.swift */; };
 		3BBC7C762B15620200410123 /* LoopTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3BBC7C752B15620200410123 /* LoopTestingKit.framework */; };
 		3BBC7C772B15620200410123 /* LoopTestingKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3BBC7C752B15620200410123 /* LoopTestingKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3BBC7C7D2B15679700410123 /* BolusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BBC7C7C2B15679700410123 /* BolusView.swift */; };
+		3BC5A0E10000000000000002 /* CheckCgmConnectionIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BC5A0E10000000000000001 /* CheckCgmConnectionIntent.swift */; };
+		3BC5A0E10000000000000005 /* CheckCgmConnectionIntentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BC5A0E10000000000000004 /* CheckCgmConnectionIntentTests.swift */; };
 		3BCL5T01000000000000A001 /* ClosedLoopTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BCL5T01000000000000A002 /* ClosedLoopTestSupport.swift */; };
 		3BD3FFA92F9C311B0056F151 /* HealthKitSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD3FFA82F9C311B0056F151 /* HealthKitSettingsView.swift */; };
 		3BD7937D2AF55B8200E5FDC9 /* PersistedProperty.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BD7937C2AF55B8200E5FDC9 /* PersistedProperty.swift */; };
@@ -146,12 +154,6 @@
 		3BDB5701000000000000F6 /* GRDBLoopRecordStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BDB5701000000000000F5 /* GRDBLoopRecordStore.swift */; };
 		3BDB5701000000000000F8 /* LoopRecordStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BDB5701000000000000F7 /* LoopRecordStoreTests.swift */; };
 		3BDB5701000000000000FB /* LoopRecordFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BDB5701000000000000FA /* LoopRecordFixtures.swift */; };
-		3BAE5001000000000000000A /* TargetGlucoseServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000009 /* TargetGlucoseServiceTests.swift */; };
-		3BAE50010000000000000008 /* MealSoonPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000007 /* MealSoonPolicyTests.swift */; };
-		3BAE5001000000000000000C /* ExercisePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE5001000000000000000B /* ExercisePolicyTests.swift */; };
-		3BAE50010000000000000006 /* MainViewTargetOverrideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000005 /* MainViewTargetOverrideView.swift */; };
-		3BAE50010000000000000004 /* SettingsAutomationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000003 /* SettingsAutomationView.swift */; };
-		3BAE50010000000000000002 /* TargetOverride.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000001 /* TargetOverride.swift */; };
 		3BE629B52AFCC8B6001526D4 /* SettingsStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BE629B42AFCC8B6001526D4 /* SettingsStorage.swift */; };
 		3BE6DDDB2D08706E0032DD7F /* BioKernelWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 3BE6DDCE2D08706D0032DD7F /* BioKernelWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3BE6DDE02D0870840032DD7F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3B709A7E2AF492A0004E5885 /* Assets.xcassets */; };
@@ -367,11 +369,19 @@
 		3BA1F0010000000000002017 /* MealRecordStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealRecordStoreTests.swift; sourceTree = "<group>"; };
 		3BA1F0010000000000002019 /* MealStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealStyle.swift; sourceTree = "<group>"; };
 		3BAD0C4B2E521ECA00B1F8CF /* PumpHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PumpHistoryView.swift; sourceTree = "<group>"; };
+		3BAE50010000000000000001 /* TargetOverride.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetOverride.swift; sourceTree = "<group>"; };
+		3BAE50010000000000000003 /* SettingsAutomationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAutomationView.swift; sourceTree = "<group>"; };
+		3BAE50010000000000000005 /* MainViewTargetOverrideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewTargetOverrideView.swift; sourceTree = "<group>"; };
+		3BAE50010000000000000007 /* MealSoonPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealSoonPolicyTests.swift; sourceTree = "<group>"; };
+		3BAE50010000000000000009 /* TargetGlucoseServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetGlucoseServiceTests.swift; sourceTree = "<group>"; };
+		3BAE5001000000000000000B /* ExercisePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExercisePolicyTests.swift; sourceTree = "<group>"; };
 		3BAECD1F2B28F270002B9062 /* HealthKitStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitStorage.swift; sourceTree = "<group>"; };
 		3BAECD212B28FF54002B9062 /* BioKernel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BioKernel.entitlements; sourceTree = "<group>"; };
 		3BBC7C732B155C7F00410123 /* FaceId.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceId.swift; sourceTree = "<group>"; };
 		3BBC7C752B15620200410123 /* LoopTestingKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = LoopTestingKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3BBC7C7C2B15679700410123 /* BolusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusView.swift; sourceTree = "<group>"; };
+		3BC5A0E10000000000000001 /* CheckCgmConnectionIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckCgmConnectionIntent.swift; sourceTree = "<group>"; };
+		3BC5A0E10000000000000004 /* CheckCgmConnectionIntentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckCgmConnectionIntentTests.swift; sourceTree = "<group>"; };
 		3BCL5T01000000000000A002 /* ClosedLoopTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClosedLoopTestSupport.swift; sourceTree = "<group>"; };
 		3BD3FFA82F9C311B0056F151 /* HealthKitSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitSettingsView.swift; sourceTree = "<group>"; };
 		3BD7937C2AF55B8200E5FDC9 /* PersistedProperty.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PersistedProperty.swift; sourceTree = "<group>"; };
@@ -396,12 +406,6 @@
 		3BDB5701000000000000F3 /* LoopRecordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopRecordStore.swift; sourceTree = "<group>"; };
 		3BDB5701000000000000F5 /* GRDBLoopRecordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GRDBLoopRecordStore.swift; sourceTree = "<group>"; };
 		3BDB5701000000000000F7 /* LoopRecordStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopRecordStoreTests.swift; sourceTree = "<group>"; };
-		3BAE50010000000000000009 /* TargetGlucoseServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetGlucoseServiceTests.swift; sourceTree = "<group>"; };
-		3BAE50010000000000000007 /* MealSoonPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealSoonPolicyTests.swift; sourceTree = "<group>"; };
-		3BAE5001000000000000000B /* ExercisePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExercisePolicyTests.swift; sourceTree = "<group>"; };
-		3BAE50010000000000000005 /* MainViewTargetOverrideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewTargetOverrideView.swift; sourceTree = "<group>"; };
-		3BAE50010000000000000003 /* SettingsAutomationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAutomationView.swift; sourceTree = "<group>"; };
-		3BAE50010000000000000001 /* TargetOverride.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetOverride.swift; sourceTree = "<group>"; };
 		3BDB5701000000000000FA /* LoopRecordFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopRecordFixtures.swift; sourceTree = "<group>"; };
 		3BE629B42AFCC8B6001526D4 /* SettingsStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStorage.swift; sourceTree = "<group>"; };
 		3BE6DDCE2D08706D0032DD7F /* BioKernelWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "BioKernelWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -565,6 +569,7 @@
 				3C4911E72AF4C6290070D3B4 /* DependencyInjection */,
 				3C7553E12AFDBF9F00FAD880 /* ExtensionsAndUtils */,
 				3C07C89E2AF9837F008F604C /* Info.plist */,
+				3BC5A0E10000000000000003 /* Intents */,
 				3B709AB72AF494E6004E5885 /* LoopKitSupport */,
 				3B6063B72B562913009D9CBC /* MachineLearningModels */,
 				3BA00A512D22D5D00002B051 /* DataTypes */,
@@ -657,6 +662,14 @@
 				3BA00A542D23157C0002B051 /* SettingsDataTypes.swift */,
 			);
 			path = DataTypes;
+			sourceTree = "<group>";
+		};
+		3BC5A0E10000000000000003 /* Intents */ = {
+			isa = PBXGroup;
+			children = (
+				3BC5A0E10000000000000001 /* CheckCgmConnectionIntent.swift */,
+			);
+			path = Intents;
 			sourceTree = "<group>";
 		};
 		3C15FE482B0C9C5000CA1FD4 /* Resources */ = {
@@ -792,6 +805,7 @@
 				3BA1F0010000000000000B01 /* AiInterfaceParityTests.swift */,
 				3BA1F0010000000000000009 /* AiInterfaceTests.swift */,
 				3BDB570100000000000000D5 /* AlertRecordStoreTests.swift */,
+				3BC5A0E10000000000000004 /* CheckCgmConnectionIntentTests.swift */,
 				3BA00A562D231CA00002B051 /* ClosedLoopSafetyTests.swift */,
 				3B7F08402B2DDE33002930A4 /* ClosedLoopTests.swift */,
 				3BDB570100000000000000C5 /* GlucoseRecordStoreTests.swift */,
@@ -1105,6 +1119,7 @@
 				3B3C9B142C46DEB800BB7CCF /* MainViewAlertView.swift in Sources */,
 				3C7553D22AFD8AD100FAD880 /* DeviceDataManager+CGM.swift in Sources */,
 				3B709A7B2AF4929D004E5885 /* BioKernelApp.swift in Sources */,
+				3BC5A0E10000000000000002 /* CheckCgmConnectionIntent.swift in Sources */,
 				3B96F2AC2D0904EE00ABBA16 /* WatchCommsService.swift in Sources */,
 				3B3BEC502C3D87B8007F0CCE /* BackgroundService.swift in Sources */,
 				3CBFB9912AFFAEC80020FC90 /* DateTime.swift in Sources */,
@@ -1154,6 +1169,7 @@
 				3BAE5001000000000000000A /* TargetGlucoseServiceTests.swift in Sources */,
 				3BAE50010000000000000008 /* MealSoonPolicyTests.swift in Sources */,
 				3BAE5001000000000000000C /* ExercisePolicyTests.swift in Sources */,
+				3BC5A0E10000000000000005 /* CheckCgmConnectionIntentTests.swift in Sources */,
 				3CAAFC8C2B0D71AE00597055 /* ReplayLogs.swift in Sources */,
 				3B40DE692D24453F0032328F /* LoopFunctionTests.swift in Sources */,
 				3B7F08412B2DDE33002930A4 /* ClosedLoopTests.swift in Sources */,
