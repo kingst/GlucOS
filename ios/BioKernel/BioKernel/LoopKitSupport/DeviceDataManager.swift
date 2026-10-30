@@ -50,6 +50,7 @@ public protocol DeviceDataManager: AnyObject {
     func cgmManagerDescriptors() -> [CGMManagerDescriptor]
 
     func refreshCgmAndPumpDataFromUI() async
+    func checkCgmData() async
     func checkCgmDataAndLoop() async
 
     // for the delegate classes to use

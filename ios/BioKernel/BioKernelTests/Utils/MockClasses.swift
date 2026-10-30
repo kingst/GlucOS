@@ -442,6 +442,10 @@ class MockDeviceDataManager: DeviceDataManager {
         // No-op for mock
     }
     
+    func checkCgmData() async {
+        // No-op for mock
+    }
+    
     func checkCgmDataAndLoop() async {
         // No-op for mock
     }
