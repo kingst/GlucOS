@@ -60,6 +60,10 @@ struct PIDState: Codable {
     let lastGlucose: Double?
     let lastGlucoseAt: Date?
     let accumulatedError: Double
+    /// The controller's glucose input on the last tick, filtered or raw
+    /// depending on the low-pass filter setting. The name is kept so an
+    /// existing `pid_state.json` keeps restoring across that setting's
+    /// introduction.
     let lastFilteredGlucose: Double?
 }
 
@@ -148,6 +152,8 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
     var lastGlucose: Double?
     var lastGlucoseAt: Date?
     var accumulatedError = 0.0
+    /// The controller's glucose input on the last tick: the filter's output
+    /// when the low-pass filter is on, the raw reading when it is off.
     var lastFilteredGlucose: Double?
     
     /// deltaGlucoseError should get raw CGM values as it does its own filtering, don't pass
@@ -200,15 +206,26 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
         let basalBaselineInsulinOnBoard = PhysiologicalUtilities .calculateBasalBaselineInsulinOnBoard(basalRate: basalRate, insulinType: insulinType)
         let deltaGlucoseError = deltaGlucoseError(settings: settings, dataFrame: dataFrame, at: at)
         
-        // PID controller
-        let filteredGlucose = lowPassFilter(glucose: glucoseInMgDl, at: at)
+        // PID controller. With the low-pass filter off the controller sees
+        // the raw reading, and the derivative is taken over the raw pair
+        // (`lastGlucose`) rather than against `lastFilteredGlucose`: on the
+        // tick that turns the filter off, the filtered value still lags the
+        // raw one by roughly slope x time constant, and pairing raw with
+        // filtered would charge that whole lag to one derivative. While off,
+        // `lastFilteredGlucose` is written with the raw reading, so turning
+        // the filter back on blends from the previous raw value rather than
+        // from a filtered value that may be hours stale. The integrator does
+        // not depend on the filter either way.
+        let filterEnabled = settings.isPidLowPassFilterEnabled()
+        let filteredGlucose = filterEnabled ? lowPassFilter(glucose: glucoseInMgDl, at: at) : glucoseInMgDl
+        let previousGlucose = filterEnabled ? lastFilteredGlucose : lastGlucose
         let error = filteredGlucose - targetGlucoseInMgDl
         var derivative = 0.0
-        if let dt = lastGlucoseAt.map({ at.timeIntervalSince($0) }), dt < 11.minutesToSeconds(), let lastFilteredGlucose = lastFilteredGlucose {
+        if let dt = lastGlucoseAt.map({ at.timeIntervalSince($0) }), dt < 11.minutesToSeconds(), let previousGlucose {
             // these are slighly non-standard for PID but we do it this
             // way to keep our derivative and integral in glucose units
             // to make it easier to set Ki and Kd
-            derivative = (filteredGlucose - lastFilteredGlucose)
+            derivative = (filteredGlucose - previousGlucose)
             
             // with this check we're trying to only accumulate errors
             // when we're outside of digestion and accumulate deltaGlucose

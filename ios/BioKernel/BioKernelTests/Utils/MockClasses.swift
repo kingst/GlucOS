@@ -78,6 +78,7 @@ class MockSettingsStorage: SettingsStorage {
     var pidDerivativeGain = 0.35
     var useBiologicalInvariant = false
     var machineLearningGain = 2.0
+    var usePidLowPassFilter = false
     
     func update(useMicroBolus: Bool, useMachineLearningClosedLoop: Bool, useBiologicalInvariant: Bool) {
         self.useMicroBolus = useMicroBolus
@@ -97,6 +98,10 @@ class MockSettingsStorage: SettingsStorage {
         self.useBiologicalInvariant = useBiologicalInvariant
     }
     
+    func update(usePidLowPassFilter: Bool) {
+        self.usePidLowPassFilter = usePidLowPassFilter
+    }
+    
     func update(shutOffGlucoseInMgDl: Double) {
         self.shutOffGlucoseInMgDl = shutOffGlucoseInMgDl
     }
@@ -106,7 +111,7 @@ class MockSettingsStorage: SettingsStorage {
     }
     
     func snapshot() -> BioKernel.CodableSettings {
-        return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: pumpBasalRateUnitsPerHour, insulinSensitivityInMgDlPerUnit: insulinSensitivityInMgDlPerUnit, maxBasalRateUnitsPerHour: maxBasalRateUnitsPerHour, maxBolusUnits: maxBolusUnits, shutOffGlucoseInMgDl: shutOffGlucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, closedLoopEnabled: closedLoopEnabled, useMachineLearningClosedLoop: useMachineLearningClosedLoop, useMicroBolus: useMicroBolus, microBolusDoseFactor: microBolusDoseFactor, learnedBasalRateUnitsPerHour: learnedBasalRateUnitsPerHour, learnedInsulinSensitivityInMgDlPerUnit: learnedInsulinSensitivityInMgDlPerUnit, bolusAmountForLess: bolusAmountForLess, bolusAmountForUsual: bolusAmountForUsual, bolusAmountForMore: bolusAmountForMore, pidIntegratorGain: pidIntegratorGain, pidDerivativeGain: pidDerivativeGain, useBiologicalInvariant: useBiologicalInvariant, machineLearningGain: machineLearningGain)
+        return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: pumpBasalRateUnitsPerHour, insulinSensitivityInMgDlPerUnit: insulinSensitivityInMgDlPerUnit, maxBasalRateUnitsPerHour: maxBasalRateUnitsPerHour, maxBolusUnits: maxBolusUnits, shutOffGlucoseInMgDl: shutOffGlucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, closedLoopEnabled: closedLoopEnabled, useMachineLearningClosedLoop: useMachineLearningClosedLoop, useMicroBolus: useMicroBolus, microBolusDoseFactor: microBolusDoseFactor, learnedBasalRateUnitsPerHour: learnedBasalRateUnitsPerHour, learnedInsulinSensitivityInMgDlPerUnit: learnedInsulinSensitivityInMgDlPerUnit, bolusAmountForLess: bolusAmountForLess, bolusAmountForUsual: bolusAmountForUsual, bolusAmountForMore: bolusAmountForMore, pidIntegratorGain: pidIntegratorGain, pidDerivativeGain: pidDerivativeGain, useBiologicalInvariant: useBiologicalInvariant, machineLearningGain: machineLearningGain, usePidLowPassFilter: usePidLowPassFilter)
     }
     
     func writeToDisk(settings: BioKernel.CodableSettings) throws {

@@ -10,6 +10,16 @@ import SwiftUI
 struct AppColors {
     // Primary is 0x70A1FF with 0.5 alpha for dark mode
     static let primary = Color("DarkAwarePrimary")
+    /// `primary` resolved for `scheme`, as a plain color.
+    ///
+    /// For a bar under `toolbarColorScheme(.dark)`, which resolves dynamic
+    /// colors in its own dark appearance and so would always pick the
+    /// half-transparent dark variant.
+    static func primary(for scheme: ColorScheme) -> Color {
+        guard let dynamic = UIColor(named: "DarkAwarePrimary") else { return primary }
+        let style: UIUserInterfaceStyle = scheme == .dark ? .dark : .light
+        return Color(uiColor: dynamic.resolvedColor(with: UITraitCollection(userInterfaceStyle: style)))
+    }
     static let yellow = Color(hex: 0xECCC68)
     static let lightRed = Color(hex: 0xFF7F50)
     static let orange = Color(hex: 0xFFA502)

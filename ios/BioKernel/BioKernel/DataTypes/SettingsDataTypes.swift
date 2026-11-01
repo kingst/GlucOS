@@ -67,6 +67,7 @@ public struct CodableSettings: Codable {
     let pidDerivativeGain: Double?
     let useBiologicalInvariant: Bool?
     let machineLearningGain: Double?
+    let usePidLowPassFilter: Bool?
 
     // Note: We hard code this at 30 minutes because of Omnipod limitations
     let correctionDurationInSeconds = 30.minutesToSeconds()
@@ -82,6 +83,7 @@ public struct CodableSettings: Codable {
     static let pidIntegratorGainDefault = 0.055
     static let pidDerivativeGainDefault = 3.0
     static let machineLearningGainDefault = 1.5
+    static let usePidLowPassFilterDefault = false
     
     func learnedInsulinSensitivity(at: Date) -> Double {
         return learnedInsulinSensitivityInMgDlPerUnit.value(at: at) ?? insulinSensitivityInMgDlPerUnit
@@ -94,6 +96,7 @@ public struct CodableSettings: Codable {
     func getPidIntegratorGain() -> Double { pidIntegratorGain ?? CodableSettings.pidIntegratorGainDefault }
     func getPidDerivativeGain() -> Double { pidDerivativeGain ?? CodableSettings.pidDerivativeGainDefault }
     func getMachineLearningGain() -> Double { machineLearningGain ?? CodableSettings.machineLearningGainDefault }
+    func isPidLowPassFilterEnabled() -> Bool { usePidLowPassFilter ?? CodableSettings.usePidLowPassFilterDefault }
     
     func learnedBasalRate(at: Date) -> Double {
         return learnedBasalRatesUnitsPerHour.value(at: at) ?? pumpBasalRateUnitsPerHour
@@ -124,7 +127,7 @@ public struct CodableSettings: Codable {
         }
     }
     
-    public init(created: Date, pumpBasalRateUnitsPerHour: Double, insulinSensitivityInMgDlPerUnit: Double, maxBasalRateUnitsPerHour: Double, maxBolusUnits: Double, shutOffGlucoseInMgDl: Double, targetGlucoseInMgDl: Double, closedLoopEnabled: Bool, useMachineLearningClosedLoop: Bool, useMicroBolus: Bool, microBolusDoseFactor: Double, learnedBasalRateUnitsPerHour: LearnedSettingsSchedule, learnedInsulinSensitivityInMgDlPerUnit: LearnedSettingsSchedule, bolusAmountForLess: Double, bolusAmountForUsual: Double, bolusAmountForMore: Double, pidIntegratorGain: Double, pidDerivativeGain: Double, useBiologicalInvariant: Bool, machineLearningGain: Double) {
+    public init(created: Date, pumpBasalRateUnitsPerHour: Double, insulinSensitivityInMgDlPerUnit: Double, maxBasalRateUnitsPerHour: Double, maxBolusUnits: Double, shutOffGlucoseInMgDl: Double, targetGlucoseInMgDl: Double, closedLoopEnabled: Bool, useMachineLearningClosedLoop: Bool, useMicroBolus: Bool, microBolusDoseFactor: Double, learnedBasalRateUnitsPerHour: LearnedSettingsSchedule, learnedInsulinSensitivityInMgDlPerUnit: LearnedSettingsSchedule, bolusAmountForLess: Double, bolusAmountForUsual: Double, bolusAmountForMore: Double, pidIntegratorGain: Double, pidDerivativeGain: Double, useBiologicalInvariant: Bool, machineLearningGain: Double, usePidLowPassFilter: Bool) {
         self.created = created
         self.pumpBasalRateUnitsPerHour = pumpBasalRateUnitsPerHour
         self.insulinSensitivityInMgDlPerUnit = insulinSensitivityInMgDlPerUnit
@@ -145,10 +148,11 @@ public struct CodableSettings: Codable {
         self.pidDerivativeGain = pidDerivativeGain
         self.useBiologicalInvariant = useBiologicalInvariant
         self.machineLearningGain = machineLearningGain
+        self.usePidLowPassFilter = usePidLowPassFilter
     }
     
     static func defaults() -> CodableSettings {
-        return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: 0.3, insulinSensitivityInMgDlPerUnit: 45, maxBasalRateUnitsPerHour: 2, maxBolusUnits: 5, shutOffGlucoseInMgDl: 85, targetGlucoseInMgDl: 90, closedLoopEnabled: false, useMachineLearningClosedLoop: false, useMicroBolus: useMicroBolusDefault, microBolusDoseFactor: microBolusDoseFactorDefault, learnedBasalRateUnitsPerHour: LearnedSettingsSchedule.empty(), learnedInsulinSensitivityInMgDlPerUnit: LearnedSettingsSchedule.empty(), bolusAmountForLess: bolusAmountForLessDefault, bolusAmountForUsual: bolusAmountForUsualDefault, bolusAmountForMore: bolusAmountForMoreDefault, pidIntegratorGain: pidIntegratorGainDefault, pidDerivativeGain: pidDerivativeGainDefault, useBiologicalInvariant: useBiologicalInvariantDefault, machineLearningGain: machineLearningGainDefault)
+        return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: 0.3, insulinSensitivityInMgDlPerUnit: 45, maxBasalRateUnitsPerHour: 2, maxBolusUnits: 5, shutOffGlucoseInMgDl: 85, targetGlucoseInMgDl: 90, closedLoopEnabled: false, useMachineLearningClosedLoop: false, useMicroBolus: useMicroBolusDefault, microBolusDoseFactor: microBolusDoseFactorDefault, learnedBasalRateUnitsPerHour: LearnedSettingsSchedule.empty(), learnedInsulinSensitivityInMgDlPerUnit: LearnedSettingsSchedule.empty(), bolusAmountForLess: bolusAmountForLessDefault, bolusAmountForUsual: bolusAmountForUsualDefault, bolusAmountForMore: bolusAmountForMoreDefault, pidIntegratorGain: pidIntegratorGainDefault, pidDerivativeGain: pidDerivativeGainDefault, useBiologicalInvariant: useBiologicalInvariantDefault, machineLearningGain: machineLearningGainDefault, usePidLowPassFilter: usePidLowPassFilterDefault)
     }
 
     // Decoder migration: the legacy on-disk key was the misspelled `learnedInsulinSensivityInMgDlPerUnit`.
@@ -188,5 +192,6 @@ public struct CodableSettings: Codable {
         self.pidDerivativeGain = try c.decodeIfPresent(Double.self, forKey: k("pidDerivativeGain"))
         self.useBiologicalInvariant = try c.decodeIfPresent(Bool.self, forKey: k("useBiologicalInvariant"))
         self.machineLearningGain = try c.decodeIfPresent(Double.self, forKey: k("machineLearningGain"))
+        self.usePidLowPassFilter = try c.decodeIfPresent(Bool.self, forKey: k("usePidLowPassFilter"))
     }
 }

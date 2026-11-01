@@ -64,6 +64,11 @@ struct SettingsView: View {
                 Section("Algorithm settings (advanced)") {
                     DecimalPicker(title: "Target glucose", selection: $settingsViewModel.glucoseTarget, items: settingsViewModel.glucoseTargetValues, hasModifications: $hasModifications)
                     DecimalPicker(title: "µBolus dose factor", selection: $settingsViewModel.microBolusDoseFactor, items: settingsViewModel.microBolusDoseFactorValues, hasModifications: $hasModifications)
+                    Toggle(isOn: $settingsViewModel.usePidLowPassFilter) {
+                        Text("PID low-pass filter")
+                    }.onChange(of: settingsViewModel.usePidLowPassFilter) {
+                        hasModifications = true
+                    }
                     DecimalPicker(title: "PID Integrator gain", selection: $settingsViewModel.pidIntegratorGain, items: settingsViewModel.pidIntegratorValues, hasModifications: $hasModifications)
                     DecimalPicker(title: "PID Derivative gain", selection: $settingsViewModel.pidDerivativeGain, items: settingsViewModel.pidDerivativeValues, hasModifications: $hasModifications)
                     DecimalPicker(title: "ML gain", selection: $settingsViewModel.machineLearningGain, items: settingsViewModel.machineLearningGainValues, hasModifications: $hasModifications)
