@@ -43,6 +43,14 @@ final class AppComposition {
     /// `closed_loop_results.json` and `safety_states.json`. See
     /// dev/backlog/loop-record-store-grdb.md.
     let loopRecordStore: LoopRecordStore?
+    /// Every CGM reading of the last 90 days. `glucoseStorage` is the seam the
+    /// loop reads through; the store is exposed only so the data export can
+    /// snapshot it.
+    let glucoseRecordStore: GlucoseRecordStore?
+    /// Every meal an AI app announced in the last 90 days, plus what was dosed
+    /// for it. `mealStorage` is the seam the views read through; the store is
+    /// exposed only so the data export can snapshot it.
+    let mealRecordStore: MealRecordStore?
     /// "What target, and why" for the pipeline: the settings target, or the
     /// meal-soon / exercise override read out of `loopRecordStore`, with meal
     /// soon ended by the pump's bolus reports in `insulinStorage`. See
@@ -191,9 +199,10 @@ final class AppComposition {
         // the alerts box is filled in. Nothing depends back on it: the loop
         // calls `ingest` and the views read it, and neither the pipeline nor
         // the safety service knows it exists.
+        let mealRecordStore = AppComposition.makeMealRecordStore()
         let mealStorage = LocalMealStorage(
             announcementStorage: mealAnnouncementStorage,
-            recordStore: AppComposition.makeMealRecordStore(),
+            recordStore: mealRecordStore,
             glucoseStorage: glucoseStorage,
             settingsStorage: { settingsStorage },
             glucoseAlertsService: { alertsBox.resolve() }
@@ -261,6 +270,8 @@ final class AppComposition {
         self.mealStorage = mealStorage
         self.insulinRecordStore = insulinRecordStore
         self.loopRecordStore = loopRecordStore
+        self.glucoseRecordStore = glucoseRecordStore
+        self.mealRecordStore = mealRecordStore
         self.physiologicalModels = physiologicalModels
         self.glucoseAlertsService = glucoseAlertsService
         self.watchComms = watchComms

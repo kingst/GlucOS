@@ -11,6 +11,8 @@ struct DataExportView: View {
     @State private var aiApps: [AiAppFiles] = []
     @State private var isConfirmingReset = false
     @State private var storeSnapshot: URL?
+    @State private var glucoseStoreSnapshot: URL?
+    @State private var mealStoreSnapshot: URL?
     @State private var loopStoreSnapshot: URL?
 
     var body: some View {
@@ -103,6 +105,40 @@ struct DataExportView: View {
                 }
             }
 
+            // Same treatment for the glucose store. The AI interface files above
+            // carry three days of readings; this is the full 90, and it is the
+            // other half of every retrospective question the insulin store
+            // answers — what a dose did is a join between the two.
+            if let glucoseStoreSnapshot {
+                Section {
+                    ShareLink(item: glucoseStoreSnapshot) {
+                        Label("Share glucose record store", systemImage: "square.and.arrow.up")
+                    }
+                    LabeledContent(glucoseStoreSnapshot.lastPathComponent, value: fileSize(of: glucoseStoreSnapshot))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text("Glucose record store")
+                }
+            }
+
+            // And the meal store. The per-app files above are the two-day window
+            // the AI apps wrote; this holds the 90 days GlucOS copied out of it,
+            // plus the one thing the files never had — what the user dosed for
+            // each meal.
+            if let mealStoreSnapshot {
+                Section {
+                    ShareLink(item: mealStoreSnapshot) {
+                        Label("Share meal record store", systemImage: "square.and.arrow.up")
+                    }
+                    LabeledContent(mealStoreSnapshot.lastPathComponent, value: fileSize(of: mealStoreSnapshot))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text("Meal record store")
+                }
+            }
+
             // Was "Share closed loop data", pointing at
             // `closed_loop_results.json` by name. That file is no longer written:
             // what each loop tick decided, and the machine-learning budget ledger
@@ -151,6 +187,12 @@ struct DataExportView: View {
     private func reloadStoreSnapshot() async {
         if let store = composition?.insulinRecordStore {
             storeSnapshot = await store.exportSnapshotURL()
+        }
+        if let store = composition?.glucoseRecordStore {
+            glucoseStoreSnapshot = await store.exportSnapshotURL()
+        }
+        if let store = composition?.mealRecordStore {
+            mealStoreSnapshot = await store.exportSnapshotURL()
         }
         if let store = composition?.loopRecordStore {
             loopStoreSnapshot = await store.exportSnapshotURL()
