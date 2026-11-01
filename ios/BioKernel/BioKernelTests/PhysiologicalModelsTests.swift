@@ -63,7 +63,7 @@ struct PhysiologicalModelsTests {
         #expect(persisted?.lastGlucose == 120)
         #expect(persisted?.lastGlucoseAt == now)
         #expect(persisted?.accumulatedError == 0.0)
-        // lowPassFilter returns the raw value on cold start
+        // with the filter off (the mock's default) the controller's input is the raw reading
         #expect(persisted?.lastFilteredGlucose == 120)
     }
 
@@ -176,6 +176,126 @@ struct PhysiologicalModelsTests {
         #expect(result.lastGlucoseAt == savedAt)
         #expect(result.accumulatedError == 50)
         #expect(result.derivative == 0.0)
+    }
+
+    // MARK: - Low-pass filter setting
+
+    private func makePhysModels() -> LocalPhysiologicalModels {
+        LocalPhysiologicalModels(
+            storedObjectFactory: InMemoryStoredObject.self,
+            glucoseStorage: MockGlucoseStorage(),
+            insulinStorage: MockInsulinStorage()
+        )
+    }
+
+    private func tick(_ physModels: LocalPhysiologicalModels, glucose: Double, at: Date) async -> PIDTempBasalResult {
+        await physModels.tempBasal(
+            settings: settings.snapshot(),
+            glucoseInMgDl: glucose,
+            targetGlucoseInMgDl: 90,
+            insulinOnBoard: 0,
+            dataFrame: nil,
+            at: at
+        )
+    }
+
+    /// Two ticks five minutes apart with the filter off (the mock's default,
+    /// matching the app's): the controller sees the raw reading, the
+    /// derivative is the raw delta, and the persisted "filtered" value is
+    /// the raw reading too.
+    @Test func filterOffFeedsTheControllerRawGlucose() async throws {
+        #expect(settings.snapshot().isPidLowPassFilterEnabled() == false)
+        let physModels = makePhysModels()
+
+        _ = await tick(physModels, glucose: 120, at: now)
+        let result = await tick(physModels, glucose: 130, at: now + 5.minutesToSeconds())
+
+        #expect(result.filteredGlucose == 130)
+        #expect(result.error == 40)
+        #expect(result.derivative == 10)
+        let persisted: PIDState? = try InMemoryStoredObject.read(fileName: "pid_state.json")
+        #expect(persisted?.lastFilteredGlucose == 130)
+    }
+
+    /// The same two ticks with the filter on, for contrast: the controller's
+    /// input lags the raw reading and the derivative is damped.
+    @Test func filterOnSmoothsTheControllerInput() async throws {
+        settings.update(usePidLowPassFilter: true)
+        let physModels = makePhysModels()
+
+        _ = await tick(physModels, glucose: 120, at: now)
+        let result = await tick(physModels, glucose: 130, at: now + 5.minutesToSeconds())
+
+        #expect(result.filteredGlucose > 120)
+        #expect(result.filteredGlucose < 130)
+        let derivative = try #require(result.derivative)
+        #expect(derivative > 0)
+        #expect(derivative < 10)
+        let persisted: PIDState? = try InMemoryStoredObject.read(fileName: "pid_state.json")
+        #expect(persisted?.lastFilteredGlucose == result.filteredGlucose)
+    }
+
+    /// The tick that turns the filter off, which is also the first tick after
+    /// the upgrade that introduced the setting: the restored state's
+    /// `lastFilteredGlucose` lags its `lastGlucose`, and the derivative must
+    /// be the raw delta (135 - 130), not the lag charged in one go (135 - 110).
+    @Test func switchingTheFilterOffDoesNotChargeTheLagToTheDerivative() async throws {
+        let fiveMinutesAgo = now - 5.minutesToSeconds()
+        let lagging = PIDState(
+            savedAt: fiveMinutesAgo,
+            lastGlucose: 130,
+            lastGlucoseAt: fiveMinutesAgo,
+            accumulatedError: 0,
+            lastFilteredGlucose: 110
+        )
+        try InMemoryStoredObject.write(lagging, fileName: "pid_state.json")
+        let physModels = makePhysModels()
+
+        let result = await tick(physModels, glucose: 135, at: now)
+
+        #expect(result.filteredGlucose == 135)
+        #expect(result.derivative == 5)
+    }
+
+    /// Turning the filter on resumes from the last raw reading: while off,
+    /// `lastFilteredGlucose` is written with the raw value, so the first
+    /// filtered tick blends from the previous raw reading and its derivative
+    /// is the damped delta from it.
+    @Test func switchingTheFilterOnResumesFromTheLastRawReading() async throws {
+        let physModels = makePhysModels()
+        _ = await tick(physModels, glucose: 120, at: now)
+
+        settings.update(usePidLowPassFilter: true)
+        let result = await tick(physModels, glucose: 130, at: now + 5.minutesToSeconds())
+
+        #expect(result.filteredGlucose > 120)
+        #expect(result.filteredGlucose < 130)
+        let derivative = try #require(result.derivative)
+        #expect(abs(derivative - (result.filteredGlucose - 120)) < 1e-9)
+    }
+
+    /// The stale-state reset still clears the filter when it is on: the first
+    /// tick after the reset seeds from the raw reading rather than blending
+    /// toward the stale filtered value.
+    @Test func staleResetClearsTheFilterWhenItIsOn() async throws {
+        settings.update(usePidLowPassFilter: true)
+        let staleAt = now - 30.minutesToSeconds()
+        let stale = PIDState(
+            savedAt: staleAt,
+            lastGlucose: 110,
+            lastGlucoseAt: staleAt,
+            accumulatedError: 50,
+            lastFilteredGlucose: 110
+        )
+        try InMemoryStoredObject.write(stale, fileName: "pid_state.json")
+        let physModels = makePhysModels()
+
+        let result = await tick(physModels, glucose: 130, at: now)
+
+        #expect(result.filteredGlucose == 130)
+        #expect(result.derivative == 0.0)
+        let persisted: PIDState? = try InMemoryStoredObject.read(fileName: "pid_state.json")
+        #expect(persisted?.lastFilteredGlucose == 130)
     }
 }
 

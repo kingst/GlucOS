@@ -91,6 +91,7 @@ public class SettingsViewModel: ObservableObject {
     @Published var pidDerivativeGain: DecimalSetting
     @Published var useBiologicalInvariant: Bool
     @Published var machineLearningGain: DecimalSetting
+    @Published var usePidLowPassFilter: Bool
     
     var mlBasalSchedule: DecimalSettingSchedule
     var mlInsulinSensitivitySchedule: DecimalSettingSchedule
@@ -182,12 +183,13 @@ public class SettingsViewModel: ObservableObject {
         pidDerivativeGain = DecimalSetting(value: settings.getPidDerivativeGain(), units: SettingsViewModel.gainUnits)
         useBiologicalInvariant = settings.isBiologicalInvariantEnabled()
         machineLearningGain = DecimalSetting(value: settings.getMachineLearningGain(), units: SettingsViewModel.gainUnits)
+        usePidLowPassFilter = settings.isPidLowPassFilterEnabled()
     }
 
     func snapshot() -> CodableSettings {
         let learnedBasalRate = LearnedSettingsSchedule.from(schedule: mlBasalSchedule)
         let learnedInsulinSensitivity = LearnedSettingsSchedule.from(schedule: mlInsulinSensitivitySchedule)
-        return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: pumpBasalRate.value, insulinSensitivityInMgDlPerUnit: insulinSensitivity.value, maxBasalRateUnitsPerHour: maxBasalRate.value, maxBolusUnits: maxBolus.value, shutOffGlucoseInMgDl: glucoseShutoffThreshold.value, targetGlucoseInMgDl: glucoseTarget.value, closedLoopEnabled: closedLoopEnabled, useMachineLearningClosedLoop: useMachineLearningClosedLoop, useMicroBolus: useMicroBolus, microBolusDoseFactor: microBolusDoseFactor.value, learnedBasalRateUnitsPerHour: learnedBasalRate, learnedInsulinSensitivityInMgDlPerUnit: learnedInsulinSensitivity, bolusAmountForLess: bolusAmountForLess.value, bolusAmountForUsual: bolusAmountForUsual.value, bolusAmountForMore: bolusAmountForMore.value, pidIntegratorGain: pidIntegratorGain.value, pidDerivativeGain: pidDerivativeGain.value, useBiologicalInvariant: useBiologicalInvariant, machineLearningGain: machineLearningGain.value)
+        return CodableSettings(created: Date(), pumpBasalRateUnitsPerHour: pumpBasalRate.value, insulinSensitivityInMgDlPerUnit: insulinSensitivity.value, maxBasalRateUnitsPerHour: maxBasalRate.value, maxBolusUnits: maxBolus.value, shutOffGlucoseInMgDl: glucoseShutoffThreshold.value, targetGlucoseInMgDl: glucoseTarget.value, closedLoopEnabled: closedLoopEnabled, useMachineLearningClosedLoop: useMachineLearningClosedLoop, useMicroBolus: useMicroBolus, microBolusDoseFactor: microBolusDoseFactor.value, learnedBasalRateUnitsPerHour: learnedBasalRate, learnedInsulinSensitivityInMgDlPerUnit: learnedInsulinSensitivity, bolusAmountForLess: bolusAmountForLess.value, bolusAmountForUsual: bolusAmountForUsual.value, bolusAmountForMore: bolusAmountForMore.value, pidIntegratorGain: pidIntegratorGain.value, pidDerivativeGain: pidDerivativeGain.value, useBiologicalInvariant: useBiologicalInvariant, machineLearningGain: machineLearningGain.value, usePidLowPassFilter: usePidLowPassFilter)
     }
 }
 

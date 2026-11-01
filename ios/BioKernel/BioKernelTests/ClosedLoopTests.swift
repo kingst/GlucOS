@@ -276,5 +276,33 @@ struct ClosedLoopTests {
 
         // The legacy schedule should land on the renamed property.
         #expect(settings.learnedInsulinSensitivityInMgDlPerUnit.midnightToFour == 42)
+        // An absent `usePidLowPassFilter` key reads as off, the default, so an
+        // upgraded install runs with the filter off until the switch is saved.
+        #expect(settings.isPidLowPassFilterEnabled() == false)
+    }
+
+    @Test func pidLowPassFilterKeyDecodes() async throws {
+        let json = """
+        {
+            "created": "2025-01-01T00:00:00Z",
+            "pumpBasalRateUnitsPerHour": 0.3,
+            "insulinSensitivityInMgDlPerUnit": 45,
+            "maxBasalRateUnitsPerHour": 2,
+            "maxBolusUnits": 5,
+            "shutOffGlucoseInMgDl": 85,
+            "targetGlucoseInMgDl": 90,
+            "closedLoopEnabled": true,
+            "useMachineLearningClosedLoop": false,
+            "learnedBasalRatesUnitsPerHour": {},
+            "usePidLowPassFilter": true
+        }
+        """
+        let data = try #require(json.data(using: .utf8))
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let settings = try decoder.decode(CodableSettings.self, from: data)
+
+        #expect(settings.isPidLowPassFilterEnabled() == true)
     }
 }

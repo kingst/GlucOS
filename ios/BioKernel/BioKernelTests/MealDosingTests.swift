@@ -148,7 +148,8 @@ struct MealDosingTests {
             pidIntegratorGain: defaults.getPidIntegratorGain(),
             pidDerivativeGain: defaults.getPidDerivativeGain(),
             useBiologicalInvariant: defaults.isBiologicalInvariantEnabled(),
-            machineLearningGain: defaults.getMachineLearningGain()
+            machineLearningGain: defaults.getMachineLearningGain(),
+            usePidLowPassFilter: defaults.isPidLowPassFilterEnabled()
         )
     }
 
