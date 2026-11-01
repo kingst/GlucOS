@@ -184,4 +184,11 @@ protocol MealRecordStore: Sendable {
     /// Records what the user dosed for a meal. A no-op when the meal isn't in
     /// the store.
     func recordDose(bundleIdentifier: String, mealId: String, units: Double, at: Date) async throws
+
+    /// A consistent, shareable copy of the database, or nil when one could not
+    /// be made. See `GRDBMealRecordStore.exportSnapshotURL`.
+    ///
+    /// nil rather than throwing, for the same reason the insulin store's is:
+    /// this is a diagnostic, and nothing doses off a share sheet.
+    func exportSnapshotURL() async -> URL?
 }

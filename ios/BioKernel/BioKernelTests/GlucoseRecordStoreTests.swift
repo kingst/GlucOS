@@ -465,4 +465,27 @@ struct GlucoseRecordStoreTests {
         #expect(lastDay.count == 24 * 12 + 1) // inclusive at both ends
         #expect(try await store.lastReading()?.date == Self.now)
     }
+
+    // MARK: - Export
+
+    @Test func theExportSnapshotIsASelfContainedCopy() async throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+            .appendingPathComponent("glucose_readings.sqlite")
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+        let store = try GRDBGlucoseRecordStore(url: url, createdAt: Self.now)
+        _ = try await store.ingest(GlucoseFixtures.series(endingAt: Self.now, count: 12), at: Self.now)
+
+        let snapshot = try #require(await store.exportSnapshotURL())
+        #expect(snapshot != url, "the snapshot must not be the live file")
+        let copy = try DatabaseQueue(path: snapshot.path)
+        let count = try await copy.read { db in try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM glucose_reading") ?? 0 }
+        #expect(count == 12)
+    }
+
+    @Test func anInMemoryStoreHasNothingToExport() async throws {
+        let store = try makeStore()
+        #expect(await store.exportSnapshotURL() == nil)
+    }
 }

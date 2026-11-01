@@ -597,6 +597,32 @@ struct MealRecordStoreTests {
         #expect(try await store.meal(bundleIdentifier: coach, mealId: "m1") == nil)
     }
 
+    // MARK: - Export
+
+    @Test func theExportSnapshotIsASelfContainedCopy() async throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+            .appendingPathComponent("meals.sqlite")
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+        let store = try GRDBMealRecordStore(url: url)
+        try await store.ingest([
+            announcement("m1", updatedAt: now, startTime: now),
+            announcement("m2", updatedAt: now, startTime: now + 1.hoursToSeconds(), mealDescription: "soup"),
+        ], at: now)
+
+        let snapshot = try #require(await store.exportSnapshotURL())
+        #expect(snapshot != url, "the snapshot must not be the live file")
+        let copy = try DatabaseQueue(path: snapshot.path)
+        let count = try await copy.read { db in try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM meal") ?? 0 }
+        #expect(count == 2)
+    }
+
+    @Test func anInMemoryStoreHasNothingToExport() async throws {
+        let store = try makeStore()
+        #expect(await store.exportSnapshotURL() == nil)
+    }
+
     // MARK: - What the window's numbers count
 
     func bolus(

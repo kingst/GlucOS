@@ -134,6 +134,9 @@ actor GRDBGlucoseRecordStore: GlucoseRecordStore {
     // MARK: - State
 
     private let dbQueue: DatabaseQueue
+    /// nil for the in-memory store, which has no file to snapshot.
+    private let url: URL?
+    private let log = DiagnosticLog(category: "GlucoseRecordStore")
 
     // MARK: - Init
 
@@ -161,6 +164,7 @@ actor GRDBGlucoseRecordStore: GlucoseRecordStore {
         } catch {
             throw GlucoseRecordStoreError.couldNotOpen("could not open \(url.lastPathComponent): \(error)")
         }
+        self.url = url
 
         try Self.prepare(dbQueue, createdAt: createdAt)
     }
@@ -172,6 +176,7 @@ actor GRDBGlucoseRecordStore: GlucoseRecordStore {
         } catch {
             throw GlucoseRecordStoreError.couldNotOpen("could not open an in-memory database: \(error)")
         }
+        self.url = nil
         try Self.prepare(dbQueue, createdAt: createdAt)
     }
 
@@ -380,4 +385,34 @@ actor GRDBGlucoseRecordStore: GlucoseRecordStore {
         }
     }
 
+    // MARK: - Export
+
+    /// `VACUUM INTO` rather than sharing the live file: `DatabaseQueue` uses a
+    /// rollback journal, so the main file needs its `-journal` sidecar to open
+    /// consistently, and a share sheet hands over one file whenever it likes.
+    ///
+    /// The snapshot lands in the store's own directory so it inherits
+    /// `NSFileProtectionNone`, which means it cannot reuse the live name.
+    /// Overwritten each time rather than accumulating.
+    func exportSnapshotURL() async -> URL? {
+        guard let url else { return nil }
+        let snapshot = url.deletingLastPathComponent()
+            .appendingPathComponent("glucose_readings.export.sqlite", isDirectory: false)
+        do {
+            if FileManager.default.fileExists(atPath: snapshot.path) {
+                try FileManager.default.removeItem(at: snapshot)
+            }
+            try await dbQueue.writeWithoutTransaction { db in
+                try db.execute(sql: "VACUUM INTO ?", arguments: [snapshot.path])
+            }
+            try? FileManager.default.setAttributes(
+                [.protectionKey: FileProtectionType.none],
+                ofItemAtPath: snapshot.path
+            )
+            return snapshot
+        } catch {
+            log.error("could not snapshot the glucose record store: %{public}@", String(describing: error))
+            return nil
+        }
+    }
 }

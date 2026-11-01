@@ -82,6 +82,12 @@ protocol GlucoseRecordStore: Sendable {
     /// one time step of it.
     func readingsBetween(startDate: Date, endDate: Date) async throws -> [NewGlucoseSample]
 
+    /// A consistent, shareable copy of the database, or nil when one could not
+    /// be made. See `GRDBGlucoseRecordStore.exportSnapshotURL`.
+    ///
+    /// nil rather than throwing, for the same reason the insulin store's is:
+    /// this is a diagnostic, and nothing doses off a share sheet.
+    func exportSnapshotURL() async -> URL?
 }
 
 // MARK: - Policy constants
