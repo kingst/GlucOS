@@ -15,6 +15,11 @@ import LoopKit
 public struct FilteredGlucose {
     public let glucose: Double
     public let at: Date
+    /// Whether this tick's pump commands went through. False for a tick that
+    /// reached the pipeline and then hit a pump error: the chart's target line
+    /// still draws those, the filtered-glucose line treats them as a missed
+    /// loop and breaks.
+    public let dosed: Bool
     /// The target this tick dosed toward, and why, so the main glucose chart can
     /// draw the target as a step line off the same read that feeds the
     /// filtered-glucose line (dev/backlog/meal-soon.md §7.4). Both nil on rows
@@ -22,9 +27,10 @@ public struct FilteredGlucose {
     public let targetMgDl: Double?
     public let targetSource: TargetGlucoseSource?
 
-    public init(glucose: Double, at: Date, targetMgDl: Double? = nil, targetSource: TargetGlucoseSource? = nil) {
+    public init(glucose: Double, at: Date, dosed: Bool, targetMgDl: Double? = nil, targetSource: TargetGlucoseSource? = nil) {
         self.glucose = glucose
         self.at = at
+        self.dosed = dosed
         self.targetMgDl = targetMgDl
         self.targetSource = targetSource
     }

@@ -80,8 +80,54 @@ struct GlucoseChartView: View {
         return points
     }
 
+    /// One point of the purple filtered-glucose line.
+    ///
+    /// `series` is what breaks the line: successful loops close enough together
+    /// to be consecutive share one, and the first loop after a miss starts the
+    /// next, so each stretch draws as its own segment and not one line joined
+    /// across the gap.
+    private struct FilteredGlucosePoint: Identifiable {
+        let at: Date
+        let glucose: Double
+        let series: String
+        var id: Date { at }
+    }
+
+    /// The furthest apart two successful loops can be and still be joined.
+    /// Loops run about every five minutes, so one missed loop leaves ten.
+    private static let maxLoopSpacing = 7.5.minutesToSeconds()
+
+    /// The filtered-glucose line, split wherever a loop was missed.
+    ///
+    /// A loop that was skipped or never ran left no reading here at all, and
+    /// one that hit a pump error is dropped below, so every kind of miss looks
+    /// the same from here: more than `maxLoopSpacing` between two successful
+    /// loops. A failed loop that is retried and succeeds inside that spacing
+    /// is not a miss and does not break the line.
+    private var filteredGlucosePoints: [FilteredGlucosePoint] {
+        var points: [FilteredGlucosePoint] = []
+        var run = 0
+        var lastAt: Date? = nil
+        for reading in appState.filteredGlucoseChartData where reading.dosed {
+            if let lastAt, reading.at.timeIntervalSince(lastAt) > Self.maxLoopSpacing {
+                run += 1
+            }
+            lastAt = reading.at
+            points.append(FilteredGlucosePoint(at: reading.at, glucose: reading.glucose, series: "Filtered \(run)"))
+        }
+        return points
+    }
+
+    /// The successful loops with a miss on both sides. A line through a single
+    /// point draws nothing, so these are drawn as points instead.
+    private func isolated(_ points: [FilteredGlucosePoint]) -> [FilteredGlucosePoint] {
+        let runLengths = points.reduce(into: [String: Int]()) { $0[$1.series, default: 0] += 1 }
+        return points.filter { runLengths[$0.series] == 1 }
+    }
+
     private func chart(geometry: GeometryProxy) -> some View {
-        Chart {
+        let filteredGlucose = filteredGlucosePoints
+        return Chart {
             AreaMark(x: .value("Time", timeWindow.min),
                      yStart: .value("Target range low", 70),
                      yEnd: .value("Target range high", 140))
@@ -118,10 +164,17 @@ struct GlucoseChartView: View {
                     .symbolSize(20)
                     .foregroundStyle(.blue)
             }
-            ForEach(appState.filteredGlucoseChartData, id: \.at) { reading in
-                LineMark(x: .value("Time", reading.at),
-                         y: .value("mg/dL", reading.glucose))
+            ForEach(filteredGlucose) { point in
+                LineMark(x: .value("Time", point.at),
+                         y: .value("mg/dL", point.glucose),
+                         series: .value("Run", point.series))
                     .symbolSize(5)
+                    .foregroundStyle(.purple)
+            }
+            ForEach(isolated(filteredGlucose)) { point in
+                PointMark(x: .value("Time", point.at),
+                          y: .value("mg/dL", point.glucose))
+                    .symbolSize(10)
                     .foregroundStyle(.purple)
             }
         }

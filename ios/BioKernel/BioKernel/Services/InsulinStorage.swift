@@ -113,23 +113,35 @@ actor LocalInsulinStorage: InsulinStorage {
     /// nil is what makes the loop skip the tick rather than dose off nothing.
     private let recordStore: InsulinRecordStore?
 
+    /// This actor's clock: the instant a batch arrived, and "now" for the reads
+    /// that are not handed an instant of their own.
+    ///
+    /// Injected because the record store runs retention and moves its clamp off
+    /// a batch's arrival instant. A test that pins its events to a fixed date
+    /// has to pin this with them, or the store prunes those events as soon as
+    /// the wall clock is a retention period past that date. The app takes the
+    /// default.
+    private let now: @Sendable () -> Date
+
     init(
         healthKitStorage: HealthKitStorage,
         watchComms: @MainActor @escaping () -> WatchComms,
         settingsStorage: @MainActor @escaping () -> SettingsStorage,
         aiInterfaceStorage: AiInterfaceStorage? = nil,
-        recordStore: InsulinRecordStore? = nil
+        recordStore: InsulinRecordStore? = nil,
+        now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.healthKitStorage = healthKitStorage
         self.watchComms = watchComms
         self.settingsStorage = settingsStorage
         self.aiInterfaceStorage = aiInterfaceStorage
         self.recordStore = recordStore
+        self.now = now
         Task {
             // Publish once at launch so an AI app has a current picture before
             // the first pump sync of the session. No pump is connected yet, so
             // the exporter falls back to the last metadata it saw.
-            await exportToAiInterface(pump: nil, at: Date())
+            await exportToAiInterface(pump: nil, at: now())
         }
     }
 
@@ -181,7 +193,7 @@ actor LocalInsulinStorage: InsulinStorage {
         guard let recordStore else { return [] }
         do {
             return try await recordStore
-                .records(from: since, to: Date(), includeRevoked: false)
+                .records(from: since, to: now(), includeRevoked: false)
                 .map { $0.newPumpEvent() }
         } catch {
             log.error(
@@ -214,7 +226,7 @@ actor LocalInsulinStorage: InsulinStorage {
             // nil means the store has never seen a dose carrying a type, which is
             // "we do not know" rather than a read failure, so it takes the same
             // default a failure does.
-            return try await recordStore.currentInsulinType(at: Date()) ?? .humalog
+            return try await recordStore.currentInsulinType(at: now()) ?? .humalog
         } catch {
             log.error(
                 "record store read failed for currentInsulinType: %{public}@",
@@ -232,7 +244,7 @@ actor LocalInsulinStorage: InsulinStorage {
     func pumpAlarm() async -> PumpAlarmType? {
         guard let recordStore else { return nil }
         do {
-            return try await recordStore.pumpAlarm(at: Date())
+            return try await recordStore.pumpAlarm(at: now())
         } catch {
             log.error(
                 "record store read failed for pumpAlarm: %{public}@",
@@ -243,9 +255,9 @@ actor LocalInsulinStorage: InsulinStorage {
     }
 
     func addPumpEvents(_ events: [LoopKit.NewPumpEvent], lastReconciliation: Date?, replacePendingEvents: Bool, pump: PumpMetadata) async -> Error? {
-        // One instant for the whole call. Two `Date()` reads here would let the
+        // One instant for the whole call. Two clock reads here would let the
         // export and the record store disagree about when this batch arrived.
-        let at = Date()
+        let at = now()
 
         let storeError = await writeToRecordStore(
             events: events,
