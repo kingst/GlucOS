@@ -770,12 +770,16 @@ actor GRDBLoopRecordStore: LoopRecordStore {
         // The target rides along on the same read so the chart can draw it
         // without a second series or a second query (meal-soon.md §7.4). Both
         // target columns are NULL on rows written before v2.
+        //
+        // `outcome` rides along too, as `dosed`, rather than being a `WHERE`
+        // clause: a pump-error tick still has a target the chart draws, and
+        // only the filtered-glucose line leaves it out.
         do {
             return try await dbQueue.read { db in
                 try Row.fetchAll(
                     db,
                     sql: """
-                        SELECT pid_at, pid_filtered_glucose, target_mg_dl, target_source FROM loop_result
+                        SELECT pid_at, pid_filtered_glucose, outcome, target_mg_dl, target_source FROM loop_result
                         WHERE at >= ? AND pid_at IS NOT NULL
                         ORDER BY pid_at
                         """,
@@ -783,11 +787,13 @@ actor GRDBLoopRecordStore: LoopRecordStore {
                 ).compactMap { row -> FilteredGlucose? in
                     guard let at: Double = row["pid_at"],
                           let glucose: Double = row["pid_filtered_glucose"] else { return nil }
+                    let outcome: String? = row["outcome"]
                     let targetMgDl: Double? = row["target_mg_dl"]
                     let targetSourceRaw: String? = row["target_source"]
                     return FilteredGlucose(
                         glucose: glucose,
                         at: Date(timeIntervalSince1970: at),
+                        dosed: outcome == "dosed",
                         targetMgDl: targetMgDl,
                         targetSource: targetSourceRaw.flatMap { TargetGlucoseSource(rawValue: $0) }
                     )

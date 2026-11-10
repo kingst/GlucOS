@@ -480,6 +480,20 @@ struct LoopRecordStoreTests {
         #expect(points.allSatisfy { abs($0.glucose - 141.5) <= accuracy }, "the filtered-glucose columns are unchanged")
     }
 
+    @Test func filteredGlucoseMarksAPumpErrorAsNotDosed() async throws {
+        let store = try makeStore()
+
+        try await store.record(LoopRecordFixtures.dosed(at: at - 10.minutesToSeconds()), safetyState: nil, at: at)
+        // The pipeline ran, so this tick has a PID result and a target and is
+        // still a point. `dosed` is how the chart knows to break the
+        // filtered-glucose line there while the target line carries on.
+        try await store.record(LoopRecordFixtures.pumpError(at: at - 5.minutesToSeconds()), safetyState: nil, at: at)
+
+        let points = try await store.filteredGlucose(since: .distantPast)
+        #expect(points.map { $0.dosed } == [true, false])
+        #expect(points.map { $0.targetMgDl } == [92.5, 92.5])
+    }
+
     // MARK: - Target overrides (dev/backlog/meal-soon.md §5)
 
     private func start(_ store: GRDBLoopRecordStore, at: Date, settingsTarget: Double = 90, kind: TargetOverrideKind = .mealSoon, duration: TimeInterval = 60.minutesToSeconds()) async throws -> TargetOverride {

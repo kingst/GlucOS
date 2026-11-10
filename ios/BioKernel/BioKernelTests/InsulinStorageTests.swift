@@ -34,7 +34,8 @@ struct InsulinStorageTests {
             healthKitStorage: MockHealthKitStore(),
             watchComms: { MockWatchComms() },
             settingsStorage: { settings },
-            recordStore: recordStore
+            recordStore: recordStore,
+            now: { Self.now }
         )
     }
 
@@ -146,6 +147,12 @@ struct InsulinStorageTests {
     /// A fixed instant, because retention and the clamp are both relative to
     /// `createdAt` and a test that drifts with the wall clock is a test that
     /// fails on a slow morning.
+    ///
+    /// `makeStorage` pins the storage's own clock here too. Left on the wall
+    /// clock, `addPumpEvents` stamps each batch with the real date, and the
+    /// store's retention deletes every event these tests add once that date is
+    /// 90 days past this one — which is how three of them started failing on
+    /// 2026-11-08.
     static let now = Date.f("2026-08-10 16:00:00 +0000")
 
     /// What the parallel run actually ran on, so the pulse size these tests
