@@ -71,11 +71,30 @@ public struct LoopRecordSnapshot {
     public let basalRate: Double
     public let predictedAddedGlucoseInMgDlPerHour: Double
     public let machineLearningInsulinLastThreeHours: Double
-    /// What this tick dosed toward, and why. Optional because a row written
-    /// before schema v2 has NULL in both, and those rows must keep reading
-    /// back (dev/backlog/meal-soon.md §6).
+    /// The settings target. Optional because a row written before schema v2
+    /// has NULL here, and those rows must keep reading back
+    /// (dev/backlog/meal-soon.md §6).
+    ///
+    /// `insulinSensitivity`, `basalRate` and `targetGlucoseInMgDl` always hold
+    /// the settings values. What an override dosed with instead is in the
+    /// three override values below, which are nil on a tick with no such
+    /// override and on every row written before schema v3
+    /// (dev/backlog/more-settings-automation.md, "What each tick records").
+    /// An override tick written before v3 has the override's target in
+    /// `targetGlucoseInMgDl`; that is accepted.
     public let targetGlucoseInMgDl: Double?
-    public let targetSource: TargetGlucoseSource?
+    /// The policy identifier of the override in effect on this tick, whether
+    /// it moved the target, scaled dosing or both. nil with no override and
+    /// on every row written before schema v4
+    /// (dev/backlog/override-mechanism.md, "What each tick records").
+    public let overridePolicy: String?
+    /// The target this tick dosed toward, only while an override moves the
+    /// target.
+    public let overrideTargetGlucoseInMgDl: Double?
+    /// The scaled values this tick dosed with, only while an override scales
+    /// dosing.
+    public let overrideBasalRate: Double?
+    public let overrideInsulinSensitivity: Double?
     public let decision: DosingDecision
     public let candidates: DoseCandidates
 
@@ -137,7 +156,10 @@ extension LoopRecordSnapshot {
         self.predictedAddedGlucoseInMgDlPerHour = snapshot.outputs.predictedAddedGlucoseInMgDlPerHour
         self.machineLearningInsulinLastThreeHours = snapshot.outputs.machineLearningInsulinLastThreeHours
         self.targetGlucoseInMgDl = snapshot.outputs.targetGlucoseInMgDl
-        self.targetSource = snapshot.outputs.targetSource
+        self.overridePolicy = snapshot.outputs.overridePolicy
+        self.overrideTargetGlucoseInMgDl = snapshot.outputs.overrideTargetGlucoseInMgDl
+        self.overrideBasalRate = snapshot.outputs.overrideBasalRate
+        self.overrideInsulinSensitivity = snapshot.outputs.overrideInsulinSensitivity
         self.decision = snapshot.outputs.decision
         self.candidates = snapshot.outputs.candidates
         self.pid = LoopRecordPID(snapshot.outputs.pidTempBasalResult)

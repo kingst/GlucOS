@@ -249,14 +249,34 @@ public struct StageTimings: Codable {
     let safetyDurationInSeconds: TimeInterval
 }
 
+/// What one run of the pipeline produced.
+///
+/// `targetGlucoseInMgDl`, `insulinSensitivity` and `basalRate` always hold the
+/// values from the settings. What an override put in their place is recorded
+/// beside them, only while that override is on
+/// (dev/backlog/more-settings-automation.md, "What each tick records").
+///
+/// Whether a target override or a dosing override was on is not a field of
+/// its own: one was on exactly when its value below is present.
 public struct PipelineOutputs: Codable {
     let predictedGlucoseInMgDl: Double
+    /// The settings target: what this tick would have dosed toward with no
+    /// override, so it is the value after the service's [70, 140] clamp.
     let targetGlucoseInMgDl: Double
-    /// Where `targetGlucoseInMgDl` came from: the user's settings, or a
-    /// meal-soon override (dev/backlog/meal-soon.md §6).
-    let targetSource: TargetGlucoseSource
+    /// The policy identifier of the override in effect on this tick, whether
+    /// it moved the target, scaled dosing or both. nil with no override
+    /// (dev/backlog/override-mechanism.md, "What each tick records").
+    let overridePolicy: String?
+    /// The target this tick dosed toward, only while an override moves the
+    /// target.
+    let overrideTargetGlucoseInMgDl: Double?
     let insulinSensitivity: Double
     let basalRate: Double
+    /// The scaled values the PID dosed with, only while an override scales
+    /// dosing. The integrator input and the biological invariant stay on the
+    /// settings values above.
+    let overrideBasalRate: Double?
+    let overrideInsulinSensitivity: Double?
     let pidTempBasalResult: PIDTempBasalResult
     let candidates: DoseCandidates
     let machineLearningInsulinLastThreeHours: Double
@@ -267,9 +287,12 @@ public struct PipelineOutputs: Codable {
     enum CodingKeys: String, CodingKey {
         case predictedGlucoseInMgDl
         case targetGlucoseInMgDl
-        case targetSource
+        case overridePolicy
+        case overrideTargetGlucoseInMgDl
         case insulinSensitivity
         case basalRate
+        case overrideBasalRate
+        case overrideInsulinSensitivity
         case pidTempBasalResult
         case candidates
         case machineLearningInsulinLastThreeHours
@@ -280,17 +303,22 @@ public struct PipelineOutputs: Codable {
 }
 
 extension PipelineOutputs {
-    /// Hand-written only so `targetSource` can default: a replay fixture in
-    /// `BioKernelTests/Resources` that predates the field still has to load.
-    /// `encode(to:)` stays synthesized, and declaring this in an extension
-    /// keeps the memberwise initializer.
+    /// Hand-written only so the override fields can default: a replay
+    /// fixture in `BioKernelTests/Resources` that predates them still has to
+    /// load, and reads as a tick with no override. A payload from a build
+    /// that wrote `targetSource` and `dosingOverrideEnabled` loads too: those
+    /// keys are no longer read. `encode(to:)` stays synthesized, and
+    /// declaring this in an extension keeps the memberwise initializer.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.predictedGlucoseInMgDl = try container.decode(Double.self, forKey: .predictedGlucoseInMgDl)
         self.targetGlucoseInMgDl = try container.decode(Double.self, forKey: .targetGlucoseInMgDl)
-        self.targetSource = try container.decodeIfPresent(TargetGlucoseSource.self, forKey: .targetSource) ?? .settings
+        self.overridePolicy = try container.decodeIfPresent(String.self, forKey: .overridePolicy)
+        self.overrideTargetGlucoseInMgDl = try container.decodeIfPresent(Double.self, forKey: .overrideTargetGlucoseInMgDl)
         self.insulinSensitivity = try container.decode(Double.self, forKey: .insulinSensitivity)
         self.basalRate = try container.decode(Double.self, forKey: .basalRate)
+        self.overrideBasalRate = try container.decodeIfPresent(Double.self, forKey: .overrideBasalRate)
+        self.overrideInsulinSensitivity = try container.decodeIfPresent(Double.self, forKey: .overrideInsulinSensitivity)
         self.pidTempBasalResult = try container.decode(PIDTempBasalResult.self, forKey: .pidTempBasalResult)
         self.candidates = try container.decode(DoseCandidates.self, forKey: .candidates)
         self.machineLearningInsulinLastThreeHours = try container.decode(Double.self, forKey: .machineLearningInsulinLastThreeHours)
@@ -349,14 +377,32 @@ struct DosingPipeline {
         let insulinOnBoard = inputs.insulinOnBoard
         let dataFrame = inputs.dataFrame
 
+        // The settings values. These are what is recorded on every tick, and
+        // what the added-glucose estimate below uses.
         let basalRate = settings.learnedBasalRate(at: at)
         let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
         let predictedGlucoseInMgDl = await physiological.predictGlucoseIn15Minutes(from: at) ?? glucoseInMgDl
         // The one read of the target per tick. The PID error, the ML dynamic-ISF
         // scaling and the micro-bolus gate all take this one number, so a
-        // meal-soon override reaches all three by changing what this returns.
+        // target override reaches all three by changing what this returns.
         let targetGlucose = await target.targetGlucose(at: at, settings: settings)
         let targetGlucoseInMgDl = targetGlucose.mgDl
+
+        // A dosing override scales the basal rate and insulin sensitivity the
+        // PID doses with, and nothing else. It cannot be applied by handing
+        // the pipeline a scaled copy of the settings, because the safety
+        // bound, the integrator input and the biological invariant are
+        // computed from the same settings and have to stay where they are. So
+        // the scaled pair is built here, once, as its own type, and travels
+        // beside the settings to the PID, which sizes its dose with it. The
+        // integrator input, the biological invariant, the guardrail clamp,
+        // the micro-bolus cap, the safety service and the added-glucose
+        // estimate all stay on the unscaled settings.
+        let dosing = DosingParameters(
+            settingsBasalRate: basalRate,
+            settingsInsulinSensitivity: insulinSensitivity,
+            dosingOverride: targetGlucose.dosingOverride
+        )
 
         let guardrails = Guardrails(
             settings: settings,
@@ -366,7 +412,7 @@ struct DosingPipeline {
         )
 
         let pidStart = Date()
-        let pidTempBasal = await physiological.tempBasal(settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at)
+        let pidTempBasal = await physiological.tempBasal(settings: settings, dosing: dosing, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, insulinOnBoard: insulinOnBoard, dataFrame: dataFrame, at: at)
         let physiologicalTempBasal = guardrails.clamp(pidTempBasal.tempBasal)
         let pidDuration = Date().timeIntervalSince(pidStart)
 
@@ -387,6 +433,8 @@ struct DosingPipeline {
         // Display-only: what the bolus policy would produce from the raw ML temp basal.
         // Not fed to the dose selector or pump — the IMPORTANT rule above still holds.
         let microBolusMl = microBolusPolicy.amount(tempBasal: mlTempBasal, settings: settings, glucoseInMgDl: glucoseInMgDl, targetGlucoseInMgDl: targetGlucoseInMgDl, at: at, lastMicroBolus: inputs.lastMicroBolus, roundToSupportedBolusVolume: inputs.roundToSupportedBolusVolume) ?? 0.0
+        // On the settings values, not the dosing pair: a dosing override
+        // changes how much we dose, not what glucose is checked against.
         let biologicalInvariant = await physiological.deltaGlucoseError(settings: settings, dataFrame: dataFrame, at: at)
 
         let decision = DoseSelector.decide(
@@ -409,10 +457,13 @@ struct DosingPipeline {
 
         return PipelineOutputs(
             predictedGlucoseInMgDl: predictedGlucoseInMgDl,
-            targetGlucoseInMgDl: targetGlucoseInMgDl,
-            targetSource: targetGlucose.source,
+            targetGlucoseInMgDl: targetGlucose.settingsMgDl,
+            overridePolicy: targetGlucose.overridePolicy,
+            overrideTargetGlucoseInMgDl: targetGlucose.overrideMovesTarget ? targetGlucoseInMgDl : nil,
             insulinSensitivity: insulinSensitivity,
             basalRate: basalRate,
+            overrideBasalRate: dosing.isOverridden ? dosing.basalRate : nil,
+            overrideInsulinSensitivity: dosing.isOverridden ? dosing.insulinSensitivity : nil,
             pidTempBasalResult: pidTempBasal,
             candidates: candidates,
             machineLearningInsulinLastThreeHours: safetyTempBasalResult.machineLearningInsulinLastThreeHours,

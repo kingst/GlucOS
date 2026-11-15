@@ -20,19 +20,27 @@ public struct FilteredGlucose {
     /// still draws those, the filtered-glucose line treats them as a missed
     /// loop and breaks.
     public let dosed: Bool
-    /// The target this tick dosed toward, and why, so the main glucose chart can
-    /// draw the target as a step line off the same read that feeds the
-    /// filtered-glucose line (dev/backlog/meal-soon.md §7.4). Both nil on rows
-    /// written before schema v2.
+    /// The settings target, so the main glucose chart can draw the target as
+    /// a step line off the same read that feeds the filtered-glucose line
+    /// (dev/backlog/meal-soon.md §7.4). nil on rows written before schema v2.
     public let targetMgDl: Double?
-    public let targetSource: TargetGlucoseSource?
+    /// The policy identifier of the override in effect on this tick, as the
+    /// text the store holds, or nil with none. The chart names and colours a
+    /// segment by it, and one it does not know still draws.
+    public let overridePolicy: String?
+    /// The target this tick dosed toward while an override moved the target,
+    /// which the chart draws as a coloured segment in place of the settings
+    /// target. nil on a tick whose override only scales dosing, on a tick
+    /// with no override and on rows written before schema v3.
+    public let overrideTargetMgDl: Double?
 
-    public init(glucose: Double, at: Date, dosed: Bool, targetMgDl: Double? = nil, targetSource: TargetGlucoseSource? = nil) {
+    public init(glucose: Double, at: Date, dosed: Bool, targetMgDl: Double? = nil, overridePolicy: String? = nil, overrideTargetMgDl: Double? = nil) {
         self.glucose = glucose
         self.at = at
         self.dosed = dosed
         self.targetMgDl = targetMgDl
-        self.targetSource = targetSource
+        self.overridePolicy = overridePolicy
+        self.overrideTargetMgDl = overrideTargetMgDl
     }
 }
 

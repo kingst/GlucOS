@@ -4,49 +4,66 @@
 //
 //  Created by Sam King on 12/29/24.
 //
-//  Answers "what target, and why" for the dosing pipeline.
+//  The override manager: answers "what target, and why" for the dosing
+//  pipeline, and whether a dosing override is on.
 //
-//  This used to be a pass-through that existed as the future hook for lowering
-//  the target before a meal. The timed overrides — meal soon
-//  (dev/backlog/meal-soon.md) and exercise (dev/backlog/exercise.md) — are that
-//  hook, so nothing new is threaded through the pipeline: it still reads the
-//  target once per tick, and the PID error, the ML dynamic-ISF scaling and the
-//  micro-bolus gate all follow whatever this returns.
+//  This is the mechanism half of dev/backlog/override-mechanism.md. It holds
+//  at most one open override, which is a row in the loop record store: an
+//  effect (a target offset, a dosing multiplier, or both) and an expiry. It
+//  checks the effect against `OverrideGuardrails` when the override starts,
+//  clamps to them again on every tick, ends the override on the clock, and
+//  does nothing else on its own. It knows no setting by name. Meal soon,
+//  exercise and the rest are policies (`TargetOverrideKind`) that decide an
+//  effect and a duration and call `start` and `cancelOverride`, and anything
+//  that ends an override early or chains into another belongs to a policy.
+//
+//  The pipeline asks once per tick: the PID error, the ML dynamic-ISF scaling
+//  and the micro-bolus gate all follow the target this returns, and the PID
+//  doses with the basal rate and insulin sensitivity the dosing override
+//  scales. Both come from the one read of the open row, so a tick never pairs
+//  one override's target with another's multiplier.
 //
 //  An override is a pure function of a stored row and the clock, evaluated on
 //  every call (meal-soon §3). There is no in-memory state to restore, so nothing
 //  can get stuck: if the app dies at minute 30, the first evaluation after
-//  expiry computes "expired" from the row. Meal soon also ends on the pump's own
-//  bolus report rather than a signal from the bolus views (meal-soon §4.2), so
-//  it covers every entry point including ones that do not exist yet.
+//  expiry computes "expired" from the row.
 //
-//  At most one override is open at a time. Starting either kind closes whatever
-//  is open as `.cancelled`, so the later setting wins.
+//  Starting an override closes whatever is open as `.cancelled`, so the later
+//  one wins. Nothing chains: every start is a call to `start`.
 //
 
 import Foundation
-import LoopKit
 
 public protocol TargetGlucoseService {
-    /// The target the pipeline doses toward at `at`, and where it came from.
+    /// What the pipeline doses with at `at`: the target, and the dosing
+    /// override if one is on, both inside `OverrideGuardrails`. No store, a
+    /// failing read, no open row, or an open row that is not in effect at
+    /// `at` all give the settings target and no dosing override.
     func targetGlucose(at: Date, settings: CodableSettings) async -> TargetGlucose
 
-    /// Open a meal-soon override at `at`. Supersedes an open override of either
-    /// kind, which is closed as `.cancelled` in the same transaction.
-    func startMealSoon(at: Date, settings: CodableSettings) async throws
-
-    /// Open an exercise override at `at` that expires at `at + duration`.
-    /// Supersedes an open override of either kind, which is closed as
-    /// `.cancelled` in the same transaction. That is also how the duration is
+    /// Open an override with `effect` at `at` that expires at `at + duration`.
+    /// Throws an `OverrideGuardrailViolation` and writes nothing when the
+    /// effect or the duration is outside `OverrideGuardrails`.
+    ///
+    /// `policyIdentifier` says who started it. It is stored, published and
+    /// recorded on each tick, and nothing here acts on it.
+    ///
+    /// Supersedes an open override from any policy, which is closed as
+    /// `.cancelled` in the same transaction. That is also how a duration is
     /// changed mid-run: a fresh row from now with the new duration.
-    func startExercise(at: Date, duration: TimeInterval, settings: CodableSettings) async throws
+    func start(policyIdentifier: String, effect: OverrideEffect, at: Date, duration: TimeInterval, settings: CodableSettings) async throws
 
-    /// Close the open override, if any, as `.cancelled`.
-    func cancelOverride(at: Date) async
+    /// Close the open override, if any, as `.cancelled`. Throws when the
+    /// store could not do it. Either way what the store says afterwards is
+    /// published, so after a failed cancel the override still shows as on.
+    func cancelOverride(at: Date) async throws
 
-    /// The live override at `at`, or nil. Reads the store, applies
-    /// `TargetOverridePolicy.status`, writes the end if it observed one, and
-    /// publishes the answer to `AppObservableState.targetOverride`.
+    /// The override in effect at `at`, or nil. Reads the store, applies
+    /// `OverrideGuardrails.status`, writes the end if the clock has ended it,
+    /// and publishes the answer to `AppObservableState.targetOverride`.
+    ///
+    /// An open row that has not started at `at` is nil here, and nothing is
+    /// written or published for it.
     func activeOverride(at: Date) async -> TargetOverride?
 }
 
@@ -54,100 +71,106 @@ enum TargetGlucoseServiceError: LocalizedError {
     /// The loop record store did not open, so there is nowhere to keep the
     /// override. The pipeline keeps dosing toward the settings target.
     case noRecordStore
-    /// A zero or negative exercise duration would open a row that is already
-    /// expired. The UI only offers fixed positive choices; this is the guard
-    /// for every other caller.
-    case invalidDuration
 
     var errorDescription: String? {
         switch self {
         case .noRecordStore: return "the loop record store is unavailable"
-        case .invalidDuration: return "the duration must be longer than zero"
         }
     }
 }
 
 actor LocalTargetGlucoseService: TargetGlucoseService {
-    /// The settings target is clamped to this range. Meal soon's target is
-    /// clamped to it *after* the drop (meal-soon §4.1), so it lands in 75...125
-    /// for the settings picker's 80...140 range; exercise clamps the settings
-    /// target *before* the raise (`ExercisePolicy.target`) and is not clamped
-    /// again, so it lands in 130...190.
+    /// The settings target is clamped to this range before an override's
+    /// offset is added. The sum is then clamped to
+    /// `OverrideGuardrails.targetRangeMgDl`, which is wider: with the
+    /// settings picker's 80...140 range meal soon lands in 75...125 and the
+    /// exercise settings in 130...190.
     static let maxTargetGlucose = 140.0
     static let minTargetGlucose = 70.0
 
     /// nil when the store could not be opened. Every read then lands on the
     /// settings target.
     private let recordStore: LoopRecordStore?
-    private let insulinStorage: InsulinStorage
     private let observableState: AppObservableState
     private let log = DiagnosticLog(category: "TargetGlucoseService")
+
+    /// Counts starts and cancels: once when one begins and once when its
+    /// write has returned.
+    ///
+    /// This actor is re-entrant, so while an evaluation is suspended on the
+    /// store a `start` or a `cancelOverride` can run to completion and
+    /// publish. The row the evaluation read is then out of date, and
+    /// publishing it, or the nil that follows from ending it, would leave the
+    /// screens showing something the store does not hold. An evaluation that
+    /// finds this changed after a suspension discards what it read and starts
+    /// over.
+    private var changeCount = 0
 
     /// No I/O here, for the same watchdog reason `LoopRunner.init` does none.
     /// `observableState.targetOverride` is hydrated lazily by the first
     /// `activeOverride` call, which the views make on appear and the loop makes
     /// on its first tick.
-    init(recordStore: LoopRecordStore?, insulinStorage: InsulinStorage, observableState: AppObservableState) {
+    init(recordStore: LoopRecordStore?, observableState: AppObservableState) {
         self.recordStore = recordStore
-        self.insulinStorage = insulinStorage
         self.observableState = observableState
     }
 
     func targetGlucose(at: Date, settings: CodableSettings) async -> TargetGlucose {
-        let settingsTarget = settings.targetGlucoseInMgDl
-        guard let open = await activeOverride(at: at) else {
-            return TargetGlucose(mgDl: Self.clamp(settingsTarget), source: .settings)
+        // The one read of the open row. The target and the dosing override
+        // both come from it, through the one rule that can build the answer.
+        let open = await activeOverride(at: at)
+        return OverrideGuardrails.resolve(override: open, at: at, settingsTargetMgDl: settings.targetGlucoseInMgDl)
+    }
+
+    func start(policyIdentifier: String, effect: OverrideEffect, at: Date, duration: TimeInterval, settings: CodableSettings) async throws {
+        if let violation = OverrideGuardrails.violation(of: effect, duration: duration, settingsTargetMgDl: settings.targetGlucoseInMgDl) {
+            log.error("refused to start %{public}@: %{public}@", policyIdentifier, String(describing: violation))
+            throw violation
         }
-        // Computed from the *current* settings target on every tick, not frozen
-        // at start: if the user changes their target mid-override the override
-        // follows it.
-        switch open.kind {
-        case .mealSoon:
-            return TargetGlucose(mgDl: Self.clamp(MealSoonPolicy.target(settingsTargetMgDl: settingsTarget)), source: .mealSoon)
-        case .exercise:
-            // `ExercisePolicy.target` clamps the settings target itself, before
-            // the raise. Clamping again here would cap it at 140.
-            return TargetGlucose(mgDl: ExercisePolicy.target(settingsTargetMgDl: settingsTarget), source: .exercise)
-        }
-    }
-
-    func startMealSoon(at: Date, settings: CodableSettings) async throws {
-        try await start(kind: .mealSoon, at: at, expiresAt: at + MealSoonPolicy.duration, settings: settings)
-    }
-
-    func startExercise(at: Date, duration: TimeInterval, settings: CodableSettings) async throws {
-        guard duration > 0 else { throw TargetGlucoseServiceError.invalidDuration }
-        try await start(kind: .exercise, at: at, expiresAt: at + duration, settings: settings)
-    }
-
-    private func start(kind: TargetOverrideKind, at: Date, expiresAt: Date, settings: CodableSettings) async throws {
         guard let recordStore else { throw TargetGlucoseServiceError.noRecordStore }
-        let override = try await recordStore.startTargetOverride(
-            kind: kind,
-            at: at,
-            expiresAt: expiresAt,
-            settingsTargetMgDl: settings.targetGlucoseInMgDl
-        )
-        log.default("%{public}@ started at %{public}@, expires %{public}@", kind.rawValue, "\(at)", "\(override.expiresAt)")
+
+        changeCount += 1
+        let override: TargetOverride
+        do {
+            override = try await recordStore.startTargetOverride(
+                policyIdentifier: policyIdentifier,
+                effect: effect,
+                at: at,
+                expiresAt: at + duration,
+                settingsTargetMgDl: settings.targetGlucoseInMgDl
+            )
+        } catch {
+            changeCount += 1
+            throw error
+        }
+        changeCount += 1
+        log.default("%{public}@ started at %{public}@, expires %{public}@", policyIdentifier, "\(at)", "\(override.expiresAt)")
         await publish(override)
     }
 
-    func cancelOverride(at: Date) async {
+    func cancelOverride(at: Date) async throws {
         guard let recordStore else {
             await publish(nil)
             return
         }
+
+        changeCount += 1
+        var failure: Error? = nil
         do {
             if let open = try await recordStore.openTargetOverride() {
-                try await recordStore.endTargetOverride(id: open.id, at: at, reason: .cancelled, bolusSyncIdentifier: nil)
-                log.default("%{public}@ cancelled at %{public}@", open.kind.rawValue, "\(at)")
+                try await recordStore.endTargetOverride(id: open.id, at: at, reason: .cancelled)
+                log.default("%{public}@ cancelled at %{public}@", open.policyIdentifier, "\(at)")
             }
         } catch {
             log.error("could not cancel the target override: %{public}@", String(describing: error))
+            failure = error
         }
+        changeCount += 1
+
         // Whatever the store says now is what gets published, so a failed
         // cancel leaves the switch on rather than lying about it.
         _ = await activeOverride(at: at)
+        if let failure { throw failure }
     }
 
     func activeOverride(at: Date) async -> TargetOverride? {
@@ -156,61 +179,55 @@ actor LocalTargetGlucoseService: TargetGlucoseService {
             return nil
         }
 
-        let open: TargetOverride?
-        do {
-            open = try await recordStore.openTargetOverride()
-        } catch {
-            // Fails toward the settings target.
-            log.error("could not read the open target override; using the settings target: %{public}@", String(describing: error))
-            await publish(nil)
-            return nil
-        }
-        guard let open else {
-            await publish(nil)
-            return nil
-        }
+        // Each pass reads the open row and acts on it. A pass that finds a
+        // start or a cancel landed while it was suspended is holding a row
+        // that may have been superseded, so it stops there, with nothing
+        // published, and the next pass reads again.
+        while true {
+            let changeCountAtRead = changeCount
 
-        let doses: [DoseEntry]
-        if open.kind.endsOnManualBolus {
-            // The pump's own report of what was bolused inside the window. The
-            // query tests overlap and filters only on `deleted_at`, so an
-            // in-progress bolus is visible the moment the pod acknowledges it;
-            // the rule owns the `startDate >= startedAt` test that excludes a
-            // bolus which began before the override and is still delivering.
-            //
-            // A read failure returns `[]`, which would hide a manual bolus and
-            // let the override run to expiry. Acceptable: the same failure
-            // makes `lastPumpSync` nil, and the loop skips rather than doses.
-            doses = await insulinStorage
-                .pumpEvents(from: open.startedAt, to: min(at, open.expiresAt))
-                .compactMap { $0.dose }
-        } else {
-            // Exercise ends only on the clock or a cancel, so there is nothing
-            // to ask the pump about.
-            doses = []
-        }
-
-        switch TargetOverridePolicy.status(of: open, at: at, doses: doses) {
-        case .active:
-            await publish(open)
-            return open
-        case .ended(let endedAt, let reason, let bolusSyncIdentifier):
+            let open: TargetOverride?
             do {
-                try await recordStore.endTargetOverride(id: open.id, at: endedAt, reason: reason, bolusSyncIdentifier: bolusSyncIdentifier)
-                log.default("%{public}@ ended at %{public}@: %{public}@", open.kind.rawValue, "\(endedAt)", reason.rawValue)
+                open = try await recordStore.openTargetOverride()
             } catch {
-                // Log-only. The rule still evaluates to ended on the next call
-                // from `started_at` and the pump events, so nothing else depends
-                // on this write landing.
-                log.error("could not record the end of a target override: %{public}@", String(describing: error))
+                guard changeCount == changeCountAtRead else { continue }
+                // Fails toward the settings target and no dosing override.
+                log.error("could not read the open target override; using the settings target: %{public}@", String(describing: error))
+                await publish(nil)
+                return nil
             }
-            await publish(nil)
-            return nil
-        }
-    }
+            guard changeCount == changeCountAtRead else { continue }
 
-    private static func clamp(_ mgDl: Double) -> Double {
-        return mgDl.clamp(low: minTargetGlucose, high: maxTargetGlucose)
+            guard let open else {
+                await publish(nil)
+                return nil
+            }
+
+            switch OverrideGuardrails.status(of: open, at: at) {
+            case .active:
+                await publish(open)
+                return open
+            case .notStarted:
+                // `at` is before the row began: a loop whose tick time was
+                // fixed before the tap, or a clock that was set back. The
+                // override is not in effect at `at` and it is not over, so
+                // nothing is written and nothing is published.
+                return nil
+            case .ended(let endedAt, let reason):
+                do {
+                    try await recordStore.endTargetOverride(id: open.id, at: endedAt, reason: reason)
+                    log.default("%{public}@ ended at %{public}@: %{public}@", open.policyIdentifier, "\(endedAt)", reason.rawValue)
+                } catch {
+                    // Log-only. The rule still evaluates to ended on the next
+                    // call from the row and the clock, so nothing else
+                    // depends on this write landing.
+                    log.error("could not record the end of a target override: %{public}@", String(describing: error))
+                }
+                guard changeCount == changeCountAtRead else { continue }
+                await publish(nil)
+                return nil
+            }
+        }
     }
 
     private func publish(_ override: TargetOverride?) async {

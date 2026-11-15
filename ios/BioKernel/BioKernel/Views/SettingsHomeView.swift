@@ -12,10 +12,10 @@ struct SettingsHomeView: View {
     @EnvironmentObject var glucoseAlertsViewModel: GlucoseAlertsViewModel
     @EnvironmentObject var appState: AppObservableState
 
-    /// "Meal soon", "Exercise" or "Off": which timed override is in effect.
+    /// The setting that is on, "Meal soon" or "Exercise" say, or "Off".
     private var automationStatus: String {
         guard let override = appState.targetOverride, override.isActive(at: Date()) else { return "Off" }
-        return override.kind.title
+        return OverrideAppearance.title(forPolicy: override.policyIdentifier)
     }
 
     var body: some View {

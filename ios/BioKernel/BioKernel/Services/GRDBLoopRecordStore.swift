@@ -60,10 +60,34 @@ actor GRDBLoopRecordStore: LoopRecordStore {
         var predictedAddedGlucoseMgDlPerHr: Double?
         var mlInsulinLastThreeHours: Double?
 
-        /// What this tick dosed toward, and why (dev/backlog/meal-soon.md §6).
-        /// NULL on rows written before v2, and on skipped rows.
+        /// The settings target, and whether a target override was on
+        /// (dev/backlog/meal-soon.md §6). NULL on rows written before v2, and
+        /// on skipped rows.
+        ///
+        /// `targetSource` is `settings`, or the override's policy identifier
+        /// while it moves the target. It is derived when the row is written
+        /// and only the chart read uses it, for rows from before v4.
         var targetMgDl: Double?
         var targetSource: String?
+
+        /// What an override dosed with in place of the settings values
+        /// (dev/backlog/more-settings-automation.md, "What each tick
+        /// records"). The three values are NULL unless their override is on.
+        /// All four are NULL on rows written before v3 and on skipped rows.
+        ///
+        /// `dosingOverrideEnabled` is derived when the row is written, from
+        /// `overrideBasalRate` being present, and is not read back.
+        var overrideTargetMgDl: Double?
+        var dosingOverrideEnabled: Bool?
+        var overrideBasalRate: Double?
+        var overrideInsulinSensitivity: Double?
+
+        /// The policy identifier of the override in effect on this tick,
+        /// whether it moved the target, scaled dosing or both
+        /// (dev/backlog/override-mechanism.md, "What each tick records").
+        /// NULL with no override, on rows written before v4 and on skipped
+        /// rows.
+        var overridePolicy: String?
 
         var physiologicalTempBasal: Double?
         var mlTempBasal: Double?
@@ -120,7 +144,13 @@ actor GRDBLoopRecordStore: LoopRecordStore {
             self.mlInsulinLastThreeHours = snapshot.machineLearningInsulinLastThreeHours
 
             self.targetMgDl = snapshot.targetGlucoseInMgDl
-            self.targetSource = snapshot.targetSource?.rawValue
+            self.targetSource = Self.targetSource(for: snapshot)
+
+            self.overrideTargetMgDl = snapshot.overrideTargetGlucoseInMgDl
+            self.dosingOverrideEnabled = snapshot.overrideBasalRate != nil
+            self.overrideBasalRate = snapshot.overrideBasalRate
+            self.overrideInsulinSensitivity = snapshot.overrideInsulinSensitivity
+            self.overridePolicy = snapshot.overridePolicy
 
             self.physiologicalTempBasal = snapshot.candidates.physiologicalTempBasal
             self.mlTempBasal = snapshot.candidates.mlTempBasal
@@ -137,6 +167,20 @@ actor GRDBLoopRecordStore: LoopRecordStore {
             self.pidDerivative = snapshot.pid.derivative
             self.pidDeltaGlucoseError = snapshot.pid.deltaGlucoseError
             self.pidBasalRateIob = snapshot.pid.basalRateInsulinOnBoard
+        }
+
+        static let settingsTargetSource = "settings"
+
+        /// What `target_source` holds: NULL when the tick recorded no target,
+        /// the override's policy identifier while one moves the target, and
+        /// `settings` otherwise. A tick whose override only scales dosing is
+        /// `settings` here and has its identifier in `override_policy`.
+        private static func targetSource(for snapshot: LoopRecordSnapshot) -> String? {
+            guard snapshot.targetGlucoseInMgDl != nil else { return nil }
+            guard snapshot.overrideTargetGlucoseInMgDl != nil, let overridePolicy = snapshot.overridePolicy else {
+                return settingsTargetSource
+            }
+            return overridePolicy
         }
 
         /// nil when the row does not describe a loop tick this build understands
@@ -192,11 +236,17 @@ actor GRDBLoopRecordStore: LoopRecordStore {
                 basalRate: basalRate,
                 predictedAddedGlucoseInMgDlPerHour: predictedAddedGlucoseMgDlPerHr,
                 machineLearningInsulinLastThreeHours: mlInsulinLastThreeHours,
-                // Both optional in the domain type: a row written before v2 has
-                // NULL in each, and those rows must keep decoding or the chart
+                // Optional in the domain type: a row written before v2 has
+                // NULL here, and those rows must keep decoding or the chart
                 // goes blank for a day after the upgrade.
                 targetGlucoseInMgDl: targetMgDl,
-                targetSource: targetSource.flatMap { TargetGlucoseSource(rawValue: $0) },
+                // Optional for the same reason: NULL on every row written
+                // before v4, and the three values are NULL on every row
+                // written before v3, which reads as no override.
+                overridePolicy: overridePolicy,
+                overrideTargetGlucoseInMgDl: overrideTargetMgDl,
+                overrideBasalRate: overrideBasalRate,
+                overrideInsulinSensitivity: overrideInsulinSensitivity,
                 decision: decision,
                 candidates: DoseCandidates(
                     physiologicalTempBasal: physiologicalTempBasal,
@@ -298,18 +348,31 @@ actor GRDBLoopRecordStore: LoopRecordStore {
         static let databaseColumnDecodingStrategy = DatabaseColumnDecodingStrategy.convertFromSnakeCase
 
         var id: Int64?
+        /// The policy identifier. A label: stored and handed back, and never
+        /// interpreted here. The column keeps the name it had when it held
+        /// one of a fixed list of kinds.
         var kind: String
         var startedAt: Double
         var expiresAt: Double
         var settingsTargetMgDl: Double
+        /// The effect (dev/backlog/override-mechanism.md, "The effect is
+        /// stored on the row"). Both NULL on rows written before v4, which
+        /// are all closed and are never evaluated.
+        var targetOffsetMgDl: Double?
+        var dosingMultiplier: Double?
         var endedAt: Double?
         var endReason: String?
-        var endBolusSyncId: String?
+        // `end_bolus_sync_id` is still in the table. Nothing reads or writes
+        // it since the override manager stopped ending on a manual bolus, so
+        // it has no field here and an insert leaves it NULL.
 
-        /// nil when the row's kind or end reason is one this build does not
-        /// know, which is the same dropped-not-fatal rule `LoopResultRow` uses.
+        /// nil when the row's end reason is one this build does not know,
+        /// which is the same dropped-not-fatal rule `LoopResultRow` uses. That
+        /// can only be a closed row. A policy identifier this build does not
+        /// know is not a reason to drop anything: the row carries its own
+        /// effect, and dropping an open one would leave it open and hidden.
         func toDomain() -> TargetOverride? {
-            guard let id, let kind = TargetOverrideKind(rawValue: kind) else { return nil }
+            guard let id else { return nil }
             let endReason: TargetOverrideEndReason?
             if let endReasonRaw = self.endReason {
                 guard let parsed = TargetOverrideEndReason(rawValue: endReasonRaw) else { return nil }
@@ -319,13 +382,13 @@ actor GRDBLoopRecordStore: LoopRecordStore {
             }
             return TargetOverride(
                 id: id,
-                kind: kind,
+                policyIdentifier: kind,
+                effect: OverrideEffect(targetOffsetMgDl: targetOffsetMgDl, dosingMultiplier: dosingMultiplier),
                 startedAt: Date(timeIntervalSince1970: startedAt),
                 expiresAt: Date(timeIntervalSince1970: expiresAt),
                 settingsTargetMgDl: settingsTargetMgDl,
                 endedAt: endedAt.map { Date(timeIntervalSince1970: $0) },
-                endReason: endReason,
-                endBolusSyncIdentifier: endBolusSyncId
+                endReason: endReason
             )
         }
     }
@@ -356,7 +419,9 @@ actor GRDBLoopRecordStore: LoopRecordStore {
 
     /// - Parameter createdAt: the store's creation instant, which becomes the
     ///   initial `safety_history_complete_since`. Injected rather than read from
-    ///   the clock so the fail-closed window is testable.
+    ///   the clock so the fail-closed window is testable. It is also the
+    ///   instant a migration stamps on anything it closes, since the caller
+    ///   passes the current instant on every open.
     init(url: URL, createdAt: Date) throws {
         // Per GRDB's guidance each database lives in its OWN directory, so the
         // main file, the journal sidecar, and SQLite's temp files stay together
@@ -396,7 +461,7 @@ actor GRDBLoopRecordStore: LoopRecordStore {
 
     private static func prepare(_ dbQueue: DatabaseQueue, createdAt: Date) throws {
         do {
-            try migrator().migrate(dbQueue)
+            try migrator(at: createdAt).migrate(dbQueue)
             try dbQueue.write { db in
                 // Seeded once. `INSERT OR IGNORE` rather than an upsert: on every
                 // launch after the first, these are already the right answers,
@@ -470,7 +535,9 @@ actor GRDBLoopRecordStore: LoopRecordStore {
 
     // MARK: - Migrations
 
-    private static func migrator() -> DatabaseMigrator {
+    /// - Parameter at: the instant this store is being opened, for a
+    ///   migration that has to stamp one on a row.
+    private static func migrator(at: Date) -> DatabaseMigrator {
         var migrator = DatabaseMigrator()
 
         migrator.registerMigration("v1") { db in
@@ -596,6 +663,65 @@ actor GRDBLoopRecordStore: LoopRecordStore {
                 CREATE INDEX idx_target_override_open
                   ON target_override(started_at) WHERE ended_at IS NULL
                 """)
+        }
+
+        migrator.registerMigration("v3-dosing-override") { db in
+            // dev/backlog/more-settings-automation.md, "What each tick
+            // records". From here on `target_mg_dl`, `basal_rate` and
+            // `insulin_sensitivity` always hold the settings values, and what
+            // an override put in their place is recorded beside them, only
+            // while that override is on. NULL on every row written before this
+            // migration, where a NULL `dosing_override_enabled` reads as off.
+            //
+            // This changes what `target_mg_dl` means on an override tick: it
+            // used to hold the override's target. Rows written before this
+            // migration keep that value and read as the settings target, which
+            // is accepted.
+            //
+            // `target_source` gains 'exerciseSoon' and `target_override.kind`
+            // gains 'digestion', 'exerciseSoon' and 'postExercise'. Both are
+            // text columns, so neither needs a change here, and there is no
+            // rewrite of existing rows: one stored as 'exercise' reads as the
+            // Exercise setting.
+            try db.execute(sql: "ALTER TABLE loop_result ADD COLUMN override_target_mg_dl DOUBLE")
+            try db.execute(sql: "ALTER TABLE loop_result ADD COLUMN dosing_override_enabled BOOLEAN")
+            try db.execute(sql: "ALTER TABLE loop_result ADD COLUMN override_basal_rate DOUBLE")
+            try db.execute(sql: "ALTER TABLE loop_result ADD COLUMN override_insulin_sensitivity DOUBLE")
+        }
+
+        migrator.registerMigration("v4-override-effect") { db in
+            // dev/backlog/override-mechanism.md, "Stored rows". An override
+            // row now stores its effect, where the target and the multiplier
+            // used to be worked out from `kind` by whichever build read the
+            // row. `kind` becomes the policy identifier, which is a label.
+            // Both columns are nullable: an effect has a target offset, a
+            // dosing multiplier, or both.
+            try db.execute(sql: "ALTER TABLE target_override ADD COLUMN target_offset_mg_dl DOUBLE")
+            try db.execute(sql: "ALTER TABLE target_override ADD COLUMN dosing_multiplier DOUBLE")
+
+            // The policy identifier of the override in effect on a tick. NULL
+            // on every row written before this migration. `target_source`
+            // keeps the values it has and `dosing_override_enabled` stays,
+            // and both are derived when a row is written.
+            try db.execute(sql: "ALTER TABLE loop_result ADD COLUMN override_policy TEXT")
+
+            // An override that is open at this moment has no stored effect,
+            // and working one out from its kind in here is not worth it for
+            // a row that lasts hours at most. It is closed as cancelled, and
+            // the loop is on the settings until the next start. Rows that
+            // are already closed keep NULL in the two effect columns: they
+            // are log entries and are never evaluated.
+            //
+            // `end_bolus_sync_id` stays in the table and is no longer read
+            // or written.
+            try db.execute(
+                sql: """
+                    UPDATE target_override
+                    SET ended_at = ?, end_reason = ?
+                    WHERE ended_at IS NULL
+                    """,
+                arguments: [at.timeIntervalSince1970, TargetOverrideEndReason.cancelled.rawValue]
+            )
         }
 
         return migrator
@@ -768,8 +894,14 @@ actor GRDBLoopRecordStore: LoopRecordStore {
         // which is what the array version expressed as `outcome.snapshot != nil`.
         //
         // The target rides along on the same read so the chart can draw it
-        // without a second series or a second query (meal-soon.md §7.4). Both
-        // target columns are NULL on rows written before v2.
+        // without a second series or a second query (meal-soon.md §7.4). The
+        // target is NULL on rows written before v2, and the override target
+        // is NULL on rows written before v3 and on every tick with no target
+        // override.
+        //
+        // The policy identifier is `override_policy`. That is NULL on a tick
+        // written before v4, which named its target override in
+        // `target_source` instead, so the chart still colours those.
         //
         // `outcome` rides along too, as `dosed`, rather than being a `WHERE`
         // clause: a pump-error tick still has a target the chart draws, and
@@ -779,7 +911,7 @@ actor GRDBLoopRecordStore: LoopRecordStore {
                 try Row.fetchAll(
                     db,
                     sql: """
-                        SELECT pid_at, pid_filtered_glucose, outcome, target_mg_dl, target_source FROM loop_result
+                        SELECT pid_at, pid_filtered_glucose, outcome, target_mg_dl, target_source, override_target_mg_dl, override_policy FROM loop_result
                         WHERE at >= ? AND pid_at IS NOT NULL
                         ORDER BY pid_at
                         """,
@@ -789,13 +921,17 @@ actor GRDBLoopRecordStore: LoopRecordStore {
                           let glucose: Double = row["pid_filtered_glucose"] else { return nil }
                     let outcome: String? = row["outcome"]
                     let targetMgDl: Double? = row["target_mg_dl"]
-                    let targetSourceRaw: String? = row["target_source"]
+                    let targetSource: String? = row["target_source"]
+                    let overrideTargetMgDl: Double? = row["override_target_mg_dl"]
+                    let overridePolicy: String? = row["override_policy"]
+                    let targetOverridePolicy = targetSource == LoopResultRow.settingsTargetSource ? nil : targetSource
                     return FilteredGlucose(
                         glucose: glucose,
                         at: Date(timeIntervalSince1970: at),
                         dosed: outcome == "dosed",
                         targetMgDl: targetMgDl,
-                        targetSource: targetSourceRaw.flatMap { TargetGlucoseSource(rawValue: $0) }
+                        overridePolicy: overridePolicy ?? targetOverridePolicy,
+                        overrideTargetMgDl: overrideTargetMgDl
                     )
                 }
             }
@@ -806,12 +942,13 @@ actor GRDBLoopRecordStore: LoopRecordStore {
 
     // MARK: - Target overrides
 
-    func startTargetOverride(kind: TargetOverrideKind, at: Date, expiresAt: Date, settingsTargetMgDl: Double) async throws -> TargetOverride {
+    func startTargetOverride(policyIdentifier: String, effect: OverrideEffect, at: Date, expiresAt: Date, settingsTargetMgDl: Double) async throws -> TargetOverride {
         do {
             let row = try await dbQueue.write { db -> TargetOverrideRow in
                 // One transaction: close whatever is open as `cancelled` at this
                 // same instant, then insert. There is never more than one open
-                // row, and supersession is visible in the log as a cancel.
+                // row, whatever the policies, and supersession is visible in
+                // the log as a cancel.
                 try db.execute(
                     sql: """
                         UPDATE target_override
@@ -822,13 +959,14 @@ actor GRDBLoopRecordStore: LoopRecordStore {
                 )
                 var row = TargetOverrideRow(
                     id: nil,
-                    kind: kind.rawValue,
+                    kind: policyIdentifier,
                     startedAt: at.timeIntervalSince1970,
                     expiresAt: expiresAt.timeIntervalSince1970,
                     settingsTargetMgDl: settingsTargetMgDl,
+                    targetOffsetMgDl: effect.targetOffsetMgDl,
+                    dosingMultiplier: effect.dosingMultiplier,
                     endedAt: nil,
-                    endReason: nil,
-                    endBolusSyncId: nil
+                    endReason: nil
                 )
                 try row.insert(db)
                 row.id = db.lastInsertedRowID
@@ -863,7 +1001,7 @@ actor GRDBLoopRecordStore: LoopRecordStore {
         }
     }
 
-    func endTargetOverride(id: Int64, at: Date, reason: TargetOverrideEndReason, bolusSyncIdentifier: String?) async throws {
+    func endTargetOverride(id: Int64, at: Date, reason: TargetOverrideEndReason) async throws {
         do {
             try await dbQueue.write { db in
                 // `ended_at IS NULL` in the predicate is what makes this
@@ -872,10 +1010,10 @@ actor GRDBLoopRecordStore: LoopRecordStore {
                 try db.execute(
                     sql: """
                         UPDATE target_override
-                        SET ended_at = ?, end_reason = ?, end_bolus_sync_id = ?
+                        SET ended_at = ?, end_reason = ?
                         WHERE id = ? AND ended_at IS NULL
                         """,
-                    arguments: [at.timeIntervalSince1970, reason.rawValue, bolusSyncIdentifier, id]
+                    arguments: [at.timeIntervalSince1970, reason.rawValue, id]
                 )
             }
         } catch {
