@@ -168,14 +168,13 @@ final class AppComposition {
             recordStore: insulinRecordStore
         )
 
-        // The target the pipeline doses toward. Lives here rather than at Tier 0
-        // because the meal-soon override is a row in the loop record store and
-        // ends on a bolus the pump reports through insulin storage. Its only
-        // consumer is the loop at Tier 6, so there is no cycle and no box. It
-        // does no I/O at construction (dev/backlog/meal-soon.md §4.3–4.4).
+        // The override manager: the target the pipeline doses toward and the
+        // dosing override beside it. Lives here rather than at Tier 0 because
+        // an override is a row in the loop record store. Its only consumer is
+        // the loop at Tier 6, so there is no cycle and no box. It does no I/O
+        // at construction (dev/backlog/meal-soon.md §4.3–4.4).
         let targetGlucoseService = LocalTargetGlucoseService(
             recordStore: loopRecordStore,
-            insulinStorage: insulinStorage,
             observableState: observableState
         )
 

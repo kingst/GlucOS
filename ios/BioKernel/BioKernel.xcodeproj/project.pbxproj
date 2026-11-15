@@ -122,6 +122,9 @@
 		3BAE50010000000000000008 /* MealSoonPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000007 /* MealSoonPolicyTests.swift */; };
 		3BAE5001000000000000000A /* TargetGlucoseServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000009 /* TargetGlucoseServiceTests.swift */; };
 		3BAE5001000000000000000C /* ExercisePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE5001000000000000000B /* ExercisePolicyTests.swift */; };
+		3BAE5001000000000000000E /* SettingsAutomationPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE5001000000000000000D /* SettingsAutomationPolicyTests.swift */; };
+		3BAE50010000000000000010 /* OverrideGuardrailsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE5001000000000000000F /* OverrideGuardrailsTests.swift */; };
+		3BAE50010000000000000012 /* GlucoseChartTargetLineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAE50010000000000000011 /* GlucoseChartTargetLineTests.swift */; };
 		3BAECD202B28F270002B9062 /* HealthKitStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAECD1F2B28F270002B9062 /* HealthKitStorage.swift */; };
 		3BBC7C742B155C7F00410123 /* FaceId.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BBC7C732B155C7F00410123 /* FaceId.swift */; };
 		3BBC7C762B15620200410123 /* LoopTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3BBC7C752B15620200410123 /* LoopTestingKit.framework */; };
@@ -375,6 +378,9 @@
 		3BAE50010000000000000007 /* MealSoonPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealSoonPolicyTests.swift; sourceTree = "<group>"; };
 		3BAE50010000000000000009 /* TargetGlucoseServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetGlucoseServiceTests.swift; sourceTree = "<group>"; };
 		3BAE5001000000000000000B /* ExercisePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExercisePolicyTests.swift; sourceTree = "<group>"; };
+		3BAE5001000000000000000D /* SettingsAutomationPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAutomationPolicyTests.swift; sourceTree = "<group>"; };
+		3BAE5001000000000000000F /* OverrideGuardrailsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverrideGuardrailsTests.swift; sourceTree = "<group>"; };
+		3BAE50010000000000000011 /* GlucoseChartTargetLineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseChartTargetLineTests.swift; sourceTree = "<group>"; };
 		3BAECD1F2B28F270002B9062 /* HealthKitStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitStorage.swift; sourceTree = "<group>"; };
 		3BAECD212B28FF54002B9062 /* BioKernel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BioKernel.entitlements; sourceTree = "<group>"; };
 		3BBC7C732B155C7F00410123 /* FaceId.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceId.swift; sourceTree = "<group>"; };
@@ -825,6 +831,9 @@
 				3B5361722FA6ABB500E98A24 /* PhysiologicalModelsTests.swift */,
 				3C15FE482B0C9C5000CA1FD4 /* Resources */,
 				3B348DAD2B5DAFB0000A40E9 /* SafetyServiceTests.swift */,
+				3BAE5001000000000000000D /* SettingsAutomationPolicyTests.swift */,
+				3BAE5001000000000000000F /* OverrideGuardrailsTests.swift */,
+				3BAE50010000000000000011 /* GlucoseChartTargetLineTests.swift */,
 				3BAE50010000000000000009 /* TargetGlucoseServiceTests.swift */,
 				3CAAFC8A2B0D719E00597055 /* Utils */,
 			);
@@ -1169,6 +1178,9 @@
 				3BAE5001000000000000000A /* TargetGlucoseServiceTests.swift in Sources */,
 				3BAE50010000000000000008 /* MealSoonPolicyTests.swift in Sources */,
 				3BAE5001000000000000000C /* ExercisePolicyTests.swift in Sources */,
+				3BAE5001000000000000000E /* SettingsAutomationPolicyTests.swift in Sources */,
+				3BAE50010000000000000010 /* OverrideGuardrailsTests.swift in Sources */,
+				3BAE50010000000000000012 /* GlucoseChartTargetLineTests.swift in Sources */,
 				3BC5A0E10000000000000005 /* CheckCgmConnectionIntentTests.swift in Sources */,
 				3CAAFC8C2B0D71AE00597055 /* ReplayLogs.swift in Sources */,
 				3B40DE692D24453F0032328F /* LoopFunctionTests.swift in Sources */,

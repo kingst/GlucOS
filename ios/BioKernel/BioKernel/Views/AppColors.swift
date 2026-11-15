@@ -26,9 +26,22 @@ struct AppColors {
     static let red = Color(hex: 0xFF6348)
     static let green = Color(hex: 0x7BED9F)
     static let deepIndigo = Color(hex: 0x4A5699)
-    /// The exercise override, on the banner and the chart. Dark enough for
+    /// The exercise soon override, on the banner and the chart. Dark enough for
     /// white text; distinct from the indigo meal-soon banner and the yellow alert.
     static let teal = Color(hex: 0x1D7874)
+    /// The exercise override, on the banner and the chart. Dark enough for
+    /// white text, and a hue away from teal, indigo and the chart's blue
+    /// readings, purple filtered line and green range, since its segment is
+    /// drawn among all of them.
+    static let berry = Color(hex: 0xA23B72)
+    /// The digestion and post exercise banners. Neither moves the target, so
+    /// neither is drawn on the chart; both are dark enough for white text.
+    static let bronze = Color(hex: 0x8D5B2A)
+    static let slate = Color(hex: 0x4F6D7A)
+    /// An override whose policy identifier this build does not know, on the
+    /// banner and the chart. Neutral, dark enough for white text, and darker
+    /// than the chart's grey settings target line.
+    static let graphite = Color(hex: 0x4A4A4F)
 }
 
 // https://stackoverflow.com/a/56894458

@@ -23,7 +23,14 @@ import Foundation
 
 struct LoopOutcomeCodableTests {
 
-    private func makeSnapshot() -> LoopSnapshot {
+    /// A tick with no override by default. The arguments are the four fields
+    /// an override fills in.
+    private func makeSnapshot(
+        overridePolicy: String? = nil,
+        overrideTargetGlucoseInMgDl: Double? = nil,
+        overrideBasalRate: Double? = nil,
+        overrideInsulinSensitivity: Double? = nil
+    ) -> LoopSnapshot {
         let pid = PIDTempBasalResult(
             at: Date(timeIntervalSince1970: 1_777_687_460),
             Kp: 1, Ki: 0.08, Kd: 3.6,
@@ -46,9 +53,12 @@ struct LoopOutcomeCodableTests {
         let outputs = PipelineOutputs(
             predictedGlucoseInMgDl: 146.5,
             targetGlucoseInMgDl: 90,
-            targetSource: .settings,
+            overridePolicy: overridePolicy,
+            overrideTargetGlucoseInMgDl: overrideTargetGlucoseInMgDl,
             insulinSensitivity: 55,
             basalRate: 0.3,
+            overrideBasalRate: overrideBasalRate,
+            overrideInsulinSensitivity: overrideInsulinSensitivity,
             pidTempBasalResult: pid,
             candidates: candidates,
             machineLearningInsulinLastThreeHours: 0,
@@ -112,23 +122,108 @@ struct LoopOutcomeCodableTests {
         #expect(s.outputs.targetGlucoseInMgDl == snapshot.outputs.targetGlucoseInMgDl)
     }
 
-    /// `targetSource` was added after the replay fixtures in `Resources` were
-    /// captured, so a payload without it has to decode as `.settings` rather
-    /// than fail (dev/backlog/meal-soon.md §6).
-    @Test func targetSourceDefaultsToSettingsWhenAbsent() throws {
-        let data = try JSONEncoder().encode(LoopOutcome.dosed(makeSnapshot()))
+    /// The override fields were added after the replay fixtures in
+    /// `Resources` were captured, so a payload without them has to decode as
+    /// a tick with no override rather than fail
+    /// (dev/backlog/more-settings-automation.md, "What each tick records").
+    @Test func theOverrideFieldsDefaultToNoOverrideWhenAbsent() throws {
+        let overrideKeys = ["overridePolicy", "overrideTargetGlucoseInMgDl", "overrideBasalRate", "overrideInsulinSensitivity"]
+        let snapshot = makeSnapshot(
+            overridePolicy: "exercise",
+            overrideTargetGlucoseInMgDl: 140,
+            overrideBasalRate: 0.18,
+            overrideInsulinSensitivity: 91.5
+        )
+        let data = try JSONEncoder().encode(LoopOutcome.dosed(snapshot))
         var json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
         var dosed = try #require(json["dosed"] as? [String: Any])
         var outputs = try #require(dosed["outputs"] as? [String: Any])
-        #expect(outputs["targetSource"] as? String == "settings", "the field is encoded when present")
-        outputs.removeValue(forKey: "targetSource")
+        for key in overrideKeys {
+            #expect(outputs[key] != nil, "\(key) is encoded when an override is on")
+            outputs.removeValue(forKey: key)
+        }
         dosed["outputs"] = outputs
         json["dosed"] = dosed
 
         let stripped = try JSONSerialization.data(withJSONObject: json)
-        let decoded = try JSONDecoder().decode(LoopOutcome.self, from: stripped)
-        #expect(decoded.snapshot?.outputs.targetSource == .settings)
-        #expect(decoded.snapshot?.outputs.targetGlucoseInMgDl == 90)
+        let decoded = try #require(try JSONDecoder().decode(LoopOutcome.self, from: stripped).snapshot?.outputs)
+        #expect(decoded.overridePolicy == nil)
+        #expect(decoded.overrideTargetGlucoseInMgDl == nil)
+        #expect(decoded.overrideBasalRate == nil)
+        #expect(decoded.overrideInsulinSensitivity == nil)
+        #expect(decoded.targetGlucoseInMgDl == 90, "the settings values beside them are untouched")
+        #expect(decoded.basalRate == 0.3)
+        #expect(decoded.insulinSensitivity == 55)
+    }
+
+    /// A payload from a build that wrote `targetSource` and
+    /// `dosingOverrideEnabled` still loads. Neither key is read any more:
+    /// `targetSource` was an enum whose decode threw on a name it did not
+    /// know, so here it is a name no build ever had, and the payload loads
+    /// anyway. What the tick dosed with comes from the values that are still
+    /// there.
+    @Test func aPayloadWithTheOldTargetSourceAndDosingFlagKeysStillLoads() throws {
+        let snapshot = makeSnapshot(
+            overrideTargetGlucoseInMgDl: 140,
+            overrideBasalRate: 0.18,
+            overrideInsulinSensitivity: 91.5
+        )
+        let data = try JSONEncoder().encode(LoopOutcome.dosed(snapshot))
+        var json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var dosed = try #require(json["dosed"] as? [String: Any])
+        var outputs = try #require(dosed["outputs"] as? [String: Any])
+        #expect(outputs["targetSource"] == nil, "no longer encoded")
+        #expect(outputs["dosingOverrideEnabled"] == nil, "no longer encoded")
+        outputs["targetSource"] = "aSourceNoBuildEverHad"
+        outputs["dosingOverrideEnabled"] = true
+        dosed["outputs"] = outputs
+        json["dosed"] = dosed
+
+        let old = try JSONSerialization.data(withJSONObject: json)
+        let decoded = try #require(try JSONDecoder().decode(LoopOutcome.self, from: old).snapshot?.outputs)
+        #expect(decoded.overridePolicy == nil, "an old payload has no policy identifier")
+        #expect(decoded.overrideTargetGlucoseInMgDl == 140)
+        #expect(decoded.overrideBasalRate == 0.18)
+        #expect(decoded.overrideInsulinSensitivity == 91.5)
+        #expect(decoded.targetGlucoseInMgDl == 90)
+    }
+
+    /// With an override on, all four fields survive the round trip beside the
+    /// settings values.
+    @Test func theOverrideFieldsRoundTrip() throws {
+        let snapshot = makeSnapshot(
+            overridePolicy: "exercise",
+            overrideTargetGlucoseInMgDl: 140,
+            overrideBasalRate: 0.18,
+            overrideInsulinSensitivity: 91.5
+        )
+        let (json1, decoded, json2) = try roundTrip(.dosed(snapshot))
+        #expect(json1 == json2, "round-trip JSON should be byte-identical")
+
+        let outputs = try #require(decoded.snapshot?.outputs)
+        #expect(outputs.overridePolicy == "exercise")
+        #expect(outputs.targetGlucoseInMgDl == 90)
+        #expect(outputs.overrideTargetGlucoseInMgDl == 140)
+        #expect(outputs.overrideBasalRate == 0.18)
+        #expect(outputs.overrideInsulinSensitivity == 91.5)
+        #expect(outputs.basalRate == 0.3)
+        #expect(outputs.insulinSensitivity == 55)
+    }
+
+    /// A tick whose override only scales dosing carries its policy
+    /// identifier and no override target, and one from a policy this build
+    /// does not know round-trips like any other: the identifier is text.
+    @Test func thePolicyIdentifierRoundTripsOnADosingOnlyTickAndForAnUnknownPolicy() throws {
+        let dosingOnly = makeSnapshot(overridePolicy: "digestion", overrideBasalRate: 0.39, overrideInsulinSensitivity: 42.3)
+        let digestion = try #require(try roundTrip(.dosed(dosingOnly)).decoded.snapshot?.outputs)
+        #expect(digestion.overridePolicy == "digestion")
+        #expect(digestion.overrideTargetGlucoseInMgDl == nil)
+        #expect(digestion.overrideBasalRate == 0.39)
+
+        let unknown = makeSnapshot(overridePolicy: "some-future-source", overrideTargetGlucoseInMgDl: 110)
+        let decoded = try #require(try roundTrip(.dosed(unknown)).decoded.snapshot?.outputs)
+        #expect(decoded.overridePolicy == "some-future-source")
+        #expect(decoded.overrideTargetGlucoseInMgDl == 110)
     }
 
     @Test func pumpErrorRoundTrip() throws {

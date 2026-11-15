@@ -203,18 +203,30 @@ actor MockLoopRecordStore: LoopRecordStore {
     func setFailWrites(_ fail: Bool) { failWrites = fail }
     func setFailReads(_ fail: Bool) { failReads = fail }
 
-    func startTargetOverride(kind: TargetOverrideKind, at: Date, expiresAt: Date, settingsTargetMgDl: Double) async throws -> TargetOverride {
+    /// Run once, inside the next `openTargetOverride`, after it has read the
+    /// open row and before it hands it back. Whatever this does to the store
+    /// lands while the caller is still suspended on the read, so the row the
+    /// caller gets is already out of date. That is the window a re-entrant
+    /// actor leaves open, held open on purpose.
+    private var afterNextOpenRead: (@Sendable () async -> Void)?
+    /// The same for the next `endTargetOverride`, after its write.
+    private var afterNextEndWrite: (@Sendable () async -> Void)?
+
+    func setAfterNextOpenRead(_ hook: @escaping @Sendable () async -> Void) { afterNextOpenRead = hook }
+    func setAfterNextEndWrite(_ hook: @escaping @Sendable () async -> Void) { afterNextEndWrite = hook }
+
+    func startTargetOverride(policyIdentifier: String, effect: OverrideEffect, at: Date, expiresAt: Date, settingsTargetMgDl: Double) async throws -> TargetOverride {
         guard !failWrites else { throw LoopRecordStoreError.writeFailed("injected") }
-        overrides = overrides.map { $0.endedAt == nil ? Self.closed($0, at: at, reason: .cancelled, bolusSyncIdentifier: nil) : $0 }
+        overrides = overrides.map { $0.endedAt == nil ? Self.closed($0, at: at, reason: .cancelled) : $0 }
         let override = TargetOverride(
             id: Int64(overrides.count + 1),
-            kind: kind,
+            policyIdentifier: policyIdentifier,
+            effect: effect,
             startedAt: at,
             expiresAt: expiresAt,
             settingsTargetMgDl: settingsTargetMgDl,
             endedAt: nil,
-            endReason: nil,
-            endBolusSyncIdentifier: nil
+            endReason: nil
         )
         overrides.append(override)
         return override
@@ -223,14 +235,23 @@ actor MockLoopRecordStore: LoopRecordStore {
     func openTargetOverride() async throws -> TargetOverride? {
         readCount += 1
         guard !failReads else { throw LoopRecordStoreError.readFailed("injected") }
-        return overrides.filter { $0.endedAt == nil }.max { $0.startedAt < $1.startedAt }
+        let open = overrides.filter { $0.endedAt == nil }.max { $0.startedAt < $1.startedAt }
+        if let hook = afterNextOpenRead {
+            afterNextOpenRead = nil
+            await hook()
+        }
+        return open
     }
 
-    func endTargetOverride(id: Int64, at: Date, reason: TargetOverrideEndReason, bolusSyncIdentifier: String?) async throws {
+    func endTargetOverride(id: Int64, at: Date, reason: TargetOverrideEndReason) async throws {
         guard !failWrites else { throw LoopRecordStoreError.writeFailed("injected") }
         overrides = overrides.map {
             guard $0.id == id, $0.endedAt == nil else { return $0 }
-            return Self.closed($0, at: at, reason: reason, bolusSyncIdentifier: bolusSyncIdentifier)
+            return Self.closed($0, at: at, reason: reason)
+        }
+        if let hook = afterNextEndWrite {
+            afterNextEndWrite = nil
+            await hook()
         }
     }
 
@@ -240,16 +261,16 @@ actor MockLoopRecordStore: LoopRecordStore {
         return overrides.filter { $0.startedAt >= since }
     }
 
-    private static func closed(_ override: TargetOverride, at: Date, reason: TargetOverrideEndReason, bolusSyncIdentifier: String?) -> TargetOverride {
+    private static func closed(_ override: TargetOverride, at: Date, reason: TargetOverrideEndReason) -> TargetOverride {
         return TargetOverride(
             id: override.id,
-            kind: override.kind,
+            policyIdentifier: override.policyIdentifier,
+            effect: override.effect,
             startedAt: override.startedAt,
             expiresAt: override.expiresAt,
             settingsTargetMgDl: override.settingsTargetMgDl,
             endedAt: at,
-            endReason: reason,
-            endBolusSyncIdentifier: bolusSyncIdentifier
+            endReason: reason
         )
     }
 }
@@ -258,7 +279,7 @@ class MockPhysiologicalModels: PhysiologicalModels {
     var mockPredictGlucose: Double? = nil
     var mockTempBasalResult = 0.0
     
-    func tempBasal(settings: BioKernel.CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [BioKernel.AddedGlucoseDataRow]?, at: Date) async -> BioKernel.PIDTempBasalResult {
+    func tempBasal(settings: BioKernel.CodableSettings, dosing: BioKernel.DosingParameters, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [BioKernel.AddedGlucoseDataRow]?, at: Date) async -> BioKernel.PIDTempBasalResult {
         return PIDTempBasalResult(at: at, Kp: 1, Ki: 1, Kd: 1, filteredGlucose: 100, error: 0, tempBasal: mockTempBasalResult, accumulatedError: 0, derivative: nil, lastGlucose: nil, lastGlucoseAt: nil, deltaGlucoseError: nil, basalRateInsulinOnBoard: nil)
     }
     func predictGlucoseIn15Minutes(from: Date) async -> Double? { return mockPredictGlucose }
@@ -292,30 +313,79 @@ class MockWatchComms: WatchComms {
 }
 
 class MockTargetGlucose: TargetGlucoseService {
-    /// What `targetGlucose` reports. `.mealSoon` and `.exercise` apply the real
-    /// policy to the settings target, so a pipeline test sees the real 15 mg/dl
-    /// drop or 50 mg/dl raise and not just a different label.
-    var source: TargetGlucoseSource
+    /// The open row `targetGlucose` answers from, or nil for none. The answer
+    /// is `OverrideGuardrails.resolve`, the rule the real service applies, so
+    /// a pipeline test sees the real offsets, multipliers and clamps and not
+    /// a copy of them.
+    var override: TargetOverride?
 
-    init(source: TargetGlucoseSource = .settings) {
-        self.source = source
+    init(override: TargetOverride? = nil) {
+        self.override = override
+    }
+
+    /// `kind` started at `startedAt` for its default duration, with the
+    /// effect it has at `settingsTargetMgDl`. A nil kind is no override.
+    convenience init(kind: TargetOverrideKind?, startedAt: Date, settingsTargetMgDl: Double = 90) {
+        self.init(override: kind.map { kind in
+            TargetOverride(
+                id: 1,
+                policyIdentifier: kind.policyIdentifier,
+                effect: kind.effect(settingsTargetMgDl: settingsTargetMgDl),
+                startedAt: startedAt,
+                expiresAt: startedAt + kind.defaultDuration,
+                settingsTargetMgDl: settingsTargetMgDl,
+                endedAt: nil,
+                endReason: nil
+            )
+        })
     }
 
     func targetGlucose(at: Date, settings: BioKernel.CodableSettings) async -> TargetGlucose {
-        switch source {
-        case .settings:
-            return TargetGlucose(mgDl: settings.targetGlucoseInMgDl, source: .settings)
-        case .mealSoon:
-            return TargetGlucose(mgDl: MealSoonPolicy.target(settingsTargetMgDl: settings.targetGlucoseInMgDl), source: .mealSoon)
-        case .exercise:
-            return TargetGlucose(mgDl: ExercisePolicy.target(settingsTargetMgDl: settings.targetGlucoseInMgDl), source: .exercise)
-        }
+        return OverrideGuardrails.resolve(override: override, at: at, settingsTargetMgDl: settings.targetGlucoseInMgDl)
     }
 
-    func startMealSoon(at: Date, settings: BioKernel.CodableSettings) async throws { }
-    func startExercise(at: Date, duration: TimeInterval, settings: BioKernel.CodableSettings) async throws { }
-    func cancelOverride(at: Date) async { }
+    func start(policyIdentifier: String, effect: OverrideEffect, at: Date, duration: TimeInterval, settings: BioKernel.CodableSettings) async throws { }
+    func cancelOverride(at: Date) async throws { }
     func activeOverride(at: Date) async -> TargetOverride? { return nil }
+}
+
+/// The fields of a `TargetGlucose`, so a test can compare one against numbers
+/// it writes out. A `TargetGlucose` itself can only be built by
+/// `OverrideGuardrails.resolve`.
+struct TargetGlucoseFields: Equatable {
+    var mgDl: Double
+    var settingsMgDl: Double
+    var overridePolicy: String?
+    var overrideMovesTarget: Bool
+    var dosingMultiplier: Double?
+
+    /// No override: the settings target, after its clamp, and nothing else.
+    static func settings(_ mgDl: Double) -> TargetGlucoseFields {
+        return TargetGlucoseFields(mgDl: mgDl, settingsMgDl: mgDl, overridePolicy: nil, overrideMovesTarget: false, dosingMultiplier: nil)
+    }
+
+    /// An override that moves the target to `mgDl`, with or without a dosing
+    /// multiplier.
+    static func target(_ overridePolicy: String, mgDl: Double, settingsMgDl: Double, dosingMultiplier: Double? = nil) -> TargetGlucoseFields {
+        return TargetGlucoseFields(mgDl: mgDl, settingsMgDl: settingsMgDl, overridePolicy: overridePolicy, overrideMovesTarget: true, dosingMultiplier: dosingMultiplier)
+    }
+
+    /// An override that leaves the target on the settings target.
+    static func dosingOnly(_ overridePolicy: String, settingsMgDl: Double, dosingMultiplier: Double?) -> TargetGlucoseFields {
+        return TargetGlucoseFields(mgDl: settingsMgDl, settingsMgDl: settingsMgDl, overridePolicy: overridePolicy, overrideMovesTarget: false, dosingMultiplier: dosingMultiplier)
+    }
+}
+
+extension TargetGlucose {
+    var fields: TargetGlucoseFields {
+        return TargetGlucoseFields(
+            mgDl: mgDl,
+            settingsMgDl: settingsMgDl,
+            overridePolicy: overridePolicy,
+            overrideMovesTarget: overrideMovesTarget,
+            dosingMultiplier: dosingOverride?.dosingMultiplier
+        )
+    }
 }
 
 extension PumpMetadata {

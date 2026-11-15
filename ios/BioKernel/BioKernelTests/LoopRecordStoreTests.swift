@@ -281,7 +281,16 @@ struct LoopRecordStoreTests {
 
     @Test func everyFieldOfADosedRecordRoundTrips() async throws {
         let store = try makeStore()
-        let written = LoopRecordFixtures.dosed(at: at, decision: .microBolus(units: 0.425))
+        // An exercise tick, the one kind that fills in all four override
+        // fields, so none of them round-trips as a NULL.
+        let written = LoopRecordFixtures.dosed(
+            at: at,
+            decision: .microBolus(units: 0.425),
+            overridePolicy: "exercise",
+            overrideTargetGlucoseInMgDl: 142.5,
+            overrideBasalRate: 0.51,
+            overrideInsulinSensitivity: 77.5
+        )
         try await store.record(written, safetyState: nil, at: at)
 
         let read = try #require(try await store.records(since: .distantPast).first)
@@ -299,7 +308,10 @@ struct LoopRecordStoreTests {
         #expect(actual.predictedAddedGlucoseInMgDlPerHour == expected.predictedAddedGlucoseInMgDlPerHour)
         #expect(actual.machineLearningInsulinLastThreeHours == expected.machineLearningInsulinLastThreeHours)
         #expect(actual.targetGlucoseInMgDl == expected.targetGlucoseInMgDl)
-        #expect(actual.targetSource == expected.targetSource)
+        #expect(actual.overridePolicy == expected.overridePolicy)
+        #expect(actual.overrideTargetGlucoseInMgDl == expected.overrideTargetGlucoseInMgDl)
+        #expect(actual.overrideBasalRate == expected.overrideBasalRate)
+        #expect(actual.overrideInsulinSensitivity == expected.overrideInsulinSensitivity)
         #expect(actual.decision == expected.decision)
 
         #expect(actual.candidates.physiologicalTempBasal == expected.candidates.physiologicalTempBasal)
@@ -419,6 +431,8 @@ struct LoopRecordStoreTests {
 
         let raw = try DatabaseQueue(path: url.path)
         try await raw.write { db in
+            try Self.unwindV4(db)
+            try Self.unwindV3(db)
             try db.execute(sql: "ALTER TABLE loop_result DROP COLUMN target_mg_dl")
             try db.execute(sql: "ALTER TABLE loop_result DROP COLUMN target_source")
             try db.execute(sql: "DROP TABLE target_override")
@@ -431,7 +445,9 @@ struct LoopRecordStoreTests {
 
         let snapshot = try #require(records[0].outcome.snapshot)
         #expect(snapshot.targetGlucoseInMgDl == nil)
-        #expect(snapshot.targetSource == nil)
+        #expect(snapshot.overridePolicy == nil)
+        #expect(snapshot.overrideTargetGlucoseInMgDl == nil)
+        #expect(snapshot.overrideBasalRate == nil)
         #expect(snapshot.decision == .microBolus(units: 0.3), "the rest of the row survived")
         #expect(records[1].outcome.skipReason == .openLoop)
         #expect(try await second.openTargetOverride() == nil)
@@ -441,17 +457,213 @@ struct LoopRecordStoreTests {
         #expect(columns.contains("target_source"))
     }
 
-    @Test func theTargetColumnsRoundTrip() async throws {
+    @Test func theTargetColumnRoundTrips() async throws {
         let store = try makeStore()
         try await store.record(
-            LoopRecordFixtures.dosed(at: at, targetGlucoseInMgDl: 77.5, targetSource: .mealSoon),
+            LoopRecordFixtures.dosed(at: at, targetGlucoseInMgDl: 77.5),
             safetyState: nil,
             at: at
         )
 
         let snapshot = try #require(try await store.records(since: .distantPast).first?.outcome.snapshot)
         #expect(snapshot.targetGlucoseInMgDl == 77.5)
-        #expect(snapshot.targetSource == .mealSoon)
+    }
+
+    // MARK: - Schema v3: the override columns (dev/backlog/more-settings-automation.md)
+
+    private static let overrideColumns = [
+        "override_target_mg_dl",
+        "dosing_override_enabled",
+        "override_basal_rate",
+        "override_insulin_sensitivity"
+    ]
+
+    /// Takes a v3 database back to its v2 shape from the test's own
+    /// connection.
+    private static func unwindV3(_ db: Database) throws {
+        for column in overrideColumns {
+            try db.execute(sql: "ALTER TABLE loop_result DROP COLUMN \(column)")
+        }
+        try db.execute(sql: "DELETE FROM grdb_migrations WHERE identifier = 'v3-dosing-override'")
+    }
+
+    /// Open a v2 database, migrate, read the old rows back: no override on any
+    /// of them and nothing dropped. An override tick written before v3 keeps
+    /// the override's target in the target column, where it now reads as the
+    /// settings target. That is accepted. An override that was open is
+    /// closed on the way through v4, which is tested below.
+    @Test func aV2DatabaseMigratesAndKeepsItsRows() async throws {
+        let (first, url) = try makeFileStore()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+        // What a v2 build stored for an exercise tick: the override's target
+        // in the target column, and its name in the target source. Unwinding
+        // the later migrations below drops the columns that came after.
+        try await first.record(
+            LoopRecordFixtures.dosed(at: at - 5.minutesToSeconds(), decision: .microBolus(units: 0.3), targetGlucoseInMgDl: 140, overridePolicy: "exercise", overrideTargetGlucoseInMgDl: 140),
+            safetyState: nil,
+            at: at
+        )
+        try await first.record(LoopRecordFixtures.skipped(at: at - 1.minutesToSeconds()), safetyState: nil, at: at)
+        _ = try await start(first, at: at - 10.minutesToSeconds(), kind: .exercise, duration: 4.hoursToSeconds())
+
+        let raw = try DatabaseQueue(path: url.path)
+        try await raw.write { db in
+            try Self.unwindV4(db)
+            try Self.unwindV3(db)
+        }
+
+        let second = try GRDBLoopRecordStore(url: url, createdAt: at)
+        let records = try await second.records(since: .distantPast)
+        #expect(records.count == 2, "nothing dropped")
+
+        let snapshot = try #require(records[0].outcome.snapshot)
+        #expect(snapshot.overridePolicy == nil)
+        #expect(snapshot.overrideTargetGlucoseInMgDl == nil)
+        #expect(snapshot.overrideBasalRate == nil)
+        #expect(snapshot.overrideInsulinSensitivity == nil)
+        #expect(snapshot.targetGlucoseInMgDl == 140, "the old row keeps the value it had")
+        #expect(snapshot.decision == .microBolus(units: 0.3), "the rest of the row survived")
+        #expect(records[1].outcome.skipReason == .openLoop)
+        #expect(try await second.openTargetOverride() == nil, "closed by v4")
+
+        let points = try await second.filteredGlucose(since: .distantPast)
+        #expect(points.map { $0.overrideTargetMgDl } == [nil])
+        #expect(points.map { $0.overridePolicy } == ["exercise"], "still named, from the target source the old row kept")
+
+        let columns = try await raw.read { db in try db.columns(in: "loop_result").map { $0.name } }
+        for column in Self.overrideColumns {
+            #expect(columns.contains(column))
+        }
+    }
+
+    @Test func theOverrideColumnsRoundTrip() async throws {
+        let store = try makeStore()
+        try await store.record(
+            LoopRecordFixtures.dosed(
+                at: at,
+                targetGlucoseInMgDl: 92.5,
+                overridePolicy: "exercise",
+                overrideTargetGlucoseInMgDl: 142.5,
+                overrideBasalRate: 0.51,
+                overrideInsulinSensitivity: 77.5
+            ),
+            safetyState: nil,
+            at: at
+        )
+
+        let snapshot = try #require(try await store.records(since: .distantPast).first?.outcome.snapshot)
+        #expect(snapshot.targetGlucoseInMgDl == 92.5, "the settings target, beside the override's")
+        #expect(snapshot.overridePolicy == "exercise")
+        #expect(snapshot.overrideTargetGlucoseInMgDl == 142.5)
+        #expect(snapshot.overrideBasalRate == 0.51)
+        #expect(snapshot.overrideInsulinSensitivity == 77.5)
+        #expect(snapshot.basalRate == 0.85, "the settings values, beside the scaled ones")
+        #expect(snapshot.insulinSensitivity == 46.5)
+    }
+
+    /// An override that scales dosing and leaves the target alone, which is
+    /// digestion and post exercise: the scaled pair is set and the override
+    /// target stays NULL. And one that moves the target and leaves dosing
+    /// alone, which is meal soon and exercise soon, is the other way round.
+    /// Both name their policy.
+    @Test func eachOverrideFillsOnlyItsOwnColumns() async throws {
+        let store = try makeStore()
+        try await store.record(
+            LoopRecordFixtures.dosed(at: at - 5.minutesToSeconds(), overridePolicy: "digestion", overrideBasalRate: 1.105, overrideInsulinSensitivity: 35.75),
+            safetyState: nil,
+            at: at
+        )
+        try await store.record(
+            LoopRecordFixtures.dosed(at: at, overridePolicy: "mealSoon", overrideTargetGlucoseInMgDl: 77.5),
+            safetyState: nil,
+            at: at
+        )
+
+        let records = try await store.records(since: .distantPast)
+        let digestion = try #require(records[0].outcome.snapshot)
+        #expect(digestion.overridePolicy == "digestion")
+        #expect(digestion.overrideTargetGlucoseInMgDl == nil)
+        #expect(digestion.overrideBasalRate == 1.105)
+        #expect(digestion.overrideInsulinSensitivity == 35.75)
+
+        let mealSoon = try #require(records[1].outcome.snapshot)
+        #expect(mealSoon.overridePolicy == "mealSoon")
+        #expect(mealSoon.overrideTargetGlucoseInMgDl == 77.5)
+        #expect(mealSoon.overrideBasalRate == nil)
+        #expect(mealSoon.overrideInsulinSensitivity == nil)
+    }
+
+    /// `target_source` and `dosing_override_enabled` are not fields any
+    /// writer sets. Both are worked out from the override values when the
+    /// row is written, so the three cannot disagree. `target_source` is the
+    /// policy identifier while an override moves the target and `settings`
+    /// otherwise, and `dosing_override_enabled` is on exactly when the scaled
+    /// basal rate is there.
+    @Test func theTargetSourceAndTheDosingFlagAreDerivedWhenTheRowIsWritten() async throws {
+        let (store, url) = try makeFileStore()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+        let written: [LoopRecord] = [
+            LoopRecordFixtures.dosed(at: at),
+            LoopRecordFixtures.dosed(at: at + 1, overridePolicy: "mealSoon", overrideTargetGlucoseInMgDl: 77.5),
+            LoopRecordFixtures.dosed(at: at + 2, overridePolicy: "digestion", overrideBasalRate: 1.105, overrideInsulinSensitivity: 35.75),
+            LoopRecordFixtures.dosed(at: at + 3, overridePolicy: "exercise", overrideTargetGlucoseInMgDl: 142.5, overrideBasalRate: 0.51, overrideInsulinSensitivity: 77.5),
+            LoopRecordFixtures.dosed(at: at + 4, overridePolicy: "some-future-source", overrideTargetGlucoseInMgDl: 110),
+            // What a row written before v2 reads back as.
+            LoopRecordFixtures.dosed(at: at + 5, targetGlucoseInMgDl: nil)
+        ]
+        for record in written {
+            try await store.record(record, safetyState: nil, at: at)
+        }
+
+        let raw = try DatabaseQueue(path: url.path)
+        let rows = try await raw.read { db in
+            try Row.fetchAll(db, sql: "SELECT target_source, dosing_override_enabled, override_policy FROM loop_result ORDER BY at").map { row in
+                (
+                    targetSource: row["target_source"] as String?,
+                    dosingOverrideEnabled: row["dosing_override_enabled"] as Bool?,
+                    overridePolicy: row["override_policy"] as String?
+                )
+            }
+        }
+        #expect(rows.map { $0.targetSource } == ["settings", "mealSoon", "settings", "exercise", "some-future-source", nil])
+        #expect(rows.map { $0.dosingOverrideEnabled } == [false, false, true, true, false, false])
+        #expect(rows.map { $0.overridePolicy } == [nil, "mealSoon", "digestion", "exercise", "some-future-source", nil])
+    }
+
+    /// On a tick with no override the three values and the policy are NULL in
+    /// the table, not zero or empty, and the flag is stored as off. A skipped
+    /// tick never reached the pipeline and has NULL in all five.
+    @Test func theOverrideColumnsAreNullOnATickWithNoOverride() async throws {
+        let (store, url) = try makeFileStore()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+        try await store.record(LoopRecordFixtures.dosed(at: at - 1.minutesToSeconds()), safetyState: nil, at: at)
+        try await store.record(LoopRecordFixtures.skipped(at: at), safetyState: nil, at: at)
+
+        let snapshot = try #require(try await store.records(since: .distantPast).first?.outcome.snapshot)
+        #expect(snapshot.overridePolicy == nil)
+        #expect(snapshot.overrideTargetGlucoseInMgDl == nil)
+        #expect(snapshot.overrideBasalRate == nil)
+        #expect(snapshot.overrideInsulinSensitivity == nil)
+
+        let raw = try DatabaseQueue(path: url.path)
+        let rows = try await raw.read { db in
+            try Row.fetchAll(db, sql: "SELECT \(Self.overrideColumns.joined(separator: ", ")), override_policy FROM loop_result ORDER BY at")
+        }
+        #expect(rows.count == 2)
+        let dosed = rows[0]
+        #expect(dosed["override_target_mg_dl"] as Double? == nil)
+        #expect(dosed["dosing_override_enabled"] as Bool? == false)
+        #expect(dosed["override_basal_rate"] as Double? == nil)
+        #expect(dosed["override_insulin_sensitivity"] as Double? == nil)
+        #expect(dosed["override_policy"] as String? == nil)
+        let skipped = rows[1]
+        for column in Self.overrideColumns {
+            #expect(skipped[column] as Double? == nil, "\(column) on a skipped tick")
+        }
+        #expect(skipped["override_policy"] as String? == nil)
     }
 
     @Test func filteredGlucoseCarriesTheTarget() async throws {
@@ -460,23 +672,25 @@ struct LoopRecordStoreTests {
         let second = at - 5.minutesToSeconds()
 
         try await store.record(
-            LoopRecordFixtures.dosed(at: first, pid: LoopRecordFixtures.pid(at: first), targetGlucoseInMgDl: 77.5, targetSource: .mealSoon),
+            LoopRecordFixtures.dosed(at: first, pid: LoopRecordFixtures.pid(at: first), targetGlucoseInMgDl: 92.5, overridePolicy: "mealSoon", overrideTargetGlucoseInMgDl: 77.5),
             safetyState: nil,
             at: at
         )
         // What a row written before v2 reads back as: NULL in both columns.
         try await store.record(
-            LoopRecordFixtures.dosed(at: second, pid: LoopRecordFixtures.pid(at: second), targetGlucoseInMgDl: nil, targetSource: nil),
+            LoopRecordFixtures.dosed(at: second, pid: LoopRecordFixtures.pid(at: second), targetGlucoseInMgDl: nil),
             safetyState: nil,
             at: at
         )
 
         let points = try await store.filteredGlucose(since: .distantPast)
         #expect(points.count == 2)
-        #expect(points[0].targetMgDl == 77.5)
-        #expect(points[0].targetSource == .mealSoon)
+        #expect(points[0].targetMgDl == 92.5, "the settings target, for the base line")
+        #expect(points[0].overridePolicy == "mealSoon")
+        #expect(points[0].overrideTargetMgDl == 77.5, "the override's target, for the coloured segment")
         #expect(points[1].targetMgDl == nil)
-        #expect(points[1].targetSource == nil)
+        #expect(points[1].overridePolicy == nil)
+        #expect(points[1].overrideTargetMgDl == nil)
         #expect(points.allSatisfy { abs($0.glucose - 141.5) <= accuracy }, "the filtered-glucose columns are unchanged")
     }
 
@@ -492,36 +706,244 @@ struct LoopRecordStoreTests {
         let points = try await store.filteredGlucose(since: .distantPast)
         #expect(points.map { $0.dosed } == [true, false])
         #expect(points.map { $0.targetMgDl } == [92.5, 92.5])
+        #expect(points.map { $0.overrideTargetMgDl } == [nil, nil], "no target override on either")
+        #expect(points.map { $0.overridePolicy } == [nil, nil])
+    }
+
+    /// The chart read carries the policy identifier as the text the store
+    /// holds. A tick whose override only scales dosing has its identifier and
+    /// no override target, and an identifier this build does not know comes
+    /// through like any other.
+    @Test func filteredGlucoseCarriesThePolicyIdentifierAsText() async throws {
+        let store = try makeStore()
+        let ticks: [(policy: String?, overrideTarget: Double?, overrideBasalRate: Double?)] = [
+            (nil, nil, nil),
+            ("digestion", nil, 1.105),
+            ("exercise", 142.5, 0.51),
+            ("some-future-source", 110, nil)
+        ]
+        for (index, tick) in ticks.enumerated() {
+            let instant = at + Double(index) * 5.minutesToSeconds()
+            try await store.record(
+                LoopRecordFixtures.dosed(
+                    at: instant,
+                    pid: LoopRecordFixtures.pid(at: instant),
+                    overridePolicy: tick.policy,
+                    overrideTargetGlucoseInMgDl: tick.overrideTarget,
+                    overrideBasalRate: tick.overrideBasalRate,
+                    overrideInsulinSensitivity: tick.overrideBasalRate.map { _ in 77.5 }
+                ),
+                safetyState: nil,
+                at: at
+            )
+        }
+
+        let points = try await store.filteredGlucose(since: .distantPast)
+        #expect(points.map { $0.overridePolicy } == [nil, "digestion", "exercise", "some-future-source"])
+        #expect(points.map { $0.overrideTargetMgDl } == [nil, nil, 142.5, 110])
+        #expect(points.allSatisfy { $0.targetMgDl == 92.5 })
     }
 
     // MARK: - Target overrides (dev/backlog/meal-soon.md §5)
 
+    /// `kind` as the screen starts it: under its policy identifier, with the
+    /// effect it has at `settingsTarget`.
     private func start(_ store: GRDBLoopRecordStore, at: Date, settingsTarget: Double = 90, kind: TargetOverrideKind = .mealSoon, duration: TimeInterval = 60.minutesToSeconds()) async throws -> TargetOverride {
         return try await store.startTargetOverride(
-            kind: kind,
+            policyIdentifier: kind.policyIdentifier,
+            effect: kind.effect(settingsTargetMgDl: settingsTarget),
             at: at,
             expiresAt: at + duration,
             settingsTargetMgDl: settingsTarget
         )
     }
 
-    /// The `kind` column is what tells the two overrides apart; nothing else in
-    /// the row differs. Starting one kind closes the other, the same as
-    /// starting the same kind again (dev/backlog/exercise.md §3).
-    @Test func anExerciseRowRoundTripsItsKindAndSupersedesMealSoon() async throws {
+    /// Starting one kind closes the other, the same as starting the same
+    /// kind again (dev/backlog/exercise.md §3).
+    @Test func anExerciseSoonRowRoundTripsItsKindAndSupersedesMealSoon() async throws {
         let store = try makeStore()
         let mealSoon = try await start(store, at: at)
-        let exercise = try await start(store, at: at + 10.minutesToSeconds(), kind: .exercise, duration: 2.hoursToSeconds())
-        #expect(exercise.kind == .exercise)
-        #expect(exercise.expiresAt == at + 10.minutesToSeconds() + 2.hoursToSeconds())
-        #expect(exercise.duration == 2.hoursToSeconds())
-        #expect(try await store.openTargetOverride() == exercise)
+        let exerciseSoon = try await start(store, at: at + 10.minutesToSeconds(), kind: .exerciseSoon, duration: 2.hoursToSeconds())
+        #expect(exerciseSoon.kind == .exerciseSoon)
+        #expect(exerciseSoon.expiresAt == at + 10.minutesToSeconds() + 2.hoursToSeconds())
+        #expect(exerciseSoon.duration == 2.hoursToSeconds())
+        #expect(try await store.openTargetOverride() == exerciseSoon)
 
         let rows = try await store.targetOverrides(since: .distantPast)
-        #expect(rows.map { $0.kind } == [.mealSoon, .exercise])
+        #expect(rows.map { $0.kind } == [.mealSoon, .exerciseSoon])
         #expect(rows[0].id == mealSoon.id)
         #expect(rows[0].endReason == .cancelled)
         #expect(rows[0].endedAt == at + 10.minutesToSeconds())
+    }
+
+    /// Every kind round-trips through `target_override`, with its effect.
+    /// Each start closes the one before it, so there is never more than one
+    /// open row whatever the kinds.
+    @Test func everyKindRoundTripsThroughTargetOverride() async throws {
+        let store = try makeStore()
+        var started: [TargetOverride] = []
+        for (index, kind) in TargetOverrideKind.allCases.enumerated() {
+            let override = try await start(store, at: at + Double(index).minutesToSeconds(), kind: kind, duration: kind.defaultDuration)
+            #expect(override.kind == kind)
+            #expect(override.policyIdentifier == kind.policyIdentifier)
+            #expect(override.effect == kind.effect(settingsTargetMgDl: 90))
+            #expect(override.duration == kind.defaultDuration)
+            #expect(try await store.openTargetOverride() == override)
+            started.append(override)
+        }
+
+        let rows = try await store.targetOverrides(since: .distantPast)
+        #expect(rows.map { $0.policyIdentifier } == TargetOverrideKind.allCases.map { $0.policyIdentifier })
+        #expect(rows.map { $0.effect } == TargetOverrideKind.allCases.map { $0.effect(settingsTargetMgDl: 90) })
+        #expect(rows.map { $0.id } == started.map { $0.id })
+        #expect(rows.dropLast().allSatisfy { $0.endReason == .cancelled })
+        #expect(rows.filter { $0.endedAt == nil }.map { $0.kind } == [.postExercise], "never more than one open row")
+    }
+
+    /// The raw values are what is on disk, so they are part of the schema.
+    @Test func theKindRawValuesAreWhatIsStored() {
+        #expect(TargetOverrideKind.allCases.map { $0.rawValue } == ["mealSoon", "digestion", "exerciseSoon", "exercise", "postExercise"])
+    }
+
+    // MARK: - Schema v4: the effect on the row (dev/backlog/override-mechanism.md)
+
+    /// Takes a v4 database back to its v3 shape from the test's own
+    /// connection.
+    private static func unwindV4(_ db: Database) throws {
+        try db.execute(sql: "ALTER TABLE target_override DROP COLUMN target_offset_mg_dl")
+        try db.execute(sql: "ALTER TABLE target_override DROP COLUMN dosing_multiplier")
+        try db.execute(sql: "ALTER TABLE loop_result DROP COLUMN override_policy")
+        try db.execute(sql: "DELETE FROM grdb_migrations WHERE identifier = 'v4-override-effect'")
+    }
+
+    /// The row stores its effect: a target offset, a dosing multiplier, both,
+    /// or neither side, with NULL for a side that is left alone. Nothing here
+    /// checks the numbers. That is the override manager's job, and a row from
+    /// anywhere else is clamped when it is read for a tick.
+    @Test func theEffectColumnsRoundTrip() async throws {
+        let (store, url) = try makeFileStore()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+        let effects = [
+            OverrideEffect(targetOffsetMgDl: -15, dosingMultiplier: nil),
+            OverrideEffect(targetOffsetMgDl: nil, dosingMultiplier: 1.3),
+            OverrideEffect(targetOffsetMgDl: 50, dosingMultiplier: 0.6),
+            OverrideEffect(targetOffsetMgDl: 0, dosingMultiplier: nil),
+            OverrideEffect(targetOffsetMgDl: 500, dosingMultiplier: 3)
+        ]
+        for (index, effect) in effects.enumerated() {
+            let startedAt = at + Double(index).minutesToSeconds()
+            let override = try await store.startTargetOverride(policyIdentifier: "policy-\(index)", effect: effect, at: startedAt, expiresAt: startedAt + 30.minutesToSeconds(), settingsTargetMgDl: 90)
+            #expect(override.effect == effect)
+            #expect(try await store.openTargetOverride() == override)
+        }
+
+        let rows = try await store.targetOverrides(since: .distantPast)
+        #expect(rows.map { $0.effect } == effects)
+        #expect(rows.map { $0.policyIdentifier } == ["policy-0", "policy-1", "policy-2", "policy-3", "policy-4"])
+
+        let raw = try DatabaseQueue(path: url.path)
+        let stored = try await raw.read { db in
+            try Row.fetchAll(db, sql: "SELECT kind, target_offset_mg_dl, dosing_multiplier, end_bolus_sync_id FROM target_override ORDER BY id").map { row in
+                (
+                    kind: row["kind"] as String?,
+                    targetOffsetMgDl: row["target_offset_mg_dl"] as Double?,
+                    dosingMultiplier: row["dosing_multiplier"] as Double?,
+                    endBolusSyncId: row["end_bolus_sync_id"] as String?
+                )
+            }
+        }
+        #expect(stored.map { $0.kind } == ["policy-0", "policy-1", "policy-2", "policy-3", "policy-4"], "the kind column holds the policy identifier")
+        #expect(stored.map { $0.targetOffsetMgDl } == [-15, nil, 50, 0, 500])
+        #expect(stored.map { $0.dosingMultiplier } == [nil, 1.3, 0.6, nil, 3])
+        #expect(stored.allSatisfy { $0.endBolusSyncId == nil }, "still in the table, and no longer written")
+    }
+
+    /// A policy identifier this build does not know is not dropped on read.
+    /// An open row that was dropped would stay open and hidden: still in the
+    /// table, never evaluated and never closed.
+    @Test func aRowWithAnUnknownPolicyIdentifierIsReadLikeAnyOther() async throws {
+        let store = try makeStore()
+        let effect = OverrideEffect(targetOffsetMgDl: 20, dosingMultiplier: 0.9)
+        let override = try await store.startTargetOverride(policyIdentifier: "some-future-source", effect: effect, at: at, expiresAt: at + 45.minutesToSeconds(), settingsTargetMgDl: 90)
+
+        #expect(override.kind == nil)
+        #expect(try await store.openTargetOverride() == override)
+        #expect(try await store.targetOverrides(since: .distantPast) == [override])
+
+        try await store.endTargetOverride(id: override.id, at: at + 45.minutesToSeconds(), reason: .expired)
+        #expect(try await store.openTargetOverride() == nil)
+        let closed = try #require(try await store.targetOverrides(since: .distantPast).first)
+        #expect(closed.policyIdentifier == "some-future-source")
+        #expect(closed.effect == effect)
+        #expect(closed.endReason == .expired)
+    }
+
+    /// Open a v3 database with an override open and two closed. The open one
+    /// has no stored effect, so v4 closes it as cancelled at the instant the
+    /// store is opened, and the loop is on the settings until the next start.
+    /// The closed rows are left exactly as they were, with NULL in the two
+    /// effect columns, including one a v3 build closed on a manual bolus.
+    @Test func aV3DatabaseMigratesClosingAnOpenOverrideAndLeavingClosedOnesAlone() async throws {
+        let (first, url) = try makeFileStore()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+        let mealSoon = try await start(first, at: at - 3.hoursToSeconds())
+        try await first.endTargetOverride(id: mealSoon.id, at: at - 160.minutesToSeconds(), reason: .manualBolus)
+        let digestion = try await start(first, at: at - 2.hoursToSeconds(), kind: .digestion, duration: 2.hoursToSeconds())
+        // Starting exercise closes digestion as cancelled, and is left open.
+        let exercise = try await start(first, at: at - 30.minutesToSeconds(), kind: .exercise, duration: 1.hoursToSeconds())
+        try await first.record(LoopRecordFixtures.dosed(at: at - 5.minutesToSeconds(), overridePolicy: "exercise", overrideTargetGlucoseInMgDl: 142.5, overrideBasalRate: 0.51, overrideInsulinSensitivity: 77.5), safetyState: nil, at: at)
+
+        let raw = try DatabaseQueue(path: url.path)
+        try await raw.write { db in
+            // What the v3 build wrote beside the reason.
+            try db.execute(sql: "UPDATE target_override SET end_bolus_sync_id = 'bolus-1' WHERE id = ?", arguments: [mealSoon.id])
+            try Self.unwindV4(db)
+        }
+
+        let second = try GRDBLoopRecordStore(url: url, createdAt: at)
+        #expect(try await second.openTargetOverride() == nil, "nothing is open after the migration")
+
+        let rows = try await second.targetOverrides(since: .distantPast)
+        #expect(rows.map { $0.id } == [mealSoon.id, digestion.id, exercise.id], "nothing dropped")
+        #expect(rows.map { $0.policyIdentifier } == ["mealSoon", "digestion", "exercise"])
+        #expect(rows.map { $0.endReason } == [.manualBolus, .cancelled, .cancelled])
+        #expect(rows.map { $0.endedAt } == [at - 160.minutesToSeconds(), at - 30.minutesToSeconds(), at], "the open one is closed at the instant the store was opened")
+        #expect(rows.allSatisfy { $0.effect == OverrideEffect(targetOffsetMgDl: nil, dosingMultiplier: nil) }, "no effect is worked out for a row that is already over")
+
+        // The tick written before v4 has no policy of its own, and the chart
+        // read still names it from the target source.
+        let snapshot = try #require(try await second.records(since: .distantPast).first?.outcome.snapshot)
+        #expect(snapshot.overridePolicy == nil)
+        #expect(snapshot.overrideTargetGlucoseInMgDl == 142.5)
+        #expect(try await second.filteredGlucose(since: .distantPast).map { $0.overridePolicy } == ["exercise"])
+
+        let stored = try await raw.read { db in
+            try String.fetchOne(db, sql: "SELECT end_bolus_sync_id FROM target_override WHERE id = ?", arguments: [mealSoon.id])
+        }
+        #expect(stored == "bolus-1", "the column and what was in it are left alone")
+        let columns = try await raw.read { db in try db.columns(in: "target_override").map { $0.name } }
+        #expect(columns.contains("target_offset_mg_dl"))
+        #expect(columns.contains("dosing_multiplier"))
+        let loopResultColumns = try await raw.read { db in try db.columns(in: "loop_result").map { $0.name } }
+        #expect(loopResultColumns.contains("override_policy"))
+
+        // And the next start works.
+        let next = try await start(second, at: at + 1.minutesToSeconds(), kind: .postExercise, duration: 30.minutesToSeconds())
+        #expect(next.effect == OverrideEffect(targetOffsetMgDl: nil, dosingMultiplier: 0.8))
+        #expect(try await second.openTargetOverride() == next)
+    }
+
+    /// The migration runs once. Opening a v4 store again does not close what
+    /// is open.
+    @Test func reopeningAV4DatabaseLeavesAnOpenOverrideOpen() async throws {
+        let (first, url) = try makeFileStore()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let open = try await start(first, at: at, kind: .exerciseSoon, duration: 2.hoursToSeconds())
+
+        let second = try GRDBLoopRecordStore(url: url, createdAt: at + 10.minutesToSeconds())
+        #expect(try await second.openTargetOverride() == open)
     }
 
     @Test func startingAnOverrideClosesTheOpenOneAsCancelled() async throws {
@@ -541,7 +963,6 @@ struct LoopRecordStoreTests {
         #expect(rows[0].id == first.id)
         #expect(rows[0].endedAt == at + 10.minutesToSeconds(), "closed at the same instant the second opened")
         #expect(rows[0].endReason == .cancelled)
-        #expect(rows[0].endBolusSyncIdentifier == nil)
         #expect(rows[1] == second)
         #expect(rows.filter { $0.endedAt == nil }.count == 1, "never more than one open row")
     }
@@ -551,7 +972,7 @@ struct LoopRecordStoreTests {
         #expect(try await store.openTargetOverride() == nil)
 
         let first = try await start(store, at: at)
-        try await store.endTargetOverride(id: first.id, at: at + 5.minutesToSeconds(), reason: .expired, bolusSyncIdentifier: nil)
+        try await store.endTargetOverride(id: first.id, at: at + 5.minutesToSeconds(), reason: .expired)
         #expect(try await store.openTargetOverride() == nil, "a closed row is a log entry, not state")
 
         let second = try await start(store, at: at + 2.hoursToSeconds())
@@ -562,14 +983,13 @@ struct LoopRecordStoreTests {
         let store = try makeStore()
         let override = try await start(store, at: at)
 
-        try await store.endTargetOverride(id: override.id, at: at + 20.minutesToSeconds(), reason: .manualBolus, bolusSyncIdentifier: "bolus-1")
+        try await store.endTargetOverride(id: override.id, at: at + 20.minutesToSeconds(), reason: .expired)
         // The switch, racing the per-tick observer, loses.
-        try await store.endTargetOverride(id: override.id, at: at + 25.minutesToSeconds(), reason: .cancelled, bolusSyncIdentifier: nil)
+        try await store.endTargetOverride(id: override.id, at: at + 25.minutesToSeconds(), reason: .cancelled)
 
         let row = try #require(try await store.targetOverrides(since: .distantPast).first)
         #expect(row.endedAt == at + 20.minutesToSeconds())
-        #expect(row.endReason == .manualBolus)
-        #expect(row.endBolusSyncIdentifier == "bolus-1")
+        #expect(row.endReason == .expired)
     }
 
     @Test func targetOverridesAreWindowedByStartedAtOldestFirst() async throws {

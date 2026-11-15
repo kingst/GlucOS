@@ -13,6 +13,16 @@ import LoopKit
 struct PhysiologicalModelsTests {
     let now = Date.f("2024-01-15 10:30:00 +0000")
     let settings: MockSettingsStorage
+    /// The settings values, which are what the pipeline hands the PID when no
+    /// dosing override is on. They match `MockSettingsStorage`.
+    let basalRate = 1.0
+    let insulinSensitivity = 45.0
+    let accuracy = 1e-9
+
+    /// The pair with no dosing override on: the settings values themselves.
+    var settingsDosing: DosingParameters {
+        return DosingParameters(settingsBasalRate: basalRate, settingsInsulinSensitivity: insulinSensitivity, dosingOverride: nil)
+    }
 
     init() {
         InMemoryStoredObject.reset()
@@ -28,6 +38,7 @@ struct PhysiologicalModelsTests {
 
         let result = await physModels.tempBasal(
             settings: settings.snapshot(),
+            dosing: settingsDosing,
             glucoseInMgDl: 120,
             targetGlucoseInMgDl: 90,
             insulinOnBoard: 0,
@@ -50,6 +61,7 @@ struct PhysiologicalModelsTests {
 
         _ = await physModels.tempBasal(
             settings: settings.snapshot(),
+            dosing: settingsDosing,
             glucoseInMgDl: 120,
             targetGlucoseInMgDl: 90,
             insulinOnBoard: 0,
@@ -76,6 +88,7 @@ struct PhysiologicalModelsTests {
         )
         _ = await firstBoot.tempBasal(
             settings: settings.snapshot(),
+            dosing: settingsDosing,
             glucoseInMgDl: 120,
             targetGlucoseInMgDl: 90,
             insulinOnBoard: 0,
@@ -92,6 +105,7 @@ struct PhysiologicalModelsTests {
         let nextReadingAt = now + 5.minutesToSeconds()
         let result = await secondBoot.tempBasal(
             settings: settings.snapshot(),
+            dosing: settingsDosing,
             glucoseInMgDl: 130,
             targetGlucoseInMgDl: 90,
             insulinOnBoard: 0,
@@ -128,6 +142,7 @@ struct PhysiologicalModelsTests {
 
         let result = await physModels.tempBasal(
             settings: settings.snapshot(),
+            dosing: settingsDosing,
             glucoseInMgDl: 130,
             targetGlucoseInMgDl: 90,
             insulinOnBoard: 0,
@@ -165,6 +180,7 @@ struct PhysiologicalModelsTests {
 
         let result = await physModels.tempBasal(
             settings: settings.snapshot(),
+            dosing: settingsDosing,
             glucoseInMgDl: 130,
             targetGlucoseInMgDl: 90,
             insulinOnBoard: 0,
@@ -191,6 +207,7 @@ struct PhysiologicalModelsTests {
     private func tick(_ physModels: LocalPhysiologicalModels, glucose: Double, at: Date) async -> PIDTempBasalResult {
         await physModels.tempBasal(
             settings: settings.snapshot(),
+            dosing: settingsDosing,
             glucoseInMgDl: glucose,
             targetGlucoseInMgDl: 90,
             insulinOnBoard: 0,
@@ -296,6 +313,197 @@ struct PhysiologicalModelsTests {
         #expect(result.derivative == 0.0)
         let persisted: PIDState? = try InMemoryStoredObject.read(fileName: "pid_state.json")
         #expect(persisted?.lastFilteredGlucose == 130)
+    }
+
+    // MARK: - Dosing overrides (dev/backlog/more-settings-automation.md)
+    //
+    // The PID takes the basal rate and insulin sensitivity to dose with. Under
+    // a dosing override the pipeline hands it the basal rate times the dosing
+    // multiplier and the insulin sensitivity divided by it. `deltaGlucoseError`,
+    // which is the integrator input and the biological invariant, reads the
+    // settings values itself and is the same with an override on or off.
+
+    /// One cold-start tick with `dosingMultiplier` on, or with the settings
+    /// pair for nil. No previous glucose, so the derivative and the
+    /// integrator are both zero and the PID output is the proportional term
+    /// alone.
+    private func coldTick(dosingMultiplier: Double?, glucose: Double, insulinOnBoard: Double = 0) async -> PIDTempBasalResult {
+        InMemoryStoredObject.reset()
+        return await makePhysModels().tempBasal(
+            settings: settings.snapshot(),
+            dosing: dosing(dosingMultiplier),
+            glucoseInMgDl: glucose,
+            targetGlucoseInMgDl: 90,
+            insulinOnBoard: insulinOnBoard,
+            dataFrame: nil,
+            at: now
+        )
+    }
+
+    /// The pair the pipeline hands the PID with `dosingMultiplier` on, or
+    /// the settings pair for nil. Built the way the pipeline builds it.
+    private func dosing(_ dosingMultiplier: Double?) -> DosingParameters {
+        return DosingParameters(
+            settingsBasalRate: basalRate,
+            settingsInsulinSensitivity: insulinSensitivity,
+            dosingOverride: dosingMultiplier.flatMap { DosingOverride(dosingMultiplier: $0) }
+        )
+    }
+
+    /// `DosingParameters` is the one place the scaled pair is built: the
+    /// basal rate times the multiplier and the insulin sensitivity over it.
+    /// With no dosing override it is the settings pair, untouched.
+    @Test(arguments: [1.3, 0.6, 0.8])
+    func dosingParametersScaleTheSettingsPair(dosingMultiplier: Double) {
+        let scaled = dosing(dosingMultiplier)
+        #expect(scaled.isOverridden)
+        #expect(abs(scaled.basalRate - basalRate * dosingMultiplier) <= accuracy)
+        #expect(abs(scaled.insulinSensitivity - insulinSensitivity / dosingMultiplier) <= accuracy)
+
+        #expect(settingsDosing.isOverridden == false)
+        #expect(settingsDosing.basalRate == basalRate)
+        #expect(settingsDosing.insulinSensitivity == insulinSensitivity)
+        #expect(dosing(nil) == settingsDosing)
+    }
+
+    /// The steady-state insulin on board at a basal rate, for the insulin
+    /// type `MockInsulinStorage` reports.
+    private func baselineInsulinOnBoard(basalRate: Double) -> Double {
+        return PhysiologicalUtilities.calculateBasalBaselineInsulinOnBoard(basalRate: basalRate, insulinType: .humalog)
+    }
+
+    /// At target with nothing on board the correction is zero, so the temp
+    /// basal is the basal rate the PID was handed: the settings rate times the
+    /// dosing multiplier.
+    @Test(arguments: [1.3, 0.6, 0.8])
+    func scaledInputsGiveTheScaledBasalRateAtZeroCorrection(dosingMultiplier: Double) async throws {
+        let scaledBasalRate = basalRate * dosingMultiplier
+        let result = await coldTick(dosingMultiplier: dosingMultiplier, glucose: 90)
+
+        #expect(result.error == 0)
+        #expect(abs(result.tempBasal - scaledBasalRate) <= accuracy)
+        // The PID's own baseline follows the basal rate it was handed.
+        let baseline = try #require(result.basalRateInsulinOnBoard)
+        #expect(abs(baseline - baselineInsulinOnBoard(basalRate: scaledBasalRate)) <= accuracy)
+    }
+
+    /// Above target with nothing on board, the correction is the PID output
+    /// over the scaled sensitivity, which is the dosing multiplier times what
+    /// the settings would give, and the scaled basal rate is added back in. So
+    /// the whole temp basal scales by the multiplier.
+    @Test(arguments: [1.3, 0.6, 0.8])
+    func aDosingMultiplierScalesTheCorrectionAndTheBasalRateTogether(dosingMultiplier: Double) async throws {
+        let unscaled = await coldTick(dosingMultiplier: nil, glucose: 150)
+        let scaled = await coldTick(dosingMultiplier: dosingMultiplier, glucose: 150)
+
+        // 60 mg/dl over target at 45 mg/dl per unit is 4/3 U, over a 30 minute
+        // correction, plus the 1 U/h basal rate.
+        #expect(abs(unscaled.tempBasal - (60.0 / 45.0 * 2 + 1)) <= accuracy)
+        #expect(abs(scaled.tempBasal - dosingMultiplier * unscaled.tempBasal) <= accuracy)
+        #expect(scaled.error == unscaled.error, "the multiplier does not touch the PID terms")
+    }
+
+    /// Starting Exercise or Post exercise. The baseline drops at once while
+    /// the insulin on board still reflects the old rate, so the PID sees net
+    /// insulin and doses below the scaled basal rate until it decays. That is
+    /// the safe side.
+    @Test(arguments: [0.6, 0.8])
+    func aLowerBasalRateCountsTheOldBaselineAsNetInsulin(dosingMultiplier: Double) async throws {
+        let scaledBasalRate = basalRate * dosingMultiplier
+        let onBoard = baselineInsulinOnBoard(basalRate: basalRate)
+        let result = await coldTick(dosingMultiplier: dosingMultiplier, glucose: 90, insulinOnBoard: onBoard)
+
+        let netInsulin = onBoard - baselineInsulinOnBoard(basalRate: scaledBasalRate)
+        #expect(netInsulin > 0)
+        let correctionDuration = settings.snapshot().correctionDurationInSeconds
+        #expect(abs(result.tempBasal - (scaledBasalRate - netInsulin * 1.hoursToSeconds() / correctionDuration)) <= accuracy)
+        #expect(result.tempBasal < scaledBasalRate)
+    }
+
+    /// Starting Digestion, and Exercise ending. The baseline rises above the
+    /// insulin on board, net insulin clamps at zero, and there is no catch-up
+    /// dose for the gap: the temp basal is the scaled basal rate and no more.
+    @Test func aHigherBasalRateDoesNotDoseForTheBaselineGap() async throws {
+        let dosingMultiplier = 1.3
+        let scaledBasalRate = basalRate * dosingMultiplier
+        let onBoard = baselineInsulinOnBoard(basalRate: basalRate)
+        #expect(onBoard < baselineInsulinOnBoard(basalRate: scaledBasalRate))
+
+        let result = await coldTick(dosingMultiplier: dosingMultiplier, glucose: 90, insulinOnBoard: onBoard)
+        #expect(abs(result.tempBasal - scaledBasalRate) <= accuracy)
+    }
+
+    /// Five rows five minutes apart with flat glucose, which is the window
+    /// `deltaGlucoseError` reads. `insulinDelivered` is per row.
+    private func flatFrame(insulinDelivered: Double) -> [AddedGlucoseDataRow] {
+        return (0..<5).map { index in
+            AddedGlucoseDataRow(
+                eventTime: now - Double(4 - index) * 5.minutesToSeconds(),
+                glucose: 100,
+                insulinDelivered: insulinDelivered,
+                insulinOnBoard: 1.5
+            )
+        }
+    }
+
+    /// `deltaGlucoseError` reads the settings basal rate and insulin
+    /// sensitivity itself. With flat glucose and no active insulin the error
+    /// is minus basal rate times insulin sensitivity, and active insulin adds
+    /// its units times the insulin sensitivity.
+    @Test func deltaGlucoseErrorIsOnTheSettingsValues() async throws {
+        let physModels = makePhysModels()
+
+        let noActiveInsulin = try #require(await physModels.deltaGlucoseError(settings: settings.snapshot(), dataFrame: flatFrame(insulinDelivered: 0), at: now))
+        #expect(abs(noActiveInsulin + basalRate * insulinSensitivity) <= accuracy)
+
+        // 0.05 U in each of the four steps and no change in insulin on board,
+        // so 0.2 U were active over the window. At 45 mg/dl per unit over 20
+        // minutes that is 27 mg/dl per hour.
+        let activeInsulin = try #require(await physModels.deltaGlucoseError(settings: settings.snapshot(), dataFrame: flatFrame(insulinDelivered: 0.05), at: now))
+        #expect(abs(activeInsulin - (27 - basalRate * insulinSensitivity)) <= accuracy)
+
+        // It follows the settings: twice the basal rate is twice the basal term.
+        settings.update(pumpBasalRateUnitsPerHour: 2 * basalRate)
+        let doubledBasalRate = try #require(await physModels.deltaGlucoseError(settings: settings.snapshot(), dataFrame: flatFrame(insulinDelivered: 0), at: now))
+        #expect(abs(doubledBasalRate + 2 * basalRate * insulinSensitivity) <= accuracy)
+    }
+
+    /// The integrator input does not follow the pair the PID is handed to dose
+    /// with. Two ticks five minutes apart with a dosing multiplier on: each
+    /// reports the settings error, and the second accumulates that error and
+    /// not one with the weight of the active insulin divided by the
+    /// multiplier.
+    @Test(arguments: [1.3, 0.6, 0.8])
+    func theIntegratorInputStaysOnTheSettingsValuesUnderADosingMultiplier(dosingMultiplier: Double) async throws {
+        InMemoryStoredObject.reset()
+        let physModels = makePhysModels()
+        let frame = flatFrame(insulinDelivered: 0.05)
+        let settingsError = try #require(await physModels.deltaGlucoseError(settings: settings.snapshot(), dataFrame: frame, at: now))
+        #expect(abs(settingsError - (27 - basalRate * insulinSensitivity)) <= accuracy)
+        // What scaling the pair would have given, which is a different number.
+        let scaledError = 27 / dosingMultiplier - basalRate * insulinSensitivity
+        #expect(abs(scaledError - settingsError) > 1)
+
+        var results: [PIDTempBasalResult] = []
+        for at in [now, now + 5.minutesToSeconds()] {
+            results.append(await physModels.tempBasal(
+                settings: settings.snapshot(),
+                dosing: dosing(dosingMultiplier),
+                glucoseInMgDl: 100,
+                targetGlucoseInMgDl: 90,
+                insulinOnBoard: 0,
+                dataFrame: frame,
+                at: at
+            ))
+        }
+
+        let first = try #require(results.first)
+        let second = try #require(results.last)
+        #expect(first.deltaGlucoseError == settingsError)
+        // Nothing accumulates on a first tick: there is no previous reading.
+        #expect(first.accumulatedError == 0)
+        #expect(second.deltaGlucoseError == settingsError)
+        #expect(abs(second.accumulatedError - settingsError) <= accuracy)
     }
 }
 

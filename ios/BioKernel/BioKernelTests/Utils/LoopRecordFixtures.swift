@@ -58,12 +58,17 @@ enum LoopRecordFixtures {
         )
     }
 
+    /// The defaults are a tick with no override: no policy identifier and
+    /// the three override values nil.
     static func snapshot(
         decision: DosingDecision = .tempBasal(unitsPerHour: 1.25),
         candidates: DoseCandidates = candidates(),
         pid: LoopRecordPID? = nil,
         targetGlucoseInMgDl: Double? = 92.5,
-        targetSource: TargetGlucoseSource? = .settings,
+        overridePolicy: String? = nil,
+        overrideTargetGlucoseInMgDl: Double? = nil,
+        overrideBasalRate: Double? = nil,
+        overrideInsulinSensitivity: Double? = nil,
         at: Date
     ) -> LoopRecordSnapshot {
         return LoopRecordSnapshot(
@@ -74,7 +79,10 @@ enum LoopRecordFixtures {
             predictedAddedGlucoseInMgDlPerHour: 18.25,
             machineLearningInsulinLastThreeHours: 0.625,
             targetGlucoseInMgDl: targetGlucoseInMgDl,
-            targetSource: targetSource,
+            overridePolicy: overridePolicy,
+            overrideTargetGlucoseInMgDl: overrideTargetGlucoseInMgDl,
+            overrideBasalRate: overrideBasalRate,
+            overrideInsulinSensitivity: overrideInsulinSensitivity,
             decision: decision,
             candidates: candidates,
             pid: pid ?? Self.pid(at: at - 30)
@@ -87,7 +95,10 @@ enum LoopRecordFixtures {
         candidates: DoseCandidates = candidates(),
         pid: LoopRecordPID? = nil,
         targetGlucoseInMgDl: Double? = 92.5,
-        targetSource: TargetGlucoseSource? = .settings
+        overridePolicy: String? = nil,
+        overrideTargetGlucoseInMgDl: Double? = nil,
+        overrideBasalRate: Double? = nil,
+        overrideInsulinSensitivity: Double? = nil
     ) -> LoopRecord {
         return LoopRecord(
             at: at,
@@ -96,7 +107,10 @@ enum LoopRecordFixtures {
                 candidates: candidates,
                 pid: pid,
                 targetGlucoseInMgDl: targetGlucoseInMgDl,
-                targetSource: targetSource,
+                overridePolicy: overridePolicy,
+                overrideTargetGlucoseInMgDl: overrideTargetGlucoseInMgDl,
+                overrideBasalRate: overrideBasalRate,
+                overrideInsulinSensitivity: overrideInsulinSensitivity,
                 at: at
             ))
         )

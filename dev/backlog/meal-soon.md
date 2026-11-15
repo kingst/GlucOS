@@ -144,6 +144,17 @@ what the target was when the override began, not the value in use.
 
 ### 4.2 Ending on a manual bolus: derived from pump records
 
+Superseded 2026-11-15 by @dev/backlog/override-mechanism.md, "Ending
+is on the clock". The override manager ends an override when its time
+is up and for no other reason, so this section no longer describes
+the code: the pump event read, the bolus step of the status rule and
+`endBolusSyncIdentifier` are gone, and meal soon runs until its
+duration is up or it is turned off. `manualBolus` stays as an end
+reason so that rows closed by earlier builds still decode, and
+`end_bolus_sync_id` stays in the table, unread and unwritten. A policy
+that should end on a bolus will watch for it and call `cancel`. The
+rest of this section is kept as the record of what was built.
+
 The two bolus entry points are `BolusView`
 (@ios/BioKernel/BioKernel/Views/BolusView.swift:60) and the meal
 announcement flow

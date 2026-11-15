@@ -40,9 +40,46 @@ public struct PIDTempBasalResult: Codable {
     }
 }
 
+/// The basal rate and insulin sensitivity the PID sizes its dose with: the
+/// settings values, or those values scaled by a dosing override
+/// (dev/backlog/more-settings-automation.md).
+///
+/// Its own type so the pair that may be scaled cannot be mistaken for the
+/// settings pair, which is also two `Double`s with the same names. This one
+/// is built in one place, here, and only `PhysiologicalModels.tempBasal`
+/// takes it. The integrator input and the biological invariant are
+/// `deltaGlucoseError`, which takes the settings and cannot be handed this.
+public struct DosingParameters: Equatable, Sendable {
+    let basalRate: Double
+    let insulinSensitivity: Double
+    /// Whether a dosing override scaled the pair. False means they are the
+    /// settings values.
+    let isOverridden: Bool
+
+    init(settingsBasalRate: Double, settingsInsulinSensitivity: Double, dosingOverride: DosingOverride?) {
+        if let dosingOverride {
+            self.basalRate = settingsBasalRate * dosingOverride.basalRateMultiplier
+            self.insulinSensitivity = settingsInsulinSensitivity * dosingOverride.insulinSensitivityMultiplier
+            self.isOverridden = true
+        } else {
+            self.basalRate = settingsBasalRate
+            self.insulinSensitivity = settingsInsulinSensitivity
+            self.isOverridden = false
+        }
+    }
+}
+
 public protocol PhysiologicalModels {
-    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> PIDTempBasalResult
+    /// `dosing` is the pair to dose with. It sizes the dose and nothing else:
+    /// the PID's basal baseline, the conversion of its output into insulin,
+    /// and the basal rate added back in. The integrator input is
+    /// `deltaGlucoseError`, which is on the settings values whatever this
+    /// pair is.
+    func tempBasal(settings: CodableSettings, dosing: DosingParameters, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> PIDTempBasalResult
     func predictGlucoseIn15Minutes(from: Date) async -> Double?
+    /// How far glucose moved from what the settings basal rate and insulin
+    /// sensitivity explain, in mg/dl per hour. This is the integrator input
+    /// and the biological invariant, and a dosing override does not reach it.
     func deltaGlucoseError(settings: CodableSettings, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> Double?
 }
 
@@ -158,6 +195,20 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
     
     /// deltaGlucoseError should get raw CGM values as it does its own filtering, don't pass
     /// lowpass filter values here
+    ///
+    /// This reads the settings basal rate and insulin sensitivity itself, and
+    /// is never handed the pair a dosing override scales
+    /// (dev/backlog/more-settings-automation.md). A dosing override changes
+    /// how much we dose. It is not evidence that the person's response to
+    /// insulin has changed, so what glucose is checked against stays the
+    /// settings model, and the integrator input and the biological invariant
+    /// are the same with an override on as with it off.
+    ///
+    /// Scaling the pair would leave the basal term alone, because basal rate
+    /// times insulin sensitivity is the same either way, and divide the weight
+    /// of `insulinActive` by the dosing multiplier. Under Exercise that
+    /// credits each unit of active insulin with more of a glucose drop, which
+    /// trips the invariant later and winds the integrator toward more insulin.
     func deltaGlucoseError(settings: CodableSettings, dataFrame: [AddedGlucoseDataRow]?, at: Date) -> Double? {
         let numSteps = 4
         let digestionThreshold = 40.0
@@ -195,15 +246,23 @@ actor LocalPhysiologicalModels: PhysiologicalModels {
         return alpha * glucose + (1 - alpha) * lastFilteredGlucose
     }
     
-    func tempBasal(settings: CodableSettings, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> PIDTempBasalResult {
+    func tempBasal(settings: CodableSettings, dosing: DosingParameters, glucoseInMgDl: Double, targetGlucoseInMgDl: Double, insulinOnBoard: Double, dataFrame: [AddedGlucoseDataRow]?, at: Date) async -> PIDTempBasalResult {
+        let basalRate = dosing.basalRate
+        let insulinSensitivity = dosing.insulinSensitivity
         if let lastSavedAt, at.timeIntervalSince(lastSavedAt) >= Self.staleStateThreshold || at < lastSavedAt {
             resetPidState()
         }
-        let insulinSensitivity = settings.learnedInsulinSensitivity(at: at)
         let correctionDuration = settings.correctionDurationInSeconds
-        let basalRate = settings.learnedBasalRate(at: at)
         let insulinType = await insulinStorage.currentInsulinType()
+        // The baseline follows the dosing basal rate, so it moves the
+        // moment a dosing override starts or ends while the insulin actually
+        // on board still reflects the old rate. `netInsulin` below is what
+        // absorbs that: a lower baseline counts the difference as net insulin
+        // and dosing drops until it decays, and a higher one clamps at zero,
+        // so there is no catch-up dose for the gap.
         let basalBaselineInsulinOnBoard = PhysiologicalUtilities .calculateBasalBaselineInsulinOnBoard(basalRate: basalRate, insulinType: insulinType)
+        // The integrator input is on the settings values, not on the dosing
+        // pair: see `deltaGlucoseError`.
         let deltaGlucoseError = deltaGlucoseError(settings: settings, dataFrame: dataFrame, at: at)
         
         // PID controller. With the low-pass filter off the controller sees
